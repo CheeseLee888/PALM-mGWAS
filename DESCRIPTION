@@ -1,36 +1,28 @@
-Package: SAIGEQTL
+Package: PALMmGWAS
 Type: Package
-Title: Fast and Reliable Poisson Mixed-Model Method for Microbiome QTL Mapping
+Title: Microbiome Genome-Wide Association Analysis Using the PALM Framework
 Version: 1.0
-Date: 2025-11-24
+Date: 2026-2-10
 Authors@R: c(
     person("Peter", "Li",
            email = "cheese.lee.888@gmail.com",
            role = c("aut", "cre")),
-    person("Wei", "Zhou",
-           email = "wzhou@broadinstitute.org",
-           role = "ctb",
-           comment = "Author of SAIGE; PALMmbQTL borrows and adapts its mixed-model and score-test framework."),
     person("Zhengzheng", "Tang",
            email = "ztang2@wisc.edu",
            role = c("ths", "ctb"),
            comment = "Supervisor of the PALM-mbQTL project and provider of methodological guidance."))
-Description: PALMmbQTL provides a scalable Poisson mixed-model framework for
-    microbiome QTL (mbQTL) mapping. The method fits a feature-shared
-    random-intercept Poisson mixed model to account for compositional
-    correlation among taxa and computes genome-wide score statistics
-    efficiently by fitting the null model only once. The package implements
-    null model fitting and score statistic computation for large-scale
-    mbQTL analysis.
+Description: This package implements a microbiome genome-wide association study (mGWAS) workflow based on the PALM framework. 
+       Host genetic variants are modeled as covariates of interest in regression-based association testing to identify associations 
+       between microbial features and host genotypes. The package provides end-to-end utilities for input checking, null model fitting, 
+       association testing, and result summarization, and is designed to support large-scale analyses across multiple microbial features 
+       and genetic variants. The workflow is compatible with containerized and high-performance computing environments.
 License: GPL (>= 2)
-Imports: Rcpp (>= 1.0.7), RcppParallel, Matrix, data.table, RcppArmadillo (>= 0.10.7.5), RcppNumerical, furrr, dbplyr, GMMAT, SeqArray, SNPRelate, snpStats
-Suggests: R.utils
-LinkingTo: Rcpp, RcppArmadillo (>= 0.10.7.5), RcppParallel, data.table, SPAtest (== 3.1.2),
-        RcppEigen, Matrix, methods, BH, optparse, SKAT, MetaSKAT, qlcMatrix, RhpcBLASctl, RSQLite, dplyr, nlme, MASS, RcppEigen, RcppNumerical
-Remotes: cysouw/qlcMatrix, leeshawn/MetaSKAT, barkasn/fastSave
+Imports: Matrix, data.table, dbplyr
+Suggests:
+LinkingTo:
+Remotes:
 Depends: R (>= 3.5.0)
 SystemRequirements: GNU make
-RoxygenNote: 7.1.2
+RoxygenNote:
 NeedsCompilation: yes
 Encoding: UTF-8
-Packaged: 2025-11-24

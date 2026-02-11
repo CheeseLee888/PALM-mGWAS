@@ -1,8 +1,2 @@
-useDynLib(SAIGEQTL)
-importFrom(Rcpp, evalCpp)
-importFrom(RcppParallel, RcppParallelLibs)
-import(Matrix)
-exportPattern("^[[:alpha:]]+")
-import(data.table)
-import(RcppNumerical)
-import(SNPRelate)
+exportPattern("^[^\\.]")
+

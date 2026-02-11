@@ -32,11 +32,6 @@ if [[ "${PALMmethod}" == 1 ]]; then
         --PALMOutputFile=${palm1_step2_prefix} \
         --chrom=${chrom}
 else
-    apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
-        step2_scoreTest.R \
-        --inFile=${genoFile} \
-        --NULLmodelFile=${palm2_step1_prefix}.rda \
-        --PALMOutputFile=${palm2_step2_prefix} \
-        --chrom=${chrom}
+    # Remove PALM2
 fi
 echo "Finish: Performe score test."

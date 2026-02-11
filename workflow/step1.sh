@@ -25,20 +25,6 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step0_checkIn
     --genoFile=${genoFile}
 echo "Finish: Check input files."    
 
-# # step0: generate GRM from genotype data (only for PALM-mbQTL)
-# if [[ "${PALMmethod}" == 2 ]]; then
-#     echo "Start: Generate GRM."
-#     if [[ -f "${grmFile}" ]]; then
-#         echo "GRM already exists at: ${grmFile}"
-#         echo "Skip generating GRM and reuse the existing GRM."
-#     else
-#         pixi run --manifest-path=pixi.toml Rscript extdata/step0_generateGRM.R \
-#             --genoFile=${genoFile} \
-#             --grmFile=${grmFile}
-#     fi
-#     echo "Finish: Generate GRM."
-# fi
-
 # step1: fit null model for all phenotypes
 echo "Start: Fit null model."
 if [[ "${PALMmethod}" == 1 ]]; then
@@ -47,52 +33,5 @@ if [[ "${PALMmethod}" == 1 ]]; then
         --covFile=${covFile} \
         --outputPrefix=${palm1_step1_prefix}
 else
-    # Progress file: records "which batch_idx to run next"
-    RESET_STEP1=1
-    PROGRESS="${palm2_step1_prefix}_progress.txt"
-
-    if [ "${RESET_STEP1}" -eq 1 ]; then
-        echo "[step1] RESET enabled: removing progress and restarting from 1"
-        rm -f "$PROGRESS"
-        echo 1 > "$PROGRESS"
-    else
-        if [ ! -f "$PROGRESS" ]; then
-            echo 1 > "$PROGRESS"
-        fi
-    fi
-
-    attempt=1
-    set +e   # Allow commands to fail inside the loop
-    
-    while true; do
-        batch_idx=$(cat "$PROGRESS")
-
-        echo "=== attempt=${attempt} resume batch_idx=${batch_idx} ==="
-
-        pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step1_fitNULL.R \
-            --grmFile=${grmFile} \
-            --abdFile=${abdFile} \
-            --covFile=${covFile} \
-            --outputPrefix=${palm2_step1_prefix} \
-            --batch_idx=${batch_idx}
-
-        rc=$?
-
-        # exit after all phenotypes are processed
-        if [ $rc -eq 0 ]; then
-            echo "All phenotypes processed. Stop."
-            rm -f "$PROGRESS"
-            break
-        fi
-
-        if [ $rc -eq 2 ]; then
-            echo "Fatal preflight error detected. Abort." >&2
-            exit 1
-        fi
-
-        echo "Run crashed. Restart; will resume from progress=$(cat "$PROGRESS")" >&2
-        attempt=$((attempt + 1))
-    done
-    set -e  # Re-enable exit on error
+    # Remove PALM2
 fi
-echo "Finish: Fit null model."
