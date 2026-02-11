@@ -1,0 +1,36 @@
+Package: SAIGEQTL
+Type: Package
+Title: Fast and Reliable Poisson Mixed-Model Method for Microbiome QTL Mapping
+Version: 1.0
+Date: 2025-11-24
+Authors@R: c(
+    person("Peter", "Li",
+           email = "cheese.lee.888@gmail.com",
+           role = c("aut", "cre")),
+    person("Wei", "Zhou",
+           email = "wzhou@broadinstitute.org",
+           role = "ctb",
+           comment = "Author of SAIGE; PALMmbQTL borrows and adapts its mixed-model and score-test framework."),
+    person("Zhengzheng", "Tang",
+           email = "ztang2@wisc.edu",
+           role = c("ths", "ctb"),
+           comment = "Supervisor of the PALM-mbQTL project and provider of methodological guidance."))
+Description: PALMmbQTL provides a scalable Poisson mixed-model framework for
+    microbiome QTL (mbQTL) mapping. The method fits a feature-shared
+    random-intercept Poisson mixed model to account for compositional
+    correlation among taxa and computes genome-wide score statistics
+    efficiently by fitting the null model only once. The package implements
+    null model fitting and score statistic computation for large-scale
+    mbQTL analysis.
+License: GPL (>= 2)
+Imports: Rcpp (>= 1.0.7), RcppParallel, Matrix, data.table, RcppArmadillo (>= 0.10.7.5), RcppNumerical, furrr, dbplyr, GMMAT, SeqArray, SNPRelate, snpStats
+Suggests: R.utils
+LinkingTo: Rcpp, RcppArmadillo (>= 0.10.7.5), RcppParallel, data.table, SPAtest (== 3.1.2),
+        RcppEigen, Matrix, methods, BH, optparse, SKAT, MetaSKAT, qlcMatrix, RhpcBLASctl, RSQLite, dplyr, nlme, MASS, RcppEigen, RcppNumerical
+Remotes: cysouw/qlcMatrix, leeshawn/MetaSKAT, barkasn/fastSave
+Depends: R (>= 3.5.0)
+SystemRequirements: GNU make
+RoxygenNote: 7.1.2
+NeedsCompilation: yes
+Encoding: UTF-8
+Packaged: 2025-11-24

@@ -1,0 +1,19 @@
+# R session cache
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# pixi virtual env
+.pixi
+
+# VSCode settings
+.vscode/
+
+# compiled / temp
+*.sif
+*.tar
+
+# example output
+example/output/*
+example/plot/*
