@@ -1,7 +1,4 @@
 /archived
-src/*.o
-src/*.so
-src/backup/*
 configure
 R/*.log
 R/*.lo
@@ -25,5 +22,4 @@ guide/*.out
 guide/*.pdf
 guide/*.synctex.gz
 test*
-*noCov*
 mytest/
