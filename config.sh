@@ -12,10 +12,12 @@ outputFolder=example/output
 genoFile=geno
 abdFile=abd.txt
 covFile=cov.txt
-grmFile=grm.rds
 
 # chromosome number to analyze (for step2 only); set to 'NULL' for all chromosomes
 chrom=1
+
+# other control
+useOriginalFormat=TRUE
 
 ##################################### optional below #######################################
 # Default paths for other files, can be modified as needed
@@ -43,7 +45,6 @@ outputFolder=${WORK}/${outputFolder}
 genoFile=${inputFolder}/${genoFile}
 abdFile=${inputFolder}/${abdFile}
 covFile=${inputFolder}/${covFile}
-grmFile=${inputFolder}/${grmFile}
 outputSnpFile=${outputFolder}/${outputSnpFile}
 outputFeatureFile=${outputFolder}/${outputFeatureFile}
 outputSeqDepthFile=${outputFolder}/${outputSeqDepthFile}
@@ -60,7 +61,7 @@ export genoFile
 export abdFile
 export covFile
 export chrom
-export grmFile
+export useOriginalFormat
 export outputSnpFile
 export outputFeatureFile
 export outputSeqDepthFile
