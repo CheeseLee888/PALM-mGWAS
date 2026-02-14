@@ -23,3 +23,5 @@ guide/*.pdf
 guide/*.synctex.gz
 test*
 mytest/
+example_old/
+config.sh
