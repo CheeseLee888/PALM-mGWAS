@@ -145,13 +145,7 @@ if (!opt$useCluster) {
 
 if (opt$useOriginalFormat) {
   cat("Writing results in one file.\n")
-  write.table(
-    as.data.frame(res, check.names = FALSE),
-    file = paste0(opt$PALMOutputFile, "_allpheno.txt"),
-    sep = "\t",
-    quote = FALSE,
-    col.names = NA
-  )
+  save(res, file = paste0(opt$PALMOutputFile, ".rda"))
 }else{
   cat("Writing results in split files by phenotype.\n")
 
