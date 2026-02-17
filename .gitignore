@@ -21,7 +21,7 @@ guide/*.log
 guide/*.out
 guide/*.pdf
 guide/*.synctex.gz
-test*
+*test*
 mytest/
 example_old/
 config.sh
