@@ -16,7 +16,7 @@ echo "Finish: Check input files."
 
 # step1: fit null model for all phenotypes
 echo "Start: Fit null model."
-pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step1_palm.R \
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step1_null.R \
     --abdFile=${abdFile} \
     --covFile=${covFile} \
     --outputPrefix=${palm1_step1_prefix}
