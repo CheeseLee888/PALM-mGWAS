@@ -7,7 +7,7 @@ source "$WORK/config.sh"
 
 # step2: score test
 echo "Start: Performe score test."
-pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_palm.R \
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary.R \
     --inFile=${genoFile} \
     --NULLmodelFile=${palm1_step1_prefix}.rda \
     --PALMOutputFile=${palm1_step2_prefix} \
