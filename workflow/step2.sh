@@ -11,6 +11,5 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary
     --inFile=${genoFile} \
     --NULLmodelFile=${palm1_step1_prefix}.rda \
     --PALMOutputFile=${palm1_step2_prefix} \
-    --chrom=${chrom} \
-    --useOriginalFormat=${useOriginalFormat}
+    --chrom=${chrom}
 echo "Finish: Performe score test."

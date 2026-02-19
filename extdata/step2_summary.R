@@ -28,10 +28,7 @@ option_list <- list(
     ),
     make_option("--useCluster",
         type = "logical", default = TRUE,
-        help = ""),
-    make_option("--useOriginalFormat",
-        type = "logical", default = TRUE,
-        help = "" )
+        help = "")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -46,7 +43,6 @@ getSummary(
   PALMOutputFile = opt$PALMOutputFile,
   chrom = opt$chrom,
   correct = opt$correct,
-  useCluster = opt$useCluster,
-  useOriginalFormat = opt$useOriginalFormat
+  useCluster = opt$useCluster
 )
 
