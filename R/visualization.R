@@ -8,8 +8,7 @@
 #   4) --pheno and --snp        -> Forest for that (pheno, snp) across studies
 #
 # Data format assumed for each meta file (tab-delimited):
-#   SNP CHR POS stderr pval qval pval.het qval.het study1_est study1_stderr study2_est ...
-#   (Some columns can be missing: qval, het columns, etc.)
+#   SNP CHR POS stderr pval pval.het study1_est study1_stderr study2_est ...
 
 suppressPackageStartupMessages({
   library(data.table)
@@ -17,6 +16,7 @@ suppressPackageStartupMessages({
   library(ggplot2)
   library(stringr)
   library(tibble)
+  library(qqman)
 })
 
 # ----------------------------- utilities -----------------------------
@@ -56,20 +56,14 @@ detect_studies <- function(df) {
   list(ids = ids, est_cols = est_cols, stderr_cols = stderr_cols)
 }
 
-pick_sig_field <- function(df, prefer = c("qval", "pval")) {
-  prefer <- match.arg(prefer)
-  if (prefer == "qval") {
-    if ("qval" %in% names(df)) return("qval")
-    if ("pval" %in% names(df)) return("pval")
-  } else {
-    if ("pval" %in% names(df)) return("pval")
-    if ("qval" %in% names(df)) return("qval")
-  }
-  stop("No qval or pval column found.")
+pick_sig_field <- function(df) {
+  # always use pval
+  if ("pval" %in% names(df)) return("pval")
+  stop("No pval column found.")
 }
 
-is_sig_row <- function(row, qCut = 0.05, pCut = 1e-6) {
-  if ("qval" %in% names(row) && !is.na(row$qval)) return(row$qval <= qCut)
+is_sig_row <- function(row, pCut = 1e-6) {
+  # only use pval for significance
   if ("pval" %in% names(row) && !is.na(row$pval)) return(row$pval <= pCut)
   FALSE
 }
@@ -116,54 +110,70 @@ add_bp_cum <- function(df) {
 }
 
 
-plot_manhattan <- function(df, outFile, title = NULL, qCut = 0.05, pCut = 1e-6, prefer = "qval",
-                           onlySig = FALSE, maxPoints = 200000, width = 11, height = 4.5, dpi = 300) {
-  sigField <- pick_sig_field(df, prefer = prefer)
+plot_manhattan <- function(df, outFile, title = NULL,
+                           pCut = 1e-6,
+                           onlySig = FALSE,
+                           maxPoints = 200000,
+                           width = 11, height = 4.5, dpi = 300) {
 
+  if (!requireNamespace("qqman", quietly = TRUE)) {
+    stop("Package 'qqman' is required.")
+  }
+
+  # ---- hard-coded header ----
+  required_cols <- c("SNP", "CHR", "POS", "pval")
+  miss <- setdiff(required_cols, names(df))
+  if (length(miss) > 0) {
+    stop("Missing column(s): ", paste(miss, collapse = ", "))
+  }
+
+  # ---- prepare ----
   df <- df |>
-    dplyr::mutate(score = .data[[sigField]]) |>
-    dplyr::filter(!is.na(.data$score), .data$score > 0) |>
-    dplyr::mutate(mlog = -log10(.data$score))
+    dplyr::filter(!is.na(.data$pval), .data$pval > 0)
 
   if (onlySig) {
-    df <- if (sigField == "qval") {
-      dplyr::filter(df, .data$score <= qCut)
-    } else {
-      dplyr::filter(df, .data$score <= pCut)
-    }
+    df <- dplyr::filter(df, .data$pval <= pCut)
   }
 
-  if (nrow(df) == 0) stop("No points to plot in Manhattan (after filtering).")
+  if (nrow(df) == 0)
+    stop("No points to plot.")
 
+  # keep most significant if too large
   if (nrow(df) > maxPoints) {
-    df <- dplyr::arrange(df, .data$score) |> utils::head(maxPoints)
+    df <- dplyr::arrange(df, .data$pval) |> utils::head(maxPoints)
   }
 
-  cum <- add_bp_cum(df)
-  df2 <- cum$df
-  axis_df <- cum$axis_df
-
-  g <- ggplot2::ggplot(df2, ggplot2::aes(x = .data$BPcum, y = .data$mlog)) +
-    ggplot2::geom_point(size = 0.55, alpha = 0.85) +
-    ggplot2::scale_x_continuous(breaks = axis_df$center, labels = axis_df$CHR) +
-    ggplot2::labs(
-      x = "Chromosome",
-      y = paste0("-log10(", sigField, ")"),
-      title = title %||% ""
-    ) +
-    ggplot2::theme_minimal(base_size = 12) +
-    ggplot2::theme(
-      panel.grid = ggplot2::element_blank(),
-      panel.background = ggplot2::element_rect(fill = NA, colour = "black", linewidth = 0.9),
-      axis.ticks = ggplot2::element_blank(),
-      plot.margin = ggplot2::margin(8, 10, 8, 10)
+  man <- df |>
+    dplyr::transmute(
+      CHR = as.integer(.data$CHR),
+      BP  = as.integer(.data$POS),
+      P   = as.numeric(.data$pval),
+      SNP = as.character(.data$SNP)
     )
 
   msg("Saving: %s", outFile)
-  ggplot2::ggsave(outFile, g, width = width, height = height, dpi = dpi)
-  invisible(g)
-}
 
+  grDevices::jpeg(outFile, width = width, height = height,
+                  units = "in", res = dpi)
+
+  qqman::manhattan(
+    man,
+    chr = "CHR",
+    bp  = "BP",
+    p   = "P",
+    snp = "SNP",
+    logp = TRUE,
+    col = c("grey20", "grey70"),
+    cex = 0.55,
+    main = title %||% "",
+    suggestiveline = pCut,
+    genomewideline = 5e-8
+  )
+
+  grDevices::dev.off()
+
+  invisible(man)
+}
 
 # ----------------------------- Forest plot helpers -----------------------------
 
@@ -287,7 +297,7 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
 
 # Mode A: one big combined plot (significant points across any pheno & snp)
 #' @export
-mode_big_combined <- function(metaIndex, outFile, qCut, pCut, prefer = "qval",
+mode_big_combined <- function(metaIndex, outFile, pCut = 1e-6,
                               maxPoints = 200000, sep = "\t",
                               width = 12, height = 5, dpi = 300) {
   all_hits <- list()
@@ -297,35 +307,24 @@ mode_big_combined <- function(metaIndex, outFile, qCut, pCut, prefer = "qval",
     f  <- metaIndex$file[i]
     df <- safe_fread(f, sep = sep)
 
-    sigField <- pick_sig_field(df, prefer = prefer)
-
-    df <- df |> dplyr::mutate(pheno = ph)
-
-    # keep only significant rows for this pheno
-    if (sigField == "qval") {
-      if (!("qval" %in% names(df))) next
-      df <- df |> dplyr::filter(!is.na(.data$qval), .data$qval > 0, .data$qval <= qCut)
-    } else {
-      if (!("pval" %in% names(df))) next
-      df <- df |> dplyr::filter(!is.na(.data$pval), .data$pval > 0, .data$pval <= pCut)
-    }
+    # use pval only (qval deprecated)
+    if (!("pval" %in% names(df))) next
+    df <- df |> dplyr::mutate(pheno = ph) |> dplyr::filter(!is.na(.data$pval), .data$pval > 0, .data$pval <= pCut)
 
     if (nrow(df) == 0) next
 
-    # IMPORTANT: keep qval/pval so plot_manhattan can pick sigField
-    keep <- df |> dplyr::select(dplyr::any_of(c("SNP", "CHR", "POS", "pval", "qval")), .data$pheno)
+    # keep pval so plot_manhattan can pick sigField
+    keep <- df |> dplyr::select(dplyr::any_of(c("SNP", "CHR", "POS", "pval")), .data$pheno)
     all_hits[[length(all_hits) + 1]] <- keep
   }
 
-  if (length(all_hits) == 0) stop("No significant hits found across any pheno (try looser qCut/pCut).")
+  if (length(all_hits) == 0) stop("No significant hits found across any pheno (try looser pCut).")
 
   big <- dplyr::bind_rows(all_hits)
 
-  # downsample by prefer column
+  # downsample by pval
   if (nrow(big) > maxPoints) {
-    if (prefer == "qval" && "qval" %in% names(big)) {
-      big <- dplyr::arrange(big, .data$qval) |> utils::head(maxPoints)
-    } else if ("pval" %in% names(big)) {
+    if ("pval" %in% names(big)) {
       big <- dplyr::arrange(big, .data$pval) |> utils::head(maxPoints)
     } else {
       big <- utils::head(big, maxPoints)
@@ -336,9 +335,7 @@ mode_big_combined <- function(metaIndex, outFile, qCut, pCut, prefer = "qval",
     df = big,
     outFile = outFile,
     title = "Combined significant hits across phenotypes",
-    qCut = qCut,
     pCut = pCut,
-    prefer = prefer,
     onlySig = FALSE,         # already filtered to sig
     maxPoints = maxPoints,
     width = width,
@@ -350,7 +347,7 @@ mode_big_combined <- function(metaIndex, outFile, qCut, pCut, prefer = "qval",
 
 # Mode B: Manhattan for a given pheno
 #' @export
-mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, qCut, pCut, prefer,
+mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
                                  sep = "\t", onlySig = FALSE, maxPoints = 200000,
                                  width = 12, height = 4.5, dpi = 300) {
   row <- metaIndex |> dplyr::filter(.data$pheno == phenoName)
@@ -362,7 +359,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, qCut, pCut, pref
     df = df,
     outFile = outFile,
     title = paste0("Manhattan: ", phenoName),
-    qCut = qCut, pCut = pCut, prefer = prefer,
+    pCut = pCut,
     onlySig = onlySig,
     maxPoints = maxPoints,
     width = width, height = height, dpi = dpi
@@ -374,10 +371,9 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, qCut, pCut, pref
 # sigOnlyPheno is OPTIONAL (user request): default FALSE => draw ALL phenos that contain this SNP.
 #' @export
 mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
-                                         qCut, pCut, prefer = "qval",
+                                         pCut = 1e-6,
                                          sigOnlyPheno = FALSE,
                                          ciMult = 1.96,
-                                         hetQvalCut = 0.1,
                                          studyLabels = NULL,
                                          sep = "\t",
                                          xlim_str = NA_character_,
@@ -396,7 +392,7 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
 
     # optionally filter by significance across phenos
     if (sigOnlyPheno) {
-      if (!is_sig_row(r[1, , drop = FALSE], qCut = qCut, pCut = pCut)) next
+      if (!is_sig_row(r[1, , drop = FALSE], pCut = pCut)) next
     }
 
     r$pheno <- ph
@@ -405,7 +401,7 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
 
   if (length(rows) == 0) {
     if (sigOnlyPheno) {
-      stop("No phenotypes found (with this SNP) passing significance cutoff. Try --sigOnlyPheno FALSE or loosen qCut/pCut.")
+      stop("No phenotypes found (with this SNP) passing significance cutoff. Try --sigOnlyPheno FALSE or loosen pCut.")
     } else {
       stop("No phenotypes contain this SNP in meta files: ", snp)
     }
@@ -413,8 +409,8 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
 
   df_all <- dplyr::bind_rows(rows)
 
-  # sort phenos by significance if available
-  sigField <- pick_sig_field(df_all, prefer = prefer)
+  # sort phenos by significance (use pval)
+  sigField <- pick_sig_field(df_all)
   df_all <- df_all |> dplyr::mutate(score = .data[[sigField]])
   df_all <- df_all |> dplyr::arrange(score)
 
@@ -435,10 +431,10 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
       )
   }
 
-  # highlight phenos with heterogeneity (if qval.het exists)
+  # highlight phenos with heterogeneity (use pval.het)
   het_y <- character(0)
-  if ("qval.het" %in% names(df_all)) {
-    het_y <- df_all$pheno[!is.na(df_all$qval.het) & df_all$qval.het <= hetQvalCut]
+  if ("pval.het" %in% names(df_all)) {
+    het_y <- df_all$pheno[!is.na(df_all$pval.het)]
   }
 
   y_levels <- df_all$pheno
@@ -462,7 +458,7 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
 # Mode D: pheno + snp fixed; forest across studies
 #' @export
 mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
-                                  ciMult = 1.96, hetQvalCut = 0.1,
+                                  ciMult = 1.96,
                                   studyLabels = NULL,
                                   sep = "\t",
                                   xlim_str = NA_character_,
@@ -493,8 +489,8 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
   }
 
   het_y <- character(0)
-  if ("qval.het" %in% names(r)) {
-    if (!is.na(r$qval.het[1]) && r$qval.het[1] <= hetQvalCut) het_y <- pheno
+  if ("pval.het" %in% names(r)) {
+    if (!is.na(r$pval.het[1])) het_y <- pheno
   }
 
   xlim_num <- parse_xlim(xlim_str)

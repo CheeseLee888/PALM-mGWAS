@@ -17,7 +17,7 @@ Description: This package implements a microbiome genome-wide association study 
        association testing, and result summarization, and is designed to support large-scale analyses across multiple microbial features 
        and genetic variants. The workflow is compatible with containerized and high-performance computing environments.
 License: GPL (>= 2)
-Imports: PALM, Matrix, data.table, dplyr, ggplot2, stringr
+Imports: PALM, Matrix, data.table, dplyr, ggplot2, stringr, qqman
 Suggests:
 LinkingTo:
 Remotes:

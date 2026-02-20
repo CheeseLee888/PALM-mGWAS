@@ -19,11 +19,6 @@ option_list <- list(
               help = "Output file name (png/pdf). If not set, auto-named."),
   make_option(c("--sep"), type = "character", default = "\t",
               help = "Input delimiter [default tab]"),
-
-  make_option(c("--prefer"), type = "character", default = "qval",
-              help = "Prefer 'qval' or 'pval' for significance & y-axis in manhattan [default %default]"),
-  make_option(c("--qCut"), type = "double", default = 0.05,
-              help = "q-value cutoff [default %default]"),
   make_option(c("--pCut"), type = "double", default = 1e-2,
               help = "p-value cutoff (used if qval missing) [default %default]"),
 
@@ -36,8 +31,6 @@ option_list <- list(
 
   make_option(c("--ciMult"), type = "double", default = 1.96,
               help = "CI multiplier (1.96 ~ 95%% CI) [default %default]"),
-  make_option(c("--hetQvalCut"), type = "double", default = 0.1,
-              help = "Highlight heterogeneity if qval.het <= this [default %default]"),
 
   make_option(c("--studyLabels"), type = "character", default = NA,
               help = "Optional comma-separated labels for studies, e.g. 'FR-CRC,DE-CRC,UKB' (must match number of study*_est columns)."),
@@ -56,7 +49,6 @@ option_list <- list(
 
 opt <- parse_args(OptionParser(option_list = option_list))
 
-prefer <- match.arg(tolower(opt$prefer), choices = c("qval", "pval"))
 
 metaDir <- opt$metaDir
 plotDir <- opt$plotDir
@@ -112,9 +104,7 @@ if (is.null(pheno) && is.null(snp)) {
     mode_big_combined(
       metaIndex = metaIndex,
       outFile = outFile,
-      qCut = opt$qCut,
       pCut = opt$pCut,
-      prefer = prefer,
       maxPoints = opt$maxPoints,
       sep = opt$sep,
       width = opt$width, height = opt$height, dpi = opt$dpi
@@ -126,9 +116,7 @@ if (is.null(pheno) && is.null(snp)) {
     mode_big_combined(
       metaIndex = metaIndex,
       outFile = outFile,
-      qCut = 1,                 # effectively keep all for qval
       pCut = 1,                 # keep all for pval
-      prefer = prefer,
       maxPoints = opt$maxPoints,
       sep = opt$sep,
       width = opt$width, height = opt$height, dpi = opt$dpi
@@ -141,9 +129,7 @@ if (is.null(pheno) && is.null(snp)) {
     metaIndex = metaIndex,
     phenoName = pheno,
     outFile = outFile,
-    qCut = opt$qCut,
     pCut = opt$pCut,
-    prefer = prefer,
     sep = opt$sep,
     onlySig = FALSE,           # Manhattan normally shows all; you can change if you want
     maxPoints = opt$maxPoints,
@@ -156,12 +142,9 @@ if (is.null(pheno) && is.null(snp)) {
     metaIndex = metaIndex,
     snp = snp,
     outFile = outFile,
-    qCut = opt$qCut,
     pCut = opt$pCut,
-    prefer = prefer,
     sigOnlyPheno = opt$sigOnlyPheno,     # user requested optional; default FALSE => draw all phenos
     ciMult = opt$ciMult,
-    hetQvalCut = opt$hetQvalCut,
     studyLabels = studyLabels,
     sep = opt$sep,
     xlim_str = opt$xlim,
@@ -177,7 +160,6 @@ if (is.null(pheno) && is.null(snp)) {
     snp = snp,
     outFile = outFile,
     ciMult = opt$ciMult,
-    hetQvalCut = opt$hetQvalCut,
     studyLabels = studyLabels,
     sep = opt$sep,
     xlim_str = opt$xlim,
