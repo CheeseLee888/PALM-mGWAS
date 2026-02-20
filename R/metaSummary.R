@@ -149,6 +149,14 @@ metaSummary <- function(study_dirs,
         out$pval.het <- meta_fits$`pval.het`
       }
 
+      # add per-study est/stderr columns (SNP-aligned)
+      for (d in used_studies) {
+        dat <- per_study[[d]]
+        m2 <- match(out$SNP, dat$SNP)
+        out[[paste0(d, "_est")]]    <- dat$est[m2]
+        out[[paste0(d, "_stderr")]] <- dat$stderr[m2]
+      }
+
       # optional: keep SNP ordering stable (by CHR/POS if available)
       if (all(!is.na(out$CHR)) && all(!is.na(out$POS))) {
         out <- dplyr::arrange(out, CHR, POS)
