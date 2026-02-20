@@ -4,8 +4,24 @@ source "$WORK/config.sh"
 
 
 ################################# workflow below (do not modify) #################################
-echo "Start: Generate plots."
-pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_plot.R \
-    --inFile=${plotInFile} \
-    --outdir=${plotOutDir}
-echo "Finish: Generate plots."
+echo "Start: Visualize results."
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visualization.R \
+    --metaDir=${metaDir} \
+    --plotDir=${plotDir} \
+    --pheno=${pheno} \
+    --snp=${snp}
+
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visualization.R \
+    --metaDir=${metaDir} \
+    --plotDir=${plotDir} \
+    --pheno=${pheno}
+
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visualization.R \
+    --metaDir=${metaDir} \
+    --plotDir=${plotDir} \
+    --snp=${snp}
+
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visualization.R \
+    --metaDir=${metaDir} \
+    --plotDir=${plotDir}
+echo "Finish: Visualize results."
