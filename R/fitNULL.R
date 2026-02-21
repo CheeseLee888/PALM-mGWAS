@@ -24,6 +24,7 @@ fitNULL <- function(abdFile,
     )
   }
   
+  dir.create(dirname(outputPrefix), recursive = TRUE, showWarnings = FALSE)
   save(modglmm, file = paste0(outputPrefix, ".rda"))
   cat("Done. PALM null model saved to", paste0(outputPrefix, ".rda"), "\n")
 }

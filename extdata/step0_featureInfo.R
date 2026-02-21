@@ -69,6 +69,7 @@ feature_info <- data.frame(
 if (is.null(opt$outputFile) || !nzchar(opt$outputFile)) {
   stop("The --outputFile argument is missing or empty. Please provide a valid file path.")
 }
+dir.create(dirname(opt$outputFile), recursive = TRUE, showWarnings = FALSE)
 write.table(feature_info, file = opt$outputFile, sep = "\t", quote = FALSE, row.names = FALSE)
 
 

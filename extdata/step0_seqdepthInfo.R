@@ -45,5 +45,6 @@ seqdepth_info <- data.frame(
 if (is.null(opt$outputFile) || !nzchar(opt$outputFile)) {
   stop("The --outputFile argument is missing or empty. Please provide a valid file path.")
 }
+dir.create(dirname(opt$outputFile), recursive = TRUE, showWarnings = FALSE)
 write.table(seqdepth_info, file = opt$outputFile, sep = "\t", quote = FALSE, row.names = FALSE)
 cat("Sequencing depth information written to: ", opt$outputFile, "\n")

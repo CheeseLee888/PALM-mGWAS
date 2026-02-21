@@ -88,4 +88,5 @@ info$AF <- as.numeric(AF)
 out <- info[, c("CHR","SNP","POS","A1","A2","N","AF")]
 
 message("Writing: ", opt$outputFile)
+dir.create(dirname(opt$outputFile), recursive = TRUE, showWarnings = FALSE)
 data.table::fwrite(out, file = opt$outputFile, sep = "\t", quote = FALSE, na = "NA")
