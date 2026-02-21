@@ -146,6 +146,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/r-r6-2.6.1-r44hc72bb7e_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/r-rcolorbrewer-1.1_3-r44h785f33e_4.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/r-rcpp-1.1.1-r44h3697838_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/r-rcpparmadillo-15.2.3_1-r44h3704496_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/r-recommended-4.4-r44hd8ed1ab_1008.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/r-rlang-1.1.7-r44h3697838_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/r-rpart-4.1.24-r44h54b55ab_1.conda
@@ -342,6 +343,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/r-r6-2.6.1-r44hc72bb7e_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/r-rcolorbrewer-1.1_3-r44h785f33e_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/r-rcpp-1.1.1-r44hed9a748_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/r-rcpparmadillo-15.2.3_1-r44hfa0a987_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/r-recommended-4.4-r44hd8ed1ab_1008.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/r-rlang-1.1.7-r44hed9a748_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/r-rpart-4.1.24-r44h735ac91_1.conda
@@ -3545,6 +3547,37 @@ packages:
   license_family: GPL2
   size: 2127573
   timestamp: 1768071064167
+- conda: https://conda.anaconda.org/conda-forge/linux-64/r-rcpparmadillo-15.2.3_1-r44h3704496_0.conda
+  sha256: 493929b28fd2a678f81617503726f17a0b9281c570157578e50b6831575a0a43
+  md5: 167091d8593c3aa44064b3ffbf3202c9
+  depends:
+  - __glibc >=2.17,<3.0.a0
+  - _openmp_mutex >=4.5
+  - libblas >=3.9.0,<4.0a0
+  - libgcc >=14
+  - liblapack >=3.9.0,<4.0a0
+  - libstdcxx >=14
+  - r-base >=4.4,<4.5.0a0
+  - r-rcpp >=0.11.0
+  license: GPL-2.0-or-later
+  license_family: GPL2
+  size: 1066364
+  timestamp: 1766525550011
+- conda: https://conda.anaconda.org/conda-forge/osx-64/r-rcpparmadillo-15.2.3_1-r44hfa0a987_0.conda
+  sha256: c8c3735d4f1e4df55dbd892dd7c53caf2ba6d78063c2c2fb857ea213d5d555c3
+  md5: d12739c713dd717f07a4ecf79727a198
+  depends:
+  - __osx >=10.13
+  - libblas >=3.9.0,<4.0a0
+  - libcxx >=19
+  - liblapack >=3.9.0,<4.0a0
+  - llvm-openmp >=19.1.7
+  - r-base >=4.4,<4.5.0a0
+  - r-rcpp >=0.11.0
+  license: GPL-2.0-or-later
+  license_family: GPL2
+  size: 1054244
+  timestamp: 1766525780211
 - conda: https://conda.anaconda.org/conda-forge/noarch/r-recommended-4.4-r44hd8ed1ab_1008.conda
   sha256: c69ba9924e0c68b7bc16ce7e31873219d5ae09d67d4c79d1a229e4419fbe36f4
   md5: 3bfffc0cd88a057342247c3eb877c778

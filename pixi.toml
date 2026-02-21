@@ -23,3 +23,5 @@ r-qqman = "*"
 bioconductor-snpstats = "*"
 r-ggplot2 = ">=4.0.2,<5"
 r-stringr = ">=1.6.0,<2"
+r-rcpparmadillo = ">=15.2.3_1,<16"
+
