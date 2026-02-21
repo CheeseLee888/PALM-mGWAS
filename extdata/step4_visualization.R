@@ -19,16 +19,13 @@ option_list <- list(
               help = "Output file name (png/pdf). If not set, auto-named."),
   make_option(c("--sep"), type = "character", default = "\t",
               help = "Input delimiter [default tab]"),
-  make_option(c("--pCut"), type = "double", default = 1e-2,
+  make_option(c("--pCut"), type = "double", default = 1e-5,
               help = "p-value cutoff (used if qval missing) [default %default]"),
 
   make_option(c("--sigOnlyPheno"), action = "store_true", default = FALSE,
               help = "When --snp only: only plot phenos passing significance cutoff (default: plot ALL phenos containing SNP)."),
   make_option(c("--onlySigBig"), action = "store_true", default = TRUE,
               help = "When no pheno/snp: big plot draws only significant hits (default TRUE)."),
-  make_option(c("--maxPoints"), type = "integer", default = 200000,
-              help = "Max points to plot (downsample by significance) [default %default]"),
-
   make_option(c("--ciMult"), type = "double", default = 1.96,
               help = "CI multiplier (1.96 ~ 95%% CI) [default %default]"),
 
@@ -105,7 +102,6 @@ if (is.null(pheno) && is.null(snp)) {
       metaIndex = metaIndex,
       outFile = outFile,
       pCut = opt$pCut,
-      maxPoints = opt$maxPoints,
       sep = opt$sep,
       width = opt$width, height = opt$height, dpi = opt$dpi
     )
@@ -117,7 +113,6 @@ if (is.null(pheno) && is.null(snp)) {
       metaIndex = metaIndex,
       outFile = outFile,
       pCut = 1,                 # keep all for pval
-      maxPoints = opt$maxPoints,
       sep = opt$sep,
       width = opt$width, height = opt$height, dpi = opt$dpi
     )
@@ -132,7 +127,6 @@ if (is.null(pheno) && is.null(snp)) {
     pCut = opt$pCut,
     sep = opt$sep,
     onlySig = FALSE,           # Manhattan normally shows all; you can change if you want
-    maxPoints = opt$maxPoints,
     width = opt$width, height = opt$height, dpi = opt$dpi
   )
 

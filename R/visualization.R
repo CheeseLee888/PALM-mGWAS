@@ -62,7 +62,7 @@ pick_sig_field <- function(df) {
   stop("No pval column found.")
 }
 
-is_sig_row <- function(row, pCut = 1e-6) {
+is_sig_row <- function(row, pCut = 1e-5) {
   # only use pval for significance
   if ("pval" %in% names(row) && !is.na(row$pval)) return(row$pval <= pCut)
   FALSE
@@ -111,9 +111,8 @@ add_bp_cum <- function(df) {
 
 
 plot_manhattan <- function(df, outFile, title = NULL,
-                           pCut = 1e-6,
+                           pCut = 1e-5,
                            onlySig = FALSE,
-                           maxPoints = 200000,
                            width = 11, height = 4.5, dpi = 300) {
 
   if (!requireNamespace("qqman", quietly = TRUE)) {
@@ -137,11 +136,6 @@ plot_manhattan <- function(df, outFile, title = NULL,
 
   if (nrow(df) == 0)
     stop("No points to plot.")
-
-  # keep most significant if too large
-  if (nrow(df) > maxPoints) {
-    df <- dplyr::arrange(df, .data$pval) |> utils::head(maxPoints)
-  }
 
   man <- df |>
     dplyr::transmute(
@@ -297,7 +291,7 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
 
 # Mode A: one big combined plot (significant points across any pheno & snp)
 #' @export
-mode_big_combined <- function(metaIndex, outFile, pCut = 1e-6,
+mode_big_combined <- function(metaIndex, outFile, pCut = 1e-5,
                               maxPoints = 200000, sep = "\t",
                               width = 12, height = 5, dpi = 300) {
   all_hits <- list()
@@ -337,7 +331,6 @@ mode_big_combined <- function(metaIndex, outFile, pCut = 1e-6,
     title = "Combined significant hits across phenotypes",
     pCut = pCut,
     onlySig = FALSE,         # already filtered to sig
-    maxPoints = maxPoints,
     width = width,
     height = height,
     dpi = dpi
@@ -348,7 +341,7 @@ mode_big_combined <- function(metaIndex, outFile, pCut = 1e-6,
 # Mode B: Manhattan for a given pheno
 #' @export
 mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
-                                 sep = "\t", onlySig = FALSE, maxPoints = 200000,
+                                 sep = "\t", onlySig = FALSE,
                                  width = 12, height = 4.5, dpi = 300) {
   row <- metaIndex |> dplyr::filter(.data$pheno == phenoName)
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", phenoName)
@@ -361,7 +354,6 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
     title = paste0("Manhattan: ", phenoName),
     pCut = pCut,
     onlySig = onlySig,
-    maxPoints = maxPoints,
     width = width, height = height, dpi = dpi
   )
 }
@@ -371,7 +363,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
 # sigOnlyPheno is OPTIONAL (user request): default FALSE => draw ALL phenos that contain this SNP.
 #' @export
 mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
-                                         pCut = 1e-6,
+                                         pCut = 1e-5,
                                          sigOnlyPheno = FALSE,
                                          ciMult = 1.96,
                                          studyLabels = NULL,
