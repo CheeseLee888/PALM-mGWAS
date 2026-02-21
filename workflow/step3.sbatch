@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=mgwas-step2
+#SBATCH --job-name=mgwas-step3
 #SBATCH --partition=shared
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
@@ -12,12 +12,11 @@ source "$WORK/config.sh"
 
 ################################# workflow below (do not modify) #################################
 
-# step2: score test
-echo "Start: Performe score test."
+# step3: meta-analysis
+echo "Start: Performe meta analysis."
 apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
-    step2_summary.R \
-    --inFile=${genoFile} \
-    --NULLmodelFile=${palm1_step1_prefix}.rda \
-    --PALMOutputFile=${palm1_step2_prefix} \
-    --chrom=${chrom}
-echo "Finish: Performe score test."
+    step3_meta.R \
+    --studyDirList=${studyDirList} \
+    --inPrefix=${inPrefix} \
+    --outDir=${outDir}
+echo "Finish: Performe meta analysis."
