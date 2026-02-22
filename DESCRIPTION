@@ -23,6 +23,6 @@ LinkingTo:
 Remotes:
 Depends: R (>= 3.5.0)
 SystemRequirements: GNU make
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 NeedsCompilation: yes
 Encoding: UTF-8
