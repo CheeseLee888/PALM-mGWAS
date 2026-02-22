@@ -117,6 +117,7 @@ if (is.null(pheno) && is.null(snp)) {
 
 } else if (!is.null(pheno) && is.null(snp)) {
   # Mode B
+  qq_out <- with_suffix(outFile, "_qq")
   mode_pheno_manhattan(
     metaIndex = metaIndex,
     phenoName = pheno,
@@ -124,7 +125,8 @@ if (is.null(pheno) && is.null(snp)) {
     pCut = opt$pCut,
     sep = opt$sep,
     onlySig = FALSE,           # Manhattan normally shows all; you can change if you want
-    width = opt$width, height = opt$height, dpi = opt$dpi
+    width = opt$width, height = opt$height, dpi = opt$dpi,
+    qqOutFile = qq_out
   )
 
 } else if (is.null(pheno) && !is.null(snp)) {

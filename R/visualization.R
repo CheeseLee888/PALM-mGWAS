@@ -115,6 +115,19 @@ sanitize_filename <- function(x) {
   x
 }
 
+#' Append a suffix before the filename extension
+#'
+#' @param path Path to modify.
+#' @param suffix Suffix string to insert (e.g., "_qq").
+#' @return Modified path with suffix inserted before extension.
+#' @export
+with_suffix <- function(path, suffix) {
+  ext <- tools::file_ext(path)
+  base <- if (nzchar(ext)) sub(paste0("\\.", ext, "$"), "", path) else path
+  ext_part <- if (nzchar(ext)) paste0(".", ext) else ""
+  paste0(base, suffix, ext_part)
+}
+
 # ----------------------------- Manhattan helpers -----------------------------
 
 #' Add cumulative base-pair position for Manhattan plotting
@@ -203,6 +216,40 @@ plot_manhattan <- function(df, outFile, title = NULL,
   grDevices::dev.off()
 
   invisible(man)
+}
+
+#' Draw a QQ plot and save to file
+#'
+#' @param df Data frame containing a p-value column named `pval`.
+#' @param outFile Output path (png/jpg/etc).
+#' @param title Optional plot title.
+#' @param width,height,dpi Device parameters.
+#' @export
+plot_qq <- function(df, outFile, title = NULL,
+                    width = 6, height = 6, dpi = 300) {
+  if (!requireNamespace("qqman", quietly = TRUE)) {
+    stop("Package 'qqman' is required.")
+  }
+
+  if (!("pval" %in% names(df))) {
+    stop("Missing column pval.")
+  }
+
+  df <- df |>
+    dplyr::filter(!is.na(.data$pval), .data$pval > 0)
+
+  if (nrow(df) == 0) stop("No valid p-values to plot.")
+
+  msg("Saving: %s", outFile)
+
+  grDevices::jpeg(outFile, width = width, height = height,
+                  units = "in", res = dpi)
+
+  qqman::qq(df$pval, main = title %||% "QQ Plot")
+
+  grDevices::dev.off()
+
+  invisible(NULL)
 }
 
 # ----------------------------- Forest plot helpers -----------------------------
@@ -401,7 +448,8 @@ mode_big_combined <- function(metaIndex, outFile, pCut = 1e-5,
 #' @export
 mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
                                  sep = "\t", onlySig = FALSE,
-                                 width = 12, height = 4.5, dpi = 300) {
+                                 width = 12, height = 4.5, dpi = 300,
+                                 qqOutFile = NULL, qq_width = 6, qq_height = 6) {
   row <- metaIndex |> dplyr::filter(.data$pheno == phenoName)
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", phenoName)
 
@@ -415,6 +463,17 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
     onlySig = onlySig,
     width = width, height = height, dpi = dpi
   )
+
+  if (!is.null(qqOutFile)) {
+    plot_qq(
+      df = df,
+      outFile = qqOutFile,
+      title = paste0("QQ: ", phenoName),
+      width = qq_width,
+      height = qq_height,
+      dpi = dpi
+    )
+  }
 }
 
 
