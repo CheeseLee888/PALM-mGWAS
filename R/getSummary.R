@@ -51,6 +51,11 @@ getSummary <- function(inFile,
     }
     modglmm <- env$modglmm
 
+    # normalize chrom input: treat "" or "NULL" as NULL
+    if (!is.null(chrom) && is.character(chrom)) {
+        if (!nzchar(chrom) || toupper(chrom) == "NULL") chrom <- NULL
+    }
+
     # read genotype data and make it a data.frame
     bed <- paste0(inFile, ".bed")
     bim <- paste0(inFile, ".bim")

@@ -12,8 +12,12 @@
 
 # ----------------------------- utilities -----------------------------
 
+#' Print a formatted message with newline
+#' @export
 msg <- function(...) cat(sprintf(...), "\n")
 
+#' Safely read a tabular file with required columns
+#' @export
 safe_fread <- function(path, sep = "\t") {
   if (!file.exists(path)) stop("File not found: ", path)
   if (!requireNamespace("data.table", quietly = TRUE)) {
@@ -26,20 +30,41 @@ safe_fread <- function(path, sep = "\t") {
   df
 }
 
-discover_meta_files <- function(metaDir, methodPrefix = NULL, pattern = "step3_meta_.*\\.txt$") {
-  files <- list.files(metaDir, pattern = pattern, full.names = TRUE)
-  if (!is.null(methodPrefix) && nzchar(methodPrefix)) {
-    files <- files[grepl(paste0("^", methodPrefix, "_"), basename(files))]
+#' Discover meta-analysis result files
+#'
+#' Utility to list step3 meta files and extract phenotype names from filenames.
+#'
+#' @param metaDir Directory containing meta files.
+#' @param pattern Regex pattern for filenames; default matches `step3_meta_*.txt`.
+#'
+#' @return A data frame with columns `pheno` and `file`.
+#' @export
+discover_meta_files <- function(metaDir,
+                                pattern = "step3_meta_.*\\.txt$") {
+
+  files <- list.files(metaDir,
+                      pattern = pattern,
+                      full.names = TRUE)
+
+  if (length(files) == 0) {
+    stop("No step3 meta files found in: ", metaDir,
+         "\nFiles present: ",
+         paste(list.files(metaDir), collapse = ", "))
   }
-  if (length(files) == 0) stop("No step3 meta files found in: ", metaDir)
 
   pheno <- sub(".*step3_meta_", "", basename(files))
   pheno <- sub("\\.txt$", "", pheno)
 
-  data.frame(pheno = pheno, file = files, stringsAsFactors = FALSE) |>
+  data.frame(
+    pheno = pheno,
+    file  = files,
+    stringsAsFactors = FALSE
+  ) |>
     dplyr::arrange(pheno)
 }
 
+#' Detect study columns (est/stderr) in a meta result data frame
+#' @export
 detect_studies <- function(df) {
   est_cols <- grep("^study[0-9]+_est$", names(df), value = TRUE)
   if (length(est_cols) == 0) stop("Cannot find any columns like study1_est, study2_est, ...")
@@ -50,18 +75,24 @@ detect_studies <- function(df) {
   list(ids = ids, est_cols = est_cols, stderr_cols = stderr_cols)
 }
 
+#' Pick significance field (currently pval)
+#' @export
 pick_sig_field <- function(df) {
   # always use pval
   if ("pval" %in% names(df)) return("pval")
   stop("No pval column found.")
 }
 
+#' Test if a row is significant at pCut
+#' @export
 is_sig_row <- function(row, pCut = 1e-5) {
   # only use pval for significance
   if ("pval" %in% names(row) && !is.na(row$pval)) return(row$pval <= pCut)
   FALSE
 }
 
+#' Parse xlim string like "min,max" into numeric vector
+#' @export
 parse_xlim <- function(xlim_str) {
   if (is.null(xlim_str) || is.na(xlim_str) || !nzchar(xlim_str)) return(NULL)
   parts <- stringr::str_split(xlim_str, ",", simplify = TRUE)
@@ -71,6 +102,13 @@ parse_xlim <- function(xlim_str) {
   out
 }
 
+#' Sanitize a string for safe filenames
+#'
+#' Replaces path separators and other disallowed characters with underscores.
+#'
+#' @param x Character vector to sanitize.
+#' @return Sanitized character vector.
+#' @export
 sanitize_filename <- function(x) {
   x <- gsub("[:/\\\\]", "_", x)
   x <- gsub("[^A-Za-z0-9_\\-\\.]+", "_", x)
@@ -79,6 +117,8 @@ sanitize_filename <- function(x) {
 
 # ----------------------------- Manhattan helpers -----------------------------
 
+#' Add cumulative base-pair position for Manhattan plotting
+#' @export
 add_bp_cum <- function(df) {
   df <- df |>
     dplyr::mutate(
@@ -104,6 +144,8 @@ add_bp_cum <- function(df) {
 }
 
 
+#' Draw a Manhattan plot and save to JPEG
+#' @export
 plot_manhattan <- function(df, outFile, title = NULL,
                            pCut = 1e-5,
                            onlySig = FALSE,
@@ -165,6 +207,8 @@ plot_manhattan <- function(df, outFile, title = NULL,
 
 # ----------------------------- Forest plot helpers -----------------------------
 
+#' Convert wide study columns to long format for forest plotting
+#' @export
 to_long_study <- function(df_rows, studies, y_col, ciMult = 1.96, studyLabels = NULL) {
   # df_rows: data.frame with multiple y categories (pheno or SNP)
   long <- lapply(studies$ids, function(st) {
@@ -192,6 +236,8 @@ to_long_study <- function(df_rows, studies, y_col, ciMult = 1.96, studyLabels = 
   long
 }
 
+#' Make a forest plot and save to file
+#' @export
 forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect",
                         xlim_num = NULL, het_y = NULL, width = 10, height = 7, dpi = 300,
                         show_meta = FALSE, df_meta = NULL) {
@@ -279,6 +325,8 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
   invisible(g)
 }
 
+#' Infix helper: return first non-empty string
+#' @export
 `%||%` <- function(a, b) if (!is.null(a) && nzchar(a)) a else b
 
 # ----------------------------- Mode implementations -----------------------------

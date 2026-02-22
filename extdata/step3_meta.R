@@ -8,11 +8,11 @@ suppressPackageStartupMessages({
 option_list <- list(
   make_option("--studyDirList", type="character", default="",
               help="TSV: each line 'studyID<TAB>dir'"),
-  make_option("--inPrefix", type="character", default="palm1_step2_allchr_",
+  make_option("--inPrefix", type="character", default="",
               help="Input step2 prefix"),
   make_option("--outDir", type="character", default="",
               help="Output directory"),
-  make_option("--outPrefix", type="character", default="palm1_step3_meta_",
+  make_option("--outPrefix", type="character", default="",
               help="Output file prefix"),
   make_option("--keepHet", type="character", default="TRUE",
               help="TRUE/FALSE"),

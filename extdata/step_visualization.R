@@ -5,12 +5,10 @@ suppressPackageStartupMessages({
 })
 
 option_list <- list(
-  make_option(c("--metaDir"), type = "character", default = "output/meta",
+  make_option(c("--metaDir"), type = "character", default = "",
               help = "Directory containing step3 meta files [default %default]"),
-  make_option(c("--plotDir"), type = "character", default = "output/plot",
+  make_option(c("--plotDir"), type = "character", default = "",
               help = "Directory to save plots [default %default]"),
-  make_option(c("--methodPrefix"), type = "character", default = NA,
-              help = "Optional method prefix filter, e.g. palm1 or palm2"),
   make_option(c("--pheno"), type = "character", default = NA,
               help = "Phenotype name (suffix in step3 meta filename)"),
   make_option(c("--snp"), type = "character", default = NA,
@@ -22,16 +20,16 @@ option_list <- list(
   make_option(c("--pCut"), type = "double", default = 1e-5,
               help = "p-value cutoff (used if qval missing) [default %default]"),
 
-  make_option(c("--sigOnlyPheno"), action = "store_true", default = FALSE,
+  make_option(c("--sigOnlyPheno"), type = "logical", default = FALSE,
               help = "When --snp only: only plot phenos passing significance cutoff (default: plot ALL phenos containing SNP)."),
-  make_option(c("--onlySigBig"), action = "store_true", default = TRUE,
+  make_option(c("--onlySigBig"), type = "logical", default = TRUE,
               help = "When no pheno/snp: big plot draws only significant hits (default TRUE)."),
   make_option(c("--ciMult"), type = "double", default = 1.96,
               help = "CI multiplier (1.96 ~ 95%% CI) [default %default]"),
 
   make_option(c("--studyLabels"), type = "character", default = NA,
               help = "Optional comma-separated labels for studies, e.g. 'FR-CRC,DE-CRC,UKB' (must match number of study*_est columns)."),
-  make_option(c("--showMeta"), action = "store_true", default = TRUE,
+  make_option(c("--showMeta"), type = "logical", default = TRUE,
               help = "Overlay meta est/stderr in black if available [default TRUE]"),
 
   make_option(c("--xlim"), type = "character", default = NA,
@@ -51,8 +49,7 @@ metaDir <- opt$metaDir
 plotDir <- opt$plotDir
 dir.create(plotDir, recursive = TRUE, showWarnings = FALSE)
 
-methodPrefix <- if (!is.na(opt$methodPrefix)) opt$methodPrefix else NULL
-metaIndex <- discover_meta_files(metaDir, methodPrefix = methodPrefix)
+metaIndex <- discover_meta_files(metaDir)
 
 pheno <- if (!is.na(opt$pheno)) opt$pheno else NULL
 snp   <- if (!is.na(opt$snp)) opt$snp else NULL
@@ -66,7 +63,7 @@ if (!is.na(opt$studyLabels)) {
 
 # auto output filename
 auto_out <- function() {
-  base <- if (!is.null(methodPrefix)) methodPrefix else "palm"
+  base <- "palm"
   if (is.null(pheno) && is.null(snp)) {
     return(file.path(plotDir, paste0(base, "_step4_combined_hits.png")))
   }
