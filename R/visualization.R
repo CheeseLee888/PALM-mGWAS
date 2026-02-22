@@ -128,6 +128,32 @@ with_suffix <- function(path, suffix) {
   paste0(base, suffix, ext_part)
 }
 
+#' Write top-N rows ordered by p-value
+#'
+#' @param df Data frame containing column `pval`.
+#' @param outFile Output path.
+#' @param n Number of rows to keep.
+#' @return Invisibly returns the top-N data frame.
+#' @export
+write_top_n <- function(df, outFile, n = 10) {
+  if (!("pval" %in% names(df))) {
+    stop("Missing column pval.")
+  }
+  top <- df |>
+    dplyr::filter(!is.na(.data$pval)) |>
+    dplyr::arrange(.data$pval) |>
+    utils::head(n)
+
+  msg("Saving: %s", outFile)
+  if (requireNamespace("data.table", quietly = TRUE)) {
+    data.table::fwrite(top, outFile, sep = "\t")
+  } else {
+    utils::write.table(top, outFile, sep = "\t", quote = FALSE, row.names = FALSE)
+  }
+
+  invisible(top)
+}
+
 # ----------------------------- Manhattan helpers -----------------------------
 
 #' Add cumulative base-pair position for Manhattan plotting
@@ -444,12 +470,16 @@ mode_big_combined <- function(metaIndex, outFile, pCut = 1e-5,
 #' @inheritParams mode_big_combined
 #' @param phenoName Phenotype name matching a row in `metaIndex$pheno`.
 #' @param onlySig If TRUE, keep only points passing `pCut`.
+#' @param qqOutFile Optional output path for QQ plot.
+#' @param topOutFile Optional output path for top-N hits (ordered by p-value).
+#' @param top_n How many hits to keep if `topOutFile` is provided.
 #'
 #' @export
 mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
                                  sep = "\t", onlySig = FALSE,
                                  width = 12, height = 4.5, dpi = 300,
-                                 qqOutFile = NULL, qq_width = 6, qq_height = 6) {
+                                 qqOutFile = NULL, qq_width = 6, qq_height = 6,
+                                 topOutFile = NULL, top_n = 10) {
   row <- metaIndex |> dplyr::filter(.data$pheno == phenoName)
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", phenoName)
 
@@ -472,6 +502,14 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
       width = qq_width,
       height = qq_height,
       dpi = dpi
+    )
+  }
+
+  if (!is.null(topOutFile)) {
+    write_top_n(
+      df = df,
+      outFile = topOutFile,
+      n = top_n
     )
   }
 }

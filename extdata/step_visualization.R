@@ -118,6 +118,7 @@ if (is.null(pheno) && is.null(snp)) {
 } else if (!is.null(pheno) && is.null(snp)) {
   # Mode B
   qq_out <- with_suffix(outFile, "_qq")
+  top_out <- file.path(plotDir, paste0("top10_", sanitize_filename(pheno), ".txt"))
   mode_pheno_manhattan(
     metaIndex = metaIndex,
     phenoName = pheno,
@@ -126,7 +127,9 @@ if (is.null(pheno) && is.null(snp)) {
     sep = opt$sep,
     onlySig = FALSE,           # Manhattan normally shows all; you can change if you want
     width = opt$width, height = opt$height, dpi = opt$dpi,
-    qqOutFile = qq_out
+    qqOutFile = qq_out,
+    topOutFile = top_out,
+    top_n = 10
   )
 
 } else if (is.null(pheno) && !is.null(snp)) {
