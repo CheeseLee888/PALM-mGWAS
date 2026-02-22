@@ -1,16 +1,55 @@
-suppressPackageStartupMessages({
-    library(PALM)
-    library(snpStats)
-})
-
+#' Run PALM summary statistics for PLINK genotype inputs
+#'
+#' Reads PLINK bed/bim/fam files, applies a pre-fitted PALM null model, and
+#' writes per-phenotype summary statistics (one file per phenotype).
+#'
+#' @param inFile Path prefix to PLINK files (without extension); expects
+#'   `<inFile>.bed/.bim/.fam` to exist.
+#' @param NULLmodelFile Path to `.rda` containing the fitted null model
+#'   object named `modglmm`.
+#' @param PALMOutputFile Output prefix for per-phenotype result files; each
+#'   phenotype file will be written as `<PALMOutputFile>_<pheno>.txt`.
+#' @param chrom Optional chromosome filter (numeric or string like `"chr1"`).
+#'   Use `NULL` to keep all chromosomes.
+#' @param correct Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.
+#' @param useCluster Logical; if `TRUE`, uses FID from `.fam` as cluster
+#'   information when available.
+#'
+#' @return Invisibly returns a character vector of written file paths.
+#' @export
 getSummary <- function(inFile,
                        NULLmodelFile,
                        PALMOutputFile,
-                       chrom,
+                       chrom = NULL,
                        correct = "NULL",
                        useCluster = TRUE) {
 
-    load(NULLmodelFile)  # load modglmm
+    if (!requireNamespace("PALM", quietly = TRUE)) {
+        stop("Package 'PALM' is required but not installed.")
+    }
+    if (!requireNamespace("snpStats", quietly = TRUE)) {
+        stop("Package 'snpStats' is required but not installed.")
+    }
+
+    if (missing(inFile) || !nzchar(inFile)) {
+        stop("'inFile' must be provided (PLINK prefix without extension).")
+    }
+    if (missing(NULLmodelFile) || !nzchar(NULLmodelFile)) {
+        stop("'NULLmodelFile' must be provided.")
+    }
+    if (!file.exists(NULLmodelFile)) {
+        stop("NULL model file not found: ", NULLmodelFile)
+    }
+    if (missing(PALMOutputFile) || !nzchar(PALMOutputFile)) {
+        stop("'PALMOutputFile' must be provided.")
+    }
+
+    env <- new.env()
+    load(NULLmodelFile, envir = env)  # load modglmm
+    if (!exists("modglmm", envir = env)) {
+        stop("Object 'modglmm' not found in ", NULLmodelFile)
+    }
+    modglmm <- env$modglmm
 
     # read genotype data and make it a data.frame
     bed <- paste0(inFile, ".bed")
@@ -21,14 +60,14 @@ getSummary <- function(inFile,
     # read fam to get cluster info (make sure IDs align with abdFile's)
     cluster <- NULL
     if (useCluster) {
-        cat("Reading PLINK .fam file for cluster info. \n")
-        fam_data <- read.table(fam, stringsAsFactors = FALSE)
-        colnames(fam_data) <- c("FID","IID","PID","MID","SEX","PHENO")
+        message("Reading PLINK .fam file for cluster info.")
+        fam_data <- utils::read.table(fam, stringsAsFactors = FALSE)
+        colnames(fam_data) <- c("FID", "IID", "PID", "MID", "SEX", "PHENO")
         cluster <- fam_data$FID
         names(cluster) <- fam_data$IID
         ## Handle FID = 0 case
         if (all(cluster == 0)) {
-            cat("All FID values are 0. No valid cluster information detected. Setting useCluster = FALSE.\n")
+            message("All FID values are 0. No valid cluster information detected. Setting useCluster = FALSE.")
             useCluster <- FALSE
             cluster <- NULL
         }
@@ -81,28 +120,30 @@ getSummary <- function(inFile,
 
     # ---------- run palm.get.summary ----------
     if (!useCluster) {
-        cat("No cluster provided; running palm.get.summary without cluster.\n")
+        message("No cluster provided; running palm.get.summary without cluster.")
         res <- PALM::palm.get.summary(
             null.obj = modglmm,
             covariate.interest = geno,
             correct = correct
         )
-    }else{
-        cat("Cluster provided; running palm.get.summary with cluster(FID in plink file).\n")
+    } else {
+        message("Cluster provided; running palm.get.summary with cluster (FID in PLINK file).")
         # print some cluster IDs
         uclust <- unique(cluster)
-        cat("Unique cluster IDs (FID): ", length(uclust), "\n", sep = "")
+        message("Unique cluster IDs (FID): ", length(uclust))
         max_print <- 10
         if (length(uclust) <= max_print) {
             print(uclust)
         } else {
             print(uclust[1:max_print])
-            cat("... (", length(uclust) - max_print, "more clusters omitted)\n", sep = "")
+            message("... (", length(uclust) - max_print, " more clusters omitted)")
         }
 
         tab <- table(cluster)
-        cat("Cluster size (min/median/max): ",
-            min(tab), "/", as.numeric(median(tab)), "/", max(tab), "\n", sep = "")
+        message(
+            "Cluster size (min/median/max): ",
+            min(tab), "/", as.numeric(stats::median(tab)), "/", max(tab)
+        )
 
         res <- PALM::palm.get.summary(
             null.obj = modglmm,
@@ -115,7 +156,7 @@ getSummary <- function(inFile,
     # ----------------------------
     # Write results to files (one per phenotype)
     # ----------------------------
-    cat("Writing results in split files by phenotype.\n")
+    message("Writing results in split files by phenotype.")
 
     stopifnot(length(res) >= 1)
     study_names <- names(res)
@@ -180,6 +221,7 @@ getSummary <- function(inFile,
     out_dir <- dirname(PALMOutputFile)
     dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
+    out_paths <- character(0)
     for (pheno in rownames(res)) {
         out <- data.frame(
             SNP    = common_snp,
@@ -227,8 +269,10 @@ getSummary <- function(inFile,
 
         write.table(out, file = out_file, sep = "\t",
                     quote = FALSE, row.names = FALSE, col.names = TRUE)
-        cat("Wrote per-pheno files to: ", out_file, "\n")
+        message("Wrote per-pheno file: ", out_file)
+        out_paths <- c(out_paths, out_file)
     }
 
-    cat("Done. PALM summary results saved to files with prefix:", PALMOutputFile, "\n")
+    message("Done. PALM summary results saved with prefix: ", PALMOutputFile)
+    invisible(out_paths)
 }

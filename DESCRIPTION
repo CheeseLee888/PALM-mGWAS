@@ -2,7 +2,7 @@ Package: PALMmGWAS
 Type: Package
 Title: Microbiome Genome-Wide Association Analysis Using the PALM Framework
 Version: 1.0
-Date: 2026-2-10
+Date: 2026-02-10
 Authors@R: c(
     person("Peter", "Li",
            email = "cheese.lee.888@gmail.com",
@@ -17,12 +17,12 @@ Description: This package implements a microbiome genome-wide association study 
        association testing, and result summarization, and is designed to support large-scale analyses across multiple microbial features 
        and genetic variants. The workflow is compatible with containerized and high-performance computing environments.
 License: GPL (>= 2)
-Imports: PALM, Matrix, data.table, dplyr, ggplot2, stringr, qqman
+Imports: PALM, Matrix, data.table, dplyr, ggplot2, metafor, qqman, snpStats, stringr, tibble
 Suggests:
 LinkingTo:
 Remotes:
 Depends: R (>= 3.5.0)
 SystemRequirements: GNU make
-RoxygenNote:
+RoxygenNote: 7.3.2
 NeedsCompilation: yes
 Encoding: UTF-8

@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # step4_visualization.R
 #
-# Modes (professor requirement):
+# Modes:
 #   1) no --pheno and no --snp  -> one big combined plot (significant points across any pheno & snp)
 #   2) --pheno only             -> Manhattan for that pheno
 #   3) --snp only               -> Forest across phenos for that SNP (by default draw ALL phenos that contain the SNP; optional sig-only)
@@ -10,21 +10,15 @@
 # Data format assumed for each meta file (tab-delimited):
 #   SNP CHR POS stderr pval pval.het study1_est study1_stderr study2_est ...
 
-suppressPackageStartupMessages({
-  library(data.table)
-  library(dplyr)
-  library(ggplot2)
-  library(stringr)
-  library(tibble)
-  library(qqman)
-})
-
 # ----------------------------- utilities -----------------------------
 
 msg <- function(...) cat(sprintf(...), "\n")
 
 safe_fread <- function(path, sep = "\t") {
   if (!file.exists(path)) stop("File not found: ", path)
+  if (!requireNamespace("data.table", quietly = TRUE)) {
+    stop("Package 'data.table' is required but not installed.")
+  }
   df <- data.table::fread(path, sep = sep, data.table = FALSE)
   req <- c("SNP", "CHR", "POS")
   miss <- setdiff(req, names(df))
@@ -290,6 +284,17 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
 # ----------------------------- Mode implementations -----------------------------
 
 # Mode A: one big combined plot (significant points across any pheno & snp)
+#' Create a combined Manhattan plot of significant hits across all phenotypes
+#'
+#' @param metaIndex Data frame with columns `pheno` and `file` pointing to meta
+#'   result files (as produced by step3).
+#' @param outFile Path to the output JPEG.
+#' @param pCut P-value cutoff to define significance.
+#' @param maxPoints Maximum number of points to plot (downsamples by p-value).
+#' @param sep Field separator for meta files.
+#' @param width,height,dpi Graphics device parameters passed to `ggsave`.
+#'
+#' @return Invisibly returns the data frame passed to `qqman::manhattan()`.
 #' @export
 mode_big_combined <- function(metaIndex, outFile, pCut = 1e-5,
                               maxPoints = 200000, sep = "\t",
@@ -339,6 +344,12 @@ mode_big_combined <- function(metaIndex, outFile, pCut = 1e-5,
 
 
 # Mode B: Manhattan for a given pheno
+#' Manhattan plot for a single phenotype
+#'
+#' @inheritParams mode_big_combined
+#' @param phenoName Phenotype name matching a row in `metaIndex$pheno`.
+#' @param onlySig If TRUE, keep only points passing `pCut`.
+#'
 #' @export
 mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
                                  sep = "\t", onlySig = FALSE,
@@ -361,6 +372,17 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
 
 # Mode C: SNP fixed; forest across phenos
 # sigOnlyPheno is OPTIONAL (user request): default FALSE => draw ALL phenos that contain this SNP.
+#' Forest plot for a SNP across all phenotypes
+#'
+#' @inheritParams mode_big_combined
+#' @param snp SNP ID to plot.
+#' @param sigOnlyPheno If TRUE, keep only phenotypes where this SNP passes
+#'   `pCut`.
+#' @param ciMult Multiplier for confidence interval width.
+#' @param studyLabels Optional labels replacing study IDs in the legend.
+#' @param xlim_str Optional comma-separated numeric limits for the x-axis.
+#' @param show_meta If TRUE, overlay meta-effect in black.
+#'
 #' @export
 mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
                                          pCut = 1e-5,
@@ -448,6 +470,11 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
 }
 
 # Mode D: pheno + snp fixed; forest across studies
+#' Forest plot for a given phenotype/SNP across studies
+#'
+#' @inheritParams mode_snp_forest_across_phenos
+#' @param pheno Phenotype name to plot.
+#'
 #' @export
 mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
                                   ciMult = 1.96,

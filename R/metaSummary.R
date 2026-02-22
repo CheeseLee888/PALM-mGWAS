@@ -23,6 +23,13 @@ metaSummary <- function(study_dirs,
                         keep_het = TRUE,
                         meta.method = "EE") {
 
+  if (!requireNamespace("dplyr", quietly = TRUE)) {
+    stop("Package 'dplyr' is required but not installed.")
+  }
+  if (!requireNamespace("metafor", quietly = TRUE)) {
+    stop("Package 'metafor' is required but not installed.")
+  }
+
   if (is.null(names(study_dirs)) || any(names(study_dirs) == "")) {
     stop("study_dirs must be a named vector/list: names are study IDs.")
   }
