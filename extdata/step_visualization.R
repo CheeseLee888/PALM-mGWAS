@@ -63,23 +63,23 @@ if (!is.na(opt$studyLabels)) {
 
 # auto output filename
 auto_out <- function() {
-  base <- "palm"
+  base <- ""
   if (is.null(pheno) && is.null(snp)) {
-    return(file.path(plotDir, paste0(base, "_step4_combined_hits.png")))
+    return(file.path(plotDir, paste0(base, "combined_hits.png")))
   }
   if (!is.null(pheno) && is.null(snp)) {
-    return(file.path(plotDir, paste0(base, "_step4_manhattan_", sanitize_filename(pheno), ".png")))
+    return(file.path(plotDir, paste0(base, "manhattan_", sanitize_filename(pheno), ".png")))
   }
   if (is.null(pheno) && !is.null(snp)) {
     tag <- sanitize_filename(snp)
     if (opt$sigOnlyPheno) {
-      return(file.path(plotDir, paste0(base, "_step4_forest_snp_", tag, "_sigPheno.png")))
+      return(file.path(plotDir, paste0(base, "forest_snp_", tag, "_sigPheno.png")))
     } else {
-      return(file.path(plotDir, paste0(base, "_step4_forest_snp_", tag, "_allPheno.png")))
+      return(file.path(plotDir, paste0(base, "forest_snp_", tag, "_allPheno.png")))
     }
   }
   # both
-  return(file.path(plotDir, paste0(base, "_step4_forest_", sanitize_filename(pheno), "_", sanitize_filename(snp), ".png")))
+  return(file.path(plotDir, paste0(base, "forest_", sanitize_filename(pheno), "_", sanitize_filename(snp), ".png")))
 }
 
 outFile <- if (!is.na(opt$out)) opt$out else auto_out()
@@ -117,8 +117,10 @@ if (is.null(pheno) && is.null(snp)) {
 
 } else if (!is.null(pheno) && is.null(snp)) {
   # Mode B
-  qq_out <- with_suffix(outFile, "_qq")
-  top_out <- file.path(plotDir, paste0("top10_", sanitize_filename(pheno), ".txt"))
+  # keep auxiliary outputs aligned with main outFile
+  base_no_ext <- sub("\\.[^.]+$", "", outFile)
+  qq_out <- paste0(base_no_ext, "_qq.png")
+  top_out <- paste0(base_no_ext, "_top10.txt")
   mode_pheno_manhattan(
     metaIndex = metaIndex,
     phenoName = pheno,
