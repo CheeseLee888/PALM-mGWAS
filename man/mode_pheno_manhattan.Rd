@@ -13,7 +13,12 @@ mode_pheno_manhattan(
   onlySig = FALSE,
   width = 12,
   height = 4.5,
-  dpi = 300
+  dpi = 300,
+  qqOutFile = NULL,
+  qq_width = 6,
+  qq_height = 6,
+  topOutFile = NULL,
+  top_n = 10
 )
 }
 \arguments{
@@ -24,13 +29,20 @@ result files (as produced by step3).}
 
 \item{outFile}{Path to the output JPEG.}
 
-\item{pCut}{P-value cutoff to define significance.}
+\item{pCut}{P-value cutoff used for Manhattan suggestive line and optional
+filtering.}
 
 \item{sep}{Field separator for meta files.}
 
 \item{onlySig}{If TRUE, keep only points passing `pCut`.}
 
 \item{width, height, dpi}{Graphics device parameters passed to `ggsave`.}
+
+\item{qqOutFile}{Optional output path for QQ plot.}
+
+\item{topOutFile}{Optional output path for top-N hits (ordered by p-value).}
+
+\item{top_n}{How many hits to keep if `topOutFile` is provided.}
 }
 \description{
 Manhattan plot for a single phenotype

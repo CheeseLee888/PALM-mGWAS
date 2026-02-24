@@ -28,7 +28,8 @@ result files (as produced by step3).}
 
 \item{outFile}{Path to the output JPEG.}
 
-\item{pCut}{P-value cutoff to define significance.}
+\item{pCut}{P-value cutoff used to decide significance across phenotypes
+when `sigOnlyPheno` is TRUE.}
 
 \item{sigOnlyPheno}{If TRUE, keep only phenotypes where this SNP passes
 `pCut`.}

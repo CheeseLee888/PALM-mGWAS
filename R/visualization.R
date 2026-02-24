@@ -77,23 +77,10 @@ detect_studies <- function(df) {
   list(ids = ids, est_cols = est_cols, stderr_cols = stderr_cols)
 }
 
-#' Pick significance field (currently pval)
-#' @export
-pick_sig_field <- function(df) {
-  # always use pval
-  if ("pval" %in% names(df)) {
-    return("pval")
-  }
-  stop("No pval column found.")
-}
-
 #' Test if a row is significant at pCut
 #' @export
 is_sig_row <- function(row, pCut = 1e-5) {
-  # only use pval for significance
-  if ("pval" %in% names(row) && !is.na(row$pval)) {
-    return(row$pval <= pCut)
-  }
+  if ("meta_pval" %in% names(row) && !is.na(row$meta_pval)) return(row$meta_pval <= pCut)
   FALSE
 }
 
@@ -148,12 +135,11 @@ with_suffix <- function(path, suffix) {
 #' @return Invisibly returns the top-N data frame.
 #' @export
 write_top_n <- function(df, outFile, n = 10) {
-  if (!("pval" %in% names(df))) {
-    stop("Missing column pval.")
-  }
+  if (!("meta_pval" %in% names(df))) stop("Missing meta_pval column for top list.")
+  pcol <- "meta_pval"
   top <- df |>
-    dplyr::filter(!is.na(.data$pval)) |>
-    dplyr::arrange(.data$pval) |>
+    dplyr::filter(!is.na(.data[[pcol]])) |>
+    dplyr::arrange(.data[[pcol]]) |>
     utils::head(n)
 
   msg("Saving: %s", outFile)
@@ -206,18 +192,20 @@ plot_manhattan <- function(df, outFile, title = NULL,
   }
 
   # ---- hard-coded header ----
-  required_cols <- c("SNP", "CHR", "POS", "pval")
+  required_cols <- c("SNP", "CHR", "POS")
   miss <- setdiff(required_cols, names(df))
   if (length(miss) > 0) {
     stop("Missing column(s): ", paste(miss, collapse = ", "))
   }
+  pcol <- "meta_pval"
+  if (!(pcol %in% names(df))) stop("No p-value column (meta_pval) for Manhattan plot.")
 
   # ---- prepare ----
   df <- df |>
-    dplyr::filter(!is.na(.data$pval), .data$pval > 0)
+    dplyr::filter(!is.na(.data[[pcol]]), .data[[pcol]] > 0)
 
   if (onlySig) {
-    df <- dplyr::filter(df, .data$pval <= pCut)
+    df <- dplyr::filter(df, .data[[pcol]] <= pCut)
   }
 
   if (nrow(df) == 0) {
@@ -228,7 +216,7 @@ plot_manhattan <- function(df, outFile, title = NULL,
     dplyr::transmute(
       CHR = as.integer(.data$CHR),
       BP  = as.integer(.data$POS),
-      P   = as.numeric(.data$pval),
+      P   = as.numeric(.data[[pcol]]),
       SNP = as.character(.data$SNP)
     )
 
@@ -271,12 +259,11 @@ plot_qq <- function(df, outFile, title = NULL,
     stop("Package 'qqman' is required.")
   }
 
-  if (!("pval" %in% names(df))) {
-    stop("Missing column pval.")
-  }
+  pcol <- "meta_pval"
+  if (!(pcol %in% names(df))) stop("Missing p-value column (meta_pval).")
 
   df <- df |>
-    dplyr::filter(!is.na(.data$pval), .data$pval > 0)
+    dplyr::filter(!is.na(.data[[pcol]]), .data[[pcol]] > 0)
 
   if (nrow(df) == 0) stop("No valid p-values to plot.")
 
@@ -287,7 +274,7 @@ plot_qq <- function(df, outFile, title = NULL,
     units = "in", res = dpi
   )
 
-  qqman::qq(df$pval, main = title %||% "QQ Plot")
+  qqman::qq(df[[pcol]], main = title %||% "QQ Plot")
 
   grDevices::dev.off()
 
@@ -387,8 +374,13 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
     ) +
     ggplot2::guides(color = ggplot2::guide_legend(reverse = TRUE))
 
-  # optional meta overlay
-  if (show_meta && !is.null(df_meta) && nrow(df_meta) > 0) {
+  # optional meta overlay (only when more than one study exists)
+  meta_ok <- show_meta && length(study_lvls) > 1 && !is.null(df_meta) && nrow(df_meta) > 0
+  if (show_meta && length(study_lvls) <= 1) {
+    msg("Only one study present; skipping meta overlay.")
+  }
+
+  if (meta_ok) {
     df_meta <- df_meta |> dplyr::mutate(y = factor(y, levels = y_levels))
     g <- g +
       ggplot2::geom_errorbar(
@@ -446,13 +438,18 @@ mode_big_combined <- function(metaIndex, outFile,
     f <- metaIndex$file[i]
     df <- safe_fread(f, sep = sep)
 
-    # use pval only (qval deprecated)
-    if (!("pval" %in% names(df))) next
+    if (!("meta_pval" %in% names(df))) {
+      stop("Missing meta_pval column in meta file: ", f)
+    }
+    pcol <- "meta_pval"
 
     keep <- df |>
-      dplyr::filter(!is.na(.data$pval), .data$pval > 0) |>
+      dplyr::filter(!is.na(.data[[pcol]]), .data[[pcol]] > 0) |>
       dplyr::mutate(pheno = ph) |>
-      dplyr::select(dplyr::any_of(c("SNP", "CHR", "POS", "pval")), .data$pheno)
+      dplyr::select(
+        dplyr::any_of(c("SNP", "CHR", "POS", pcol)),
+        .data$pheno
+      )
 
     if (nrow(keep) == 0) next
 
@@ -466,20 +463,20 @@ mode_big_combined <- function(metaIndex, outFile,
   # pick the phenotype with the smallest p for each SNP
   best <- big |>
     dplyr::group_by(.data$SNP) |>
-    dplyr::arrange(.data$pval, .data$pheno) |>
+    dplyr::arrange(.data$meta_pval, .data$pheno) |>
     dplyr::slice_head(n = 1) |>
     dplyr::ungroup()
 
   # optionally report pairs that beat the user threshold
   if (!is.na(printCut)) {
     hits_to_print <- best |>
-      dplyr::filter(!is.na(.data$pval), .data$pval < printCut) |>
-      dplyr::arrange(.data$pval)
+      dplyr::filter(!is.na(.data$meta_pval), .data$meta_pval < printCut) |>
+      dplyr::arrange(.data$meta_pval)
 
     if (nrow(hits_to_print) > 0) {
       msg("SNP/pheno pairs with p < %g (best per SNP):", printCut)
       apply(hits_to_print, 1, function(r) {
-        msg("  %s\t%s\t%.3e", r[["SNP"]], r[["pheno"]], as.numeric(r[["pval"]]))
+        msg("  %s\t%s\t%.3e", r[["SNP"]], r[["pheno"]], as.numeric(r[["meta_pval"]]))
         NULL
       })
 
@@ -531,7 +528,6 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", phenoName)
 
   df <- safe_fread(row$file[1], sep = sep)
-
   plot_manhattan(
     df = df,
     outFile = outFile,
@@ -618,9 +614,12 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
   df_all <- dplyr::bind_rows(rows)
 
   # sort phenos by significance (use pval)
-  sigField <- pick_sig_field(df_all)
-  df_all <- df_all |> dplyr::mutate(score = .data[[sigField]])
-  df_all <- df_all |> dplyr::arrange(score)
+  if (!("meta_pval" %in% names(df_all))) {
+    stop("Missing meta_pval column after binding phenotypes.")
+  }
+  df_all <- df_all |>
+    dplyr::mutate(score = .data$meta_pval) |>
+    dplyr::arrange(score)
 
   studies <- detect_studies(df_all)
 
@@ -628,21 +627,24 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
 
   # meta overall
   df_meta <- NULL
-  if (show_meta && all(c("est", "stderr") %in% names(df_all))) {
+  est_col <- "meta_est"
+  se_col <- "meta_stderr"
+  if (show_meta && !is.null(est_col) && !is.null(se_col)) {
     df_meta <- df_all |>
       dplyr::transmute(
         y = pheno,
-        est = est,
-        se = stderr,
-        lower = est - ciMult * stderr,
-        upper = est + ciMult * stderr
+        est = .data[[est_col]],
+        se = .data[[se_col]],
+        lower = est - ciMult * .data[[se_col]],
+        upper = est + ciMult * .data[[se_col]]
       )
   }
 
   # highlight phenos with heterogeneity (use pval.het)
   het_y <- character(0)
-  if ("pval.het" %in% names(df_all)) {
-    het_y <- df_all$pheno[!is.na(df_all$pval.het)]
+  het_col <- if ("meta_pval.het" %in% names(df_all)) "meta_pval.het" else NULL
+  if (!is.null(het_col)) {
+    het_y <- df_all$pheno[!is.na(df_all[[het_col]])]
   }
 
   y_levels <- df_all$pheno
@@ -690,21 +692,22 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
   df_long <- to_long_study(r, studies, y_col = "y", ciMult = ciMult, studyLabels = studyLabels)
 
   df_meta <- NULL
-  if (show_meta && all(c("est", "stderr") %in% names(r))) {
+  est_col <- "meta_est"
+  se_col <- "meta_stderr"
+  if (show_meta && !is.null(est_col) && !is.null(se_col)) {
     df_meta <- r |>
       dplyr::transmute(
         y = y,
-        est = est,
-        se = stderr,
-        lower = est - ciMult * stderr,
-        upper = est + ciMult * stderr
+        est = .data[[est_col]],
+        se = .data[[se_col]],
+        lower = est - ciMult * .data[[se_col]],
+        upper = est + ciMult * .data[[se_col]]
       )
   }
 
   het_y <- character(0)
-  if ("pval.het" %in% names(r)) {
-    if (!is.na(r$pval.het[1])) het_y <- pheno
-  }
+  het_col <- if ("meta_pval.het" %in% names(r)) "meta_pval.het" else NULL
+  if (!is.null(het_col) && !is.na(r[[het_col]][1])) het_y <- pheno
 
   xlim_num <- parse_xlim(xlim_str)
 

@@ -1,4 +1,4 @@
-#' Meta-analyze step2 results across studies (output in step2 file format)
+#' Meta-analyze step2 results across studies (meta columns prefixed with `meta_`)
 #'
 #' @param study_dirs Named character vector/list. Names are study IDs, values are directories.
 #' @param in_prefix Input file prefix in each study dir, e.g. "palm1_step2_allchr_"
@@ -162,13 +162,13 @@ metaSummary <- function(study_dirs,
         SNP = snp.ID,
         CHR = unname(CHR[snp.ID]),
         POS = unname(POS[snp.ID]),
-        est = meta_fits$est,
-        stderr = meta_fits$stderr,
-        pval = meta_fits$pval
+        meta_est = meta_fits$est,
+        meta_stderr = meta_fits$stderr,
+        meta_pval = meta_fits$pval
       )
 
       if (isTRUE(keep_het)) {
-        out$pval.het <- meta_fits$`pval.het`
+        out$meta_pval.het <- meta_fits$`pval.het`
       }
 
       # add per-study est/stderr columns (SNP-aligned)
@@ -197,9 +197,9 @@ metaSummary <- function(study_dirs,
         SNP = dat$SNP,
         CHR = dat$CHR,
         POS = dat$POS,
-        est = beta.coef,
-        stderr = std.coef,
-        pval = pval
+        meta_est = beta.coef,
+        meta_stderr = std.coef,
+        meta_pval = pval
       )
 
       if (all(!is.na(out$CHR)) && all(!is.na(out$POS))) {

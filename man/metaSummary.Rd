@@ -2,7 +2,7 @@
 % Please edit documentation in R/metaSummary.R
 \name{metaSummary}
 \alias{metaSummary}
-\title{Meta-analyze step2 results across studies (output in step2 file format)}
+\title{Meta-analyze step2 results across studies (meta columns prefixed with `meta_`)}
 \usage{
 metaSummary(
   study_dirs,
@@ -39,5 +39,5 @@ metaSummary(
 Named list: each element is a data.frame/tibble in step2 format.
 }
 \description{
-Meta-analyze step2 results across studies (output in step2 file format)
+Meta-analyze step2 results across studies (meta columns prefixed with `meta_`)
 }
