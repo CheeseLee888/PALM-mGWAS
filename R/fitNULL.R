@@ -13,7 +13,6 @@
 fitNULL <- function(abdFile,
                     covFile = NULL,
                     outputPrefix) {
-
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
   }

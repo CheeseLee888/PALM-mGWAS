@@ -5,6 +5,7 @@ R/*.lo
 .DS_Store
 .Rhistory
 .RData
+.pixi
 *.Rproj*
 *.sif
 *.tar

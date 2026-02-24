@@ -22,8 +22,8 @@ read_firstcol_as_rownames <- function(file) {
 
   df <- data.table::fread(
     file = file,
-    data.table   = FALSE,
-    check.names  = FALSE
+    data.table = FALSE,
+    check.names = FALSE
   )
 
   if (ncol(df) < 1) {

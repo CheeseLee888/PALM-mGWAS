@@ -22,7 +22,6 @@ metaSummary <- function(study_dirs,
                         out_suffix = ".txt",
                         keep_het = TRUE,
                         meta.method = "EE") {
-
   if (!requireNamespace("dplyr", quietly = TRUE)) {
     stop("Package 'dplyr' is required but not installed.")
   }
@@ -36,8 +35,10 @@ metaSummary <- function(study_dirs,
   study.ID <- names(study_dirs)
 
   # info: how many studies were provided
-  message(sprintf("metaSummary: reading %d study(ies): %s", length(study.ID),
-                  paste(study.ID, collapse = ", ")))
+  message(sprintf(
+    "metaSummary: reading %d study(ies): %s", length(study.ID),
+    paste(study.ID, collapse = ", ")
+  ))
 
   if (!is.null(out_dir)) {
     dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
@@ -57,33 +58,38 @@ metaSummary <- function(study_dirs,
   }
 
   .read_step2 <- function(path) {
-    if (!file.exists(path)) return(NULL)
+    if (!file.exists(path)) {
+      return(NULL)
+    }
     dat <- tryCatch(
       read.table(path, header = TRUE, sep = "\t", stringsAsFactors = FALSE, comment.char = ""),
       error = function(e) NULL
     )
-    if (is.null(dat) || nrow(dat) == 0) return(NULL)
+    if (is.null(dat) || nrow(dat) == 0) {
+      return(NULL)
+    }
 
     need <- c("SNP", "CHR", "POS", "est", "stderr", "pval")
     miss <- setdiff(need, colnames(dat))
     if (length(miss) > 0) {
-      stop("File missing required columns: ", paste(miss, collapse = ", "),
-           "\nFile: ", path)
+      stop(
+        "File missing required columns: ", paste(miss, collapse = ", "),
+        "\nFile: ", path
+      )
     }
     dat <- dat[, need, drop = FALSE]
 
-    dat$CHR    <- suppressWarnings(as.integer(dat$CHR))
-    dat$POS    <- suppressWarnings(as.integer(dat$POS))
-    dat$est    <- suppressWarnings(as.numeric(dat$est))
+    dat$CHR <- suppressWarnings(as.integer(dat$CHR))
+    dat$POS <- suppressWarnings(as.integer(dat$POS))
+    dat$est <- suppressWarnings(as.numeric(dat$est))
     dat$stderr <- suppressWarnings(as.numeric(dat$stderr))
-    dat$pval   <- suppressWarnings(as.numeric(dat$pval))
+    dat$pval <- suppressWarnings(as.numeric(dat$pval))
 
     dat <- dat[!duplicated(dat$SNP), , drop = FALSE]
     dat
   }
 
   .meta_one_feature <- function(feat) {
-
     per_study <- setNames(vector("list", length(study.ID)), study.ID)
     for (d in study.ID) {
       fpath <- file.path(study_dirs[[d]], paste0(in_prefix, feat, in_suffix))
@@ -91,26 +97,36 @@ metaSummary <- function(study_dirs,
     }
 
     has <- vapply(per_study, function(x) !is.null(x) && nrow(x) > 0, logical(1))
-    if (!any(has)) return(NULL)
+    if (!any(has)) {
+      return(NULL)
+    }
 
     used_studies <- names(per_study)[has]
     per_study <- per_study[used_studies]
     # info: how many studies contribute to this feature
     n_used <- length(used_studies)
-    message(sprintf("metaSummary: feature '%s' - using %d study(ies): %s",
-            feat, n_used, paste(used_studies, collapse = ", ")))
+    message(sprintf(
+      "metaSummary: feature '%s' - using %d study(ies): %s",
+      feat, n_used, paste(used_studies, collapse = ", ")
+    ))
 
     snp.ID <- unique(unlist(lapply(per_study, `[[`, "SNP")))
     snp.ID <- as.character(snp.ID)
 
-    AA.est <- matrix(NA_real_, nrow = length(snp.ID), ncol = length(used_studies),
-                     dimnames = list(snp.ID, used_studies))
-    AA.var <- matrix(NA_real_, nrow = length(snp.ID), ncol = length(used_studies),
-                     dimnames = list(snp.ID, used_studies))
+    AA.est <- matrix(NA_real_,
+      nrow = length(snp.ID), ncol = length(used_studies),
+      dimnames = list(snp.ID, used_studies)
+    )
+    AA.var <- matrix(NA_real_,
+      nrow = length(snp.ID), ncol = length(used_studies),
+      dimnames = list(snp.ID, used_studies)
+    )
 
     # CHR/POS: take first observed
-    CHR <- rep(NA_integer_, length(snp.ID)); names(CHR) <- snp.ID
-    POS <- rep(NA_integer_, length(snp.ID)); names(POS) <- snp.ID
+    CHR <- rep(NA_integer_, length(snp.ID))
+    names(CHR) <- snp.ID
+    POS <- rep(NA_integer_, length(snp.ID))
+    names(POS) <- snp.ID
 
     for (d in used_studies) {
       dat <- per_study[[d]]
@@ -126,7 +142,6 @@ metaSummary <- function(study_dirs,
     }
 
     if (length(used_studies) > 1) {
-
       # ---- CORE CALC (kept consistent with your old code) ----
       meta_fits <- sapply(seq_len(nrow(AA.est)), function(i) {
         non.id <- !is.na(AA.est[i, ])
@@ -160,7 +175,7 @@ metaSummary <- function(study_dirs,
       for (d in used_studies) {
         dat <- per_study[[d]]
         m2 <- match(out$SNP, dat$SNP)
-        out[[paste0(d, "_est")]]    <- dat$est[m2]
+        out[[paste0(d, "_est")]] <- dat$est[m2]
         out[[paste0(d, "_stderr")]] <- dat$stderr[m2]
       }
 
@@ -170,13 +185,12 @@ metaSummary <- function(study_dirs,
       }
 
       return(out)
-
     } else {
       d <- used_studies[1]
       dat <- per_study[[d]]
 
       beta.coef <- dat$est
-      std.coef  <- dat$stderr
+      std.coef <- dat$stderr
       pval <- 1 - pchisq((beta.coef / std.coef)^2, df = 1)
 
       out <- dplyr::tibble(
@@ -203,8 +217,10 @@ metaSummary <- function(study_dirs,
     # write to disk if requested
     if (!is.null(out_dir) && !is.null(out)) {
       out_path <- file.path(out_dir, paste0(out_prefix, feat, out_suffix))
-      write.table(out, file = out_path, sep = "\t",
-                  quote = FALSE, row.names = FALSE, col.names = TRUE)
+      write.table(out,
+        file = out_path, sep = "\t",
+        quote = FALSE, row.names = FALSE, col.names = TRUE
+      )
     }
   }
 

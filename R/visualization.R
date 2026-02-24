@@ -41,15 +41,17 @@ safe_fread <- function(path, sep = "\t") {
 #' @export
 discover_meta_files <- function(metaDir,
                                 pattern = "step3_meta_.*\\.txt$") {
-
   files <- list.files(metaDir,
-                      pattern = pattern,
-                      full.names = TRUE)
+    pattern = pattern,
+    full.names = TRUE
+  )
 
   if (length(files) == 0) {
-    stop("No step3 meta files found in: ", metaDir,
-         "\nFiles present: ",
-         paste(list.files(metaDir), collapse = ", "))
+    stop(
+      "No step3 meta files found in: ", metaDir,
+      "\nFiles present: ",
+      paste(list.files(metaDir), collapse = ", ")
+    )
   }
 
   pheno <- sub(".*step3_meta_", "", basename(files))
@@ -57,7 +59,7 @@ discover_meta_files <- function(metaDir,
 
   data.frame(
     pheno = pheno,
-    file  = files,
+    file = files,
     stringsAsFactors = FALSE
   ) |>
     dplyr::arrange(pheno)
@@ -79,7 +81,9 @@ detect_studies <- function(df) {
 #' @export
 pick_sig_field <- function(df) {
   # always use pval
-  if ("pval" %in% names(df)) return("pval")
+  if ("pval" %in% names(df)) {
+    return("pval")
+  }
   stop("No pval column found.")
 }
 
@@ -87,18 +91,26 @@ pick_sig_field <- function(df) {
 #' @export
 is_sig_row <- function(row, pCut = 1e-5) {
   # only use pval for significance
-  if ("pval" %in% names(row) && !is.na(row$pval)) return(row$pval <= pCut)
+  if ("pval" %in% names(row) && !is.na(row$pval)) {
+    return(row$pval <= pCut)
+  }
   FALSE
 }
 
 #' Parse xlim string like "min,max" into numeric vector
 #' @export
 parse_xlim <- function(xlim_str) {
-  if (is.null(xlim_str) || is.na(xlim_str) || !nzchar(xlim_str)) return(NULL)
+  if (is.null(xlim_str) || is.na(xlim_str) || !nzchar(xlim_str)) {
+    return(NULL)
+  }
   parts <- stringr::str_split(xlim_str, ",", simplify = TRUE)
-  if (ncol(parts) != 2) return(NULL)
+  if (ncol(parts) != 2) {
+    return(NULL)
+  }
   out <- suppressWarnings(as.numeric(parts))
-  if (any(is.na(out))) return(NULL)
+  if (any(is.na(out))) {
+    return(NULL)
+  }
   out
 }
 
@@ -189,7 +201,6 @@ plot_manhattan <- function(df, outFile, title = NULL,
                            pCut = 1e-5,
                            onlySig = FALSE,
                            width = 11, height = 4.5, dpi = 300) {
-
   if (!requireNamespace("qqman", quietly = TRUE)) {
     stop("Package 'qqman' is required.")
   }
@@ -209,8 +220,9 @@ plot_manhattan <- function(df, outFile, title = NULL,
     df <- dplyr::filter(df, .data$pval <= pCut)
   }
 
-  if (nrow(df) == 0)
+  if (nrow(df) == 0) {
     stop("No points to plot.")
+  }
 
   man <- df |>
     dplyr::transmute(
@@ -222,14 +234,16 @@ plot_manhattan <- function(df, outFile, title = NULL,
 
   msg("Saving: %s", outFile)
 
-  grDevices::jpeg(outFile, width = width, height = height,
-                  units = "in", res = dpi)
+  grDevices::jpeg(outFile,
+    width = width, height = height,
+    units = "in", res = dpi
+  )
 
   qqman::manhattan(
     man,
     chr = "CHR",
-    bp  = "BP",
-    p   = "P",
+    bp = "BP",
+    p = "P",
     snp = "SNP",
     logp = TRUE,
     col = c("grey20", "grey70"),
@@ -268,8 +282,10 @@ plot_qq <- function(df, outFile, title = NULL,
 
   msg("Saving: %s", outFile)
 
-  grDevices::jpeg(outFile, width = width, height = height,
-                  units = "in", res = dpi)
+  grDevices::jpeg(outFile,
+    width = width, height = height,
+    units = "in", res = dpi
+  )
 
   qqman::qq(df$pval, main = title %||% "QQ Plot")
 
@@ -286,12 +302,12 @@ to_long_study <- function(df_rows, studies, y_col, ciMult = 1.96, studyLabels = 
   # df_rows: data.frame with multiple y categories (pheno or SNP)
   long <- lapply(studies$ids, function(st) {
     tibble::tibble(
-        y = df_rows[[y_col]],
-        Study = st,
-        est = df_rows[[paste0(st, "_est")]],
-        se  = df_rows[[paste0(st, "_stderr")]]
+      y = df_rows[[y_col]],
+      Study = st,
+      est = df_rows[[paste0(st, "_est")]],
+      se = df_rows[[paste0(st, "_stderr")]]
     )
-    }) |> dplyr::bind_rows()
+  }) |> dplyr::bind_rows()
 
 
   long <- long |> dplyr::mutate(
@@ -318,7 +334,7 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
   study_lvls <- levels(df_long$Study)
 
   # palette (up to 8 nice colors; recycle if more)
-  base_cols <- c("#F8766D","#CD9600","#7CAE00","#00BE67","#00BFC4","#00A9FF","#C77CFF","#FF61CC")
+  base_cols <- c("#F8766D", "#CD9600", "#7CAE00", "#00BE67", "#00BFC4", "#00A9FF", "#C77CFF", "#FF61CC")
   pal <- setNames(rep(base_cols, length.out = length(study_lvls)), study_lvls)
 
   g <- ggplot2::ggplot()
@@ -416,7 +432,7 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
 #' @param width,height,dpi Graphics device parameters passed to `ggsave`.
 #' @param printCut Optional cutoff; SNP/phenotype pairs with best p below this
 #'   value are printed to the console and written to `<outFile>_printCut.txt`.
-#' 
+#'
 #' @return Invisibly returns the data frame passed to `qqman::manhattan()`.
 #' @export
 mode_big_combined <- function(metaIndex, outFile,
@@ -427,7 +443,7 @@ mode_big_combined <- function(metaIndex, outFile,
 
   for (i in seq_len(nrow(metaIndex))) {
     ph <- metaIndex$pheno[i]
-    f  <- metaIndex$file[i]
+    f <- metaIndex$file[i]
     df <- safe_fread(f, sep = sep)
 
     # use pval only (qval deprecated)
@@ -563,19 +579,19 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
 #'
 #' @export
 mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
-                                         pCut = 1e-5,
-                                         sigOnlyPheno = FALSE,
-                                         ciMult = 1.96,
-                                         studyLabels = NULL,
-                                         sep = "\t",
-                                         xlim_str = NA_character_,
-                                         width = 10, height = 7, dpi = 300,
-                                         show_meta = TRUE) {
+                                          pCut = 1e-5,
+                                          sigOnlyPheno = FALSE,
+                                          ciMult = 1.96,
+                                          studyLabels = NULL,
+                                          sep = "\t",
+                                          xlim_str = NA_character_,
+                                          width = 10, height = 7, dpi = 300,
+                                          show_meta = TRUE) {
   rows <- list()
 
   for (i in seq_len(nrow(metaIndex))) {
     ph <- metaIndex$pheno[i]
-    f  <- metaIndex$file[i]
+    f <- metaIndex$file[i]
     df <- safe_fread(f, sep = sep)
 
     if (!("SNP" %in% names(df))) next
@@ -617,7 +633,7 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
       dplyr::transmute(
         y = pheno,
         est = est,
-        se  = stderr,
+        se = stderr,
         lower = est - ciMult * stderr,
         upper = est + ciMult * stderr
       )
@@ -679,7 +695,7 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
       dplyr::transmute(
         y = y,
         est = est,
-        se  = stderr,
+        se = stderr,
         lower = est - ciMult * stderr,
         upper = est + ciMult * stderr
       )
