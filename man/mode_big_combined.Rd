@@ -2,17 +2,16 @@
 % Please edit documentation in R/visualization.R
 \name{mode_big_combined}
 \alias{mode_big_combined}
-\title{Create a combined Manhattan plot of significant hits across all phenotypes}
+\title{Create a combined Manhattan plot using best phenotype per SNP}
 \usage{
 mode_big_combined(
   metaIndex,
   outFile,
-  pCut = 1e-05,
-  maxPoints = 2e+05,
   sep = "\\t",
   width = 12,
   height = 5,
-  dpi = 300
+  dpi = 300,
+  printCut = 1e-08
 )
 }
 \arguments{
@@ -21,17 +20,17 @@ result files (as produced by step3).}
 
 \item{outFile}{Path to the output JPEG.}
 
-\item{pCut}{P-value cutoff to define significance.}
-
-\item{maxPoints}{Maximum number of points to plot (downsamples by p-value).}
-
 \item{sep}{Field separator for meta files.}
 
 \item{width, height, dpi}{Graphics device parameters passed to `ggsave`.}
+
+\item{printCut}{Optional cutoff; SNP/phenotype pairs with best p below this
+value are printed to the console and saved to `<outFile_basename>_printCut.txt`.}
 }
 \value{
 Invisibly returns the data frame passed to `qqman::manhattan()`.
 }
 \description{
-Create a combined Manhattan plot of significant hits across all phenotypes
+Create a combined Manhattan plot using, for each SNP, the phenotype with the
+smallest p-value. All points are kept after taking the best per SNP.
 }

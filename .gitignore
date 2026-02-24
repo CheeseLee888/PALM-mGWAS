@@ -4,6 +4,7 @@ R/*.log
 R/*.lo
 .DS_Store
 .Rhistory
+.RData
 *.Rproj*
 *.sif
 *.tar

@@ -278,7 +278,7 @@ plot_qq <- function(df, outFile, title = NULL,
   invisible(NULL)
 }
 
-# ----------------------------- Forest plot helpers -----------------------------
+# ----------------------------- Forest plot helpers ----------------------------- # nolint: line_length_linter.
 
 #' Convert wide study columns to long format for forest plotting
 #' @export
@@ -404,22 +404,25 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
 
 # ----------------------------- Mode implementations -----------------------------
 
-# Mode A: one big combined plot (significant points across any pheno & snp)
-#' Create a combined Manhattan plot of significant hits across all phenotypes
+# Mode A: one big combined plot (best pheno per SNP)
+#' Create a combined Manhattan plot using, for each SNP, the phenotype with the
+#' smallest p-value. All points are shown (after best-per-SNP selection); no
+#' significance filtering is applied.
 #'
 #' @param metaIndex Data frame with columns `pheno` and `file` pointing to meta
 #'   result files (as produced by step3).
 #' @param outFile Path to the output JPEG.
-#' @param pCut P-value cutoff to define significance.
-#' @param maxPoints Maximum number of points to plot (downsamples by p-value).
 #' @param sep Field separator for meta files.
 #' @param width,height,dpi Graphics device parameters passed to `ggsave`.
-#'
+#' @param printCut Optional cutoff; SNP/phenotype pairs with best p below this
+#'   value are printed to the console and written to `<outFile>_printCut.txt`.
+#' 
 #' @return Invisibly returns the data frame passed to `qqman::manhattan()`.
 #' @export
-mode_big_combined <- function(metaIndex, outFile, pCut = 1e-5,
-                              maxPoints = 200000, sep = "\t",
-                              width = 12, height = 5, dpi = 300) {
+mode_big_combined <- function(metaIndex, outFile,
+                              sep = "\t",
+                              width = 12, height = 5, dpi = 300,
+                              printCut = 1e-8) {
   all_hits <- list()
 
   for (i in seq_len(nrow(metaIndex))) {
@@ -429,34 +432,60 @@ mode_big_combined <- function(metaIndex, outFile, pCut = 1e-5,
 
     # use pval only (qval deprecated)
     if (!("pval" %in% names(df))) next
-    df <- df |> dplyr::mutate(pheno = ph) |> dplyr::filter(!is.na(.data$pval), .data$pval > 0, .data$pval <= pCut)
 
-    if (nrow(df) == 0) next
+    keep <- df |>
+      dplyr::filter(!is.na(.data$pval), .data$pval > 0) |>
+      dplyr::mutate(pheno = ph) |>
+      dplyr::select(dplyr::any_of(c("SNP", "CHR", "POS", "pval")), .data$pheno)
 
-    # keep pval so plot_manhattan can pick sigField
-    keep <- df |> dplyr::select(dplyr::any_of(c("SNP", "CHR", "POS", "pval")), .data$pheno)
+    if (nrow(keep) == 0) next
+
     all_hits[[length(all_hits) + 1]] <- keep
   }
 
-  if (length(all_hits) == 0) stop("No significant hits found across any pheno (try looser pCut).")
+  if (length(all_hits) == 0) stop("No valid hits found across any pheno (check pval column).")
 
   big <- dplyr::bind_rows(all_hits)
 
-  # downsample by pval
-  if (nrow(big) > maxPoints) {
-    if ("pval" %in% names(big)) {
-      big <- dplyr::arrange(big, .data$pval) |> utils::head(maxPoints)
+  # pick the phenotype with the smallest p for each SNP
+  best <- big |>
+    dplyr::group_by(.data$SNP) |>
+    dplyr::arrange(.data$pval, .data$pheno) |>
+    dplyr::slice_head(n = 1) |>
+    dplyr::ungroup()
+
+  # optionally report pairs that beat the user threshold
+  if (!is.na(printCut)) {
+    hits_to_print <- best |>
+      dplyr::filter(!is.na(.data$pval), .data$pval < printCut) |>
+      dplyr::arrange(.data$pval)
+
+    if (nrow(hits_to_print) > 0) {
+      msg("SNP/pheno pairs with p < %g (best per SNP):", printCut)
+      apply(hits_to_print, 1, function(r) {
+        msg("  %s\t%s\t%.3e", r[["SNP"]], r[["pheno"]], as.numeric(r[["pval"]]))
+        NULL
+      })
+
+      # save alongside plot, force .txt (strip any existing extension)
+      base_no_ext <- tools::file_path_sans_ext(outFile)
+      list_out <- paste0(base_no_ext, "_printCut.txt")
+      msg("Saving list: %s", list_out)
+      if (requireNamespace("data.table", quietly = TRUE)) {
+        data.table::fwrite(hits_to_print, list_out, sep = "\t")
+      } else {
+        utils::write.table(hits_to_print, list_out, sep = "\t", quote = FALSE, row.names = FALSE)
+      }
     } else {
-      big <- utils::head(big, maxPoints)
+      msg("No SNP/pheno pairs found with p < %g (best per SNP).", printCut)
     }
   }
 
   plot_manhattan(
-    df = big,
+    df = best,
     outFile = outFile,
-    title = "Combined significant hits across phenotypes",
-    pCut = pCut,
-    onlySig = FALSE,         # already filtered to sig
+    title = "Best phenotype per SNP (minimum p across phenotypes)",
+    onlySig = FALSE,
     width = width,
     height = height,
     dpi = dpi
@@ -468,6 +497,8 @@ mode_big_combined <- function(metaIndex, outFile, pCut = 1e-5,
 #' Manhattan plot for a single phenotype
 #'
 #' @inheritParams mode_big_combined
+#' @param pCut P-value cutoff used for Manhattan suggestive line and optional
+#'   filtering.
 #' @param phenoName Phenotype name matching a row in `metaIndex$pheno`.
 #' @param onlySig If TRUE, keep only points passing `pCut`.
 #' @param qqOutFile Optional output path for QQ plot.
@@ -520,6 +551,8 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
 #' Forest plot for a SNP across all phenotypes
 #'
 #' @inheritParams mode_big_combined
+#' @param pCut P-value cutoff used to decide significance across phenotypes
+#'   when `sigOnlyPheno` is TRUE.
 #' @param snp SNP ID to plot.
 #' @param sigOnlyPheno If TRUE, keep only phenotypes where this SNP passes
 #'   `pCut`.

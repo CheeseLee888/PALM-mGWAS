@@ -22,8 +22,8 @@ option_list <- list(
 
   make_option(c("--sigOnlyPheno"), type = "logical", default = FALSE,
               help = "When --snp only: only plot phenos passing significance cutoff (default: plot ALL phenos containing SNP)."),
-  make_option(c("--onlySigBig"), type = "logical", default = TRUE,
-              help = "When no pheno/snp: big plot draws only significant hits (default TRUE)."),
+  make_option(c("--printCut"), type = "double", default = 1e-8,
+              help = "When no pheno/snp: print SNP/pheno pairs whose best p across phenos is below this cutoff [default %default]."),
   make_option(c("--ciMult"), type = "double", default = 1.96,
               help = "CI multiplier (1.96 ~ 95%% CI) [default %default]"),
 
@@ -92,28 +92,14 @@ msg("Found %d meta files.", nrow(metaIndex))
 
 if (is.null(pheno) && is.null(snp)) {
   # Mode A
-  # Big combined plot: by definition only significant hits; controlled by --onlySigBig (default TRUE)
-  # If user sets onlySigBig=FALSE, it could explode; we keep the flag but still cap by maxPoints.
-  if (opt$onlySigBig) {
-    mode_big_combined(
-      metaIndex = metaIndex,
-      outFile = outFile,
-      pCut = opt$pCut,
-      sep = opt$sep,
-      width = opt$width, height = opt$height, dpi = opt$dpi
-    )
-  } else {
-    # If not onlySigBig, we still read all but then it will be huge.
-    # Safer behavior: still only plot top maxPoints by significance from all files.
-    msg("Warning: --onlySigBig FALSE can be huge; will still cap to --maxPoints by best significance.")
-    mode_big_combined(
-      metaIndex = metaIndex,
-      outFile = outFile,
-      pCut = 1,                 # keep all for pval
-      sep = opt$sep,
-      width = opt$width, height = opt$height, dpi = opt$dpi
-    )
-  }
+  # Big combined plot: show best phenotype per SNP, no significance filtering.
+  mode_big_combined(
+    metaIndex = metaIndex,
+    outFile = outFile,
+    sep = opt$sep,
+    width = opt$width, height = opt$height, dpi = opt$dpi,
+    printCut = opt$printCut
+  )
 
 } else if (!is.null(pheno) && is.null(snp)) {
   # Mode B
