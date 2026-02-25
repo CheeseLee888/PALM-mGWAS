@@ -30,6 +30,50 @@ safe_fread <- function(path, sep = "\t") {
   df
 }
 
+#' Normalize meta/step2 columns so downstream plotting works for single-study inputs
+#'
+#' If meta_* columns are absent but step2 columns exist, they are duplicated to
+#' meta_* names. Study columns are added when missing (single study only).
+#' @param df Data frame returned by `safe_fread()`.
+#' @param study_id Character scalar used when adding study*_est/stderr columns.
+#' @return Data frame with meta_* columns present.
+#' @export
+standardize_meta_df <- function(df, study_id = "study1") {
+  has_meta <- c("meta_pval", "meta_est", "meta_stderr") %in% names(df)
+  if (!all(has_meta) && all(c("pval", "est", "stderr") %in% names(df))) {
+    df$meta_pval <- df$pval
+    df$meta_est <- df$est
+    df$meta_stderr <- df$stderr
+  }
+
+  has_study_cols <- any(grepl("^study[0-9]+_est$", names(df)))
+  if (!has_study_cols) {
+    # ensure the synthetic study id matches detect_studies() expectation
+    sid <- if (grepl("^study[0-9]+$", study_id)) study_id else "study1"
+    fallback <- function(primary, backup) {
+      if (!is.null(primary)) return(primary)
+      backup
+    }
+    df[[paste0(sid, "_est")]] <- fallback(df$est, df$meta_est)
+    df[[paste0(sid, "_stderr")]] <- fallback(df$stderr, df$meta_stderr)
+  }
+
+  df
+}
+
+#' Read result file and harmonize columns (works for step3 meta or single-study step2)
+#' @export
+read_result_file <- function(path, sep = "\t", study_id = NULL) {
+  df <- safe_fread(path, sep = sep)
+
+  if (is.null(study_id) || !nzchar(study_id)) {
+    study_id <- basename(dirname(path))
+    if (!nzchar(study_id)) study_id <- "study1"
+  }
+
+  standardize_meta_df(df, study_id = study_id)
+}
+
 #' Discover meta-analysis result files
 #'
 #' Utility to list step3 meta files and extract phenotype names from filenames.
@@ -40,26 +84,45 @@ safe_fread <- function(path, sep = "\t") {
 #' @return A data frame with columns `pheno` and `file`.
 #' @export
 discover_meta_files <- function(metaDir,
-                                pattern = "step3_meta_.*\\.txt$") {
+                                pattern = "step3_meta_.*\\.txt$",
+                                allow_step2 = TRUE,
+                                step2_pattern = "step2_allchr_.*\\.txt$") {
   files <- list.files(metaDir,
     pattern = pattern,
     full.names = TRUE
   )
 
+  mode <- "step3"
+
+  if (length(files) == 0 && allow_step2) {
+    files <- list.files(metaDir,
+      pattern = step2_pattern,
+      full.names = TRUE
+    )
+    mode <- "step2"
+  }
+
   if (length(files) == 0) {
     stop(
-      "No step3 meta files found in: ", metaDir,
+      "No result files found in: ", metaDir,
+      "\nLooked for patterns: ", paste(c(pattern, if (allow_step2) step2_pattern else NULL), collapse = " | "),
       "\nFiles present: ",
       paste(list.files(metaDir), collapse = ", ")
     )
   }
 
-  pheno <- sub(".*step3_meta_", "", basename(files))
-  pheno <- sub("\\.txt$", "", pheno)
+  if (mode == "step3") {
+    pheno <- sub(".*step3_meta_", "", basename(files))
+    pheno <- sub("\\.txt$", "", pheno)
+  } else {
+    pheno <- sub(".*step2_allchr_", "", basename(files))
+    pheno <- sub("\\.txt$", "", pheno)
+  }
 
   data.frame(
     pheno = pheno,
     file = files,
+    mode = mode,
     stringsAsFactors = FALSE
   ) |>
     dplyr::arrange(pheno)
@@ -132,15 +195,24 @@ with_suffix <- function(path, suffix) {
 #' @param df Data frame containing column `pval`.
 #' @param outFile Output path.
 #' @param n Number of rows to keep.
+#' @param mode Optional string; when \"step2\" keep step2-style columns.
 #' @return Invisibly returns the top-N data frame.
 #' @export
-write_top_n <- function(df, outFile, n = 10) {
+write_top_n <- function(df, outFile, n = 10, mode = NULL) {
   if (!("meta_pval" %in% names(df))) stop("Missing meta_pval column for top list.")
   pcol <- "meta_pval"
   top <- df |>
     dplyr::filter(!is.na(.data[[pcol]])) |>
     dplyr::arrange(.data[[pcol]]) |>
     utils::head(n)
+
+  if (identical(mode, "step2")) {
+    # match step2 column style
+    # ensure pval column exists (use meta_pval fallback)
+    if (!("pval" %in% names(top))) top$pval <- top[[pcol]]
+    keep <- intersect(c("SNP", "CHR", "POS", "est", "stderr", "pval"), names(top))
+    top <- top |> dplyr::select(dplyr::all_of(keep))
+  }
 
   msg("Saving: %s", outFile)
   if (requireNamespace("data.table", quietly = TRUE)) {
@@ -436,7 +508,7 @@ mode_big_combined <- function(metaIndex, outFile,
   for (i in seq_len(nrow(metaIndex))) {
     ph <- metaIndex$pheno[i]
     f <- metaIndex$file[i]
-    df <- safe_fread(f, sep = sep)
+    df <- read_result_file(f, sep = sep, study_id = ph)
 
     if (!("meta_pval" %in% names(df))) {
       stop("Missing meta_pval column in meta file: ", f)
@@ -473,10 +545,22 @@ mode_big_combined <- function(metaIndex, outFile,
       dplyr::filter(!is.na(.data$meta_pval), .data$meta_pval < printCut) |>
       dplyr::arrange(.data$meta_pval)
 
+    # For single-study (step2-only), output columns: SNP CHR POS est stderr pval pheno
+    if ("mode" %in% names(metaIndex) && all(metaIndex$mode == "step2")) {
+      # ensure pval present
+      if (!("pval" %in% names(hits_to_print))) {
+        hits_to_print$pval <- hits_to_print$meta_pval
+      }
+      keep_cols <- c("SNP", "CHR", "POS", "est", "stderr", "pval", "pheno")
+      keep_cols <- intersect(keep_cols, names(hits_to_print))
+      hits_to_print <- hits_to_print |> dplyr::select(dplyr::all_of(keep_cols))
+    }
+
     if (nrow(hits_to_print) > 0) {
       msg("SNP/pheno pairs with p < %g (best per SNP):", printCut)
       apply(hits_to_print, 1, function(r) {
-        msg("  %s\t%s\t%.3e", r[["SNP"]], r[["pheno"]], as.numeric(r[["meta_pval"]]))
+        p_out <- if ("meta_pval" %in% names(r)) as.numeric(r[["meta_pval"]]) else as.numeric(r[["pval"]])
+        msg("  %s\t%s\t%.3e", r[["SNP"]], r[["pheno"]], p_out)
         NULL
       })
 
@@ -527,7 +611,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
   row <- metaIndex |> dplyr::filter(.data$pheno == phenoName)
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", phenoName)
 
-  df <- safe_fread(row$file[1], sep = sep)
+  df <- read_result_file(row$file[1], sep = sep, study_id = phenoName)
   plot_manhattan(
     df = df,
     outFile = outFile,
@@ -552,7 +636,8 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
     write_top_n(
       df = df,
       outFile = topOutFile,
-      n = top_n
+      n = top_n,
+      mode = row$mode[1] %||% NULL
     )
   }
 }
@@ -588,7 +673,7 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
   for (i in seq_len(nrow(metaIndex))) {
     ph <- metaIndex$pheno[i]
     f <- metaIndex$file[i]
-    df <- safe_fread(f, sep = sep)
+    df <- read_result_file(f, sep = sep, study_id = ph)
 
     if (!("SNP" %in% names(df))) next
     r <- df[df$SNP == snp, , drop = FALSE]
@@ -682,7 +767,7 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
   row <- metaIndex |> dplyr::filter(.data$pheno == pheno)
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", pheno)
 
-  df <- safe_fread(row$file[1], sep = sep)
+  df <- read_result_file(row$file[1], sep = sep, study_id = pheno)
   r <- df[df$SNP == snp, , drop = FALSE]
   if (nrow(r) == 0) stop("SNP not found in this pheno meta file: ", snp)
 
