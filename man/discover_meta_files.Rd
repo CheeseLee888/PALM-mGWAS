@@ -4,7 +4,12 @@
 \alias{discover_meta_files}
 \title{Discover meta-analysis result files}
 \usage{
-discover_meta_files(metaDir, pattern = "step3_meta_.*\\\\.txt$")
+discover_meta_files(
+  metaDir,
+  pattern = "step3_meta_.*\\\\.txt$",
+  allow_step2 = TRUE,
+  step2_pattern = "step2_allchr_.*\\\\.txt$"
+)
 }
 \arguments{
 \item{metaDir}{Directory containing meta files.}

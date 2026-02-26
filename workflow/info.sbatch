@@ -13,23 +13,12 @@ source "$WORK/config.sh"
 ################################# workflow below (do not modify) #################################
 mkdir -p "${outputFolder}"
 
-echo "Start: Generate SNP information."
+echo "Start: Generate SNP/feature/seqdepth information."
 apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
-    step0_snpInfo.R \
+    Info.R \
     --genoFile=${genoFile} \
-    --outputFile=${outputSnpFile}
-echo "Finish: Generate SNP information."
-
-echo "Start: Generate feature information."
-apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
-    step0_featureInfo.R \
     --abdFile=${abdFile} \
-    --outputFile=${outputFeatureFile}
-echo "Finish: Generate feature information."
-
-echo "Start: Generate sequencing depth information."
-apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
-    step0_seqdepthInfo.R \
-    --abdFile=${abdFile} \
-    --outputFile=${outputSeqDepthFile}
-echo "Finish: Generate sequencing depth information."
+    --outputSnpFile=${outputSnpFile} \
+    --outputFeatureFile=${outputFeatureFile} \
+    --outputSeqDepthFile=${outputSeqDepthFile}
+echo "Finish: Generate SNP/feature/seqdepth information."

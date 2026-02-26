@@ -4,7 +4,7 @@
 \alias{write_top_n}
 \title{Write top-N rows ordered by p-value}
 \usage{
-write_top_n(df, outFile, n = 10)
+write_top_n(df, outFile, n = 10, mode = NULL)
 }
 \arguments{
 \item{df}{Data frame containing column `pval`.}
@@ -12,6 +12,8 @@ write_top_n(df, outFile, n = 10)
 \item{outFile}{Output path.}
 
 \item{n}{Number of rows to keep.}
+
+\item{mode}{Optional string; when \"step2\" keep step2-style columns.}
 }
 \value{
 Invisibly returns the top-N data frame.
