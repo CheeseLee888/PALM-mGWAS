@@ -17,7 +17,8 @@ mode_snp_forest_across_phenos(
   width = 10,
   height = 7,
   dpi = 300,
-  show_meta = TRUE
+  show_meta = TRUE,
+  show_het = TRUE
 )
 }
 \arguments{

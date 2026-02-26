@@ -16,7 +16,8 @@ mode_pheno_snp_forest(
   width = 9,
   height = 4,
   dpi = 300,
-  show_meta = TRUE
+  show_meta = TRUE,
+  show_het = TRUE
 )
 }
 \arguments{

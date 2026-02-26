@@ -16,8 +16,7 @@
 #' @export
 msg <- function(...) cat(sprintf(...), "\n")
 
-#' Safely read a tabular file with required columns
-#' @export
+# Safely read a tabular file with required columns
 safe_fread <- function(path, sep = "\t") {
   if (!file.exists(path)) stop("File not found: ", path)
   if (!requireNamespace("data.table", quietly = TRUE)) {
@@ -30,14 +29,13 @@ safe_fread <- function(path, sep = "\t") {
   df
 }
 
-#' Normalize meta/step2 columns so downstream plotting works for single-study inputs
-#'
-#' If meta_* columns are absent but step2 columns exist, they are duplicated to
-#' meta_* names. Study columns are added when missing (single study only).
-#' @param df Data frame returned by `safe_fread()`.
-#' @param study_id Character scalar used when adding study*_est/stderr columns.
-#' @return Data frame with meta_* columns present.
-#' @export
+# Normalize meta/step2 columns so downstream plotting works for single-study inputs
+#
+# If meta_* columns are absent but step2 columns exist, they are duplicated to
+# meta_* names. Study columns are added when missing (single study only).
+# @param df Data frame returned by `safe_fread()`.
+# @param study_id Character scalar used when adding study*_est/stderr columns.
+# @return Data frame with meta_* columns present.
 standardize_meta_df <- function(df, study_id = "study1") {
   has_meta <- c("meta_pval", "meta_est", "meta_stderr") %in% names(df)
   if (!all(has_meta) && all(c("pval", "est", "stderr") %in% names(df))) {
@@ -61,8 +59,7 @@ standardize_meta_df <- function(df, study_id = "study1") {
   df
 }
 
-#' Read result file and harmonize columns (works for step3 meta or single-study step2)
-#' @export
+# Read result file and harmonize columns (works for step3 meta or single-study step2)
 read_result_file <- function(path, sep = "\t", study_id = NULL) {
   df <- safe_fread(path, sep = sep)
 
@@ -128,8 +125,7 @@ discover_meta_files <- function(metaDir,
     dplyr::arrange(pheno)
 }
 
-#' Detect study columns (est/stderr) in a meta result data frame
-#' @export
+# Detect study columns (est/stderr) in a meta result data frame
 detect_studies <- function(df) {
   est_cols <- grep("^study[0-9]+_est$", names(df), value = TRUE)
   if (length(est_cols) == 0) stop("Cannot find any columns like study1_est, study2_est, ...")
@@ -140,15 +136,13 @@ detect_studies <- function(df) {
   list(ids = ids, est_cols = est_cols, stderr_cols = stderr_cols)
 }
 
-#' Test if a row is significant at pCut
-#' @export
+# Test if a row is significant at pCut
 is_sig_row <- function(row, pCut = 1e-5) {
   if ("meta_pval" %in% names(row) && !is.na(row$meta_pval)) return(row$meta_pval <= pCut)
   FALSE
 }
 
-#' Parse xlim string like "min,max" into numeric vector
-#' @export
+# Parse xlim string like "min,max" into numeric vector
 parse_xlim <- function(xlim_str) {
   if (is.null(xlim_str) || is.na(xlim_str) || !nzchar(xlim_str)) {
     return(NULL)
@@ -177,12 +171,11 @@ sanitize_filename <- function(x) {
   x
 }
 
-#' Append a suffix before the filename extension
-#'
-#' @param path Path to modify.
-#' @param suffix Suffix string to insert (e.g., "_qq").
-#' @return Modified path with suffix inserted before extension.
-#' @export
+# Append a suffix before the filename extension
+#
+# @param path Path to modify.
+# @param suffix Suffix string to insert (e.g., "_qq").
+# @return Modified path with suffix inserted before extension.
 with_suffix <- function(path, suffix) {
   ext <- tools::file_ext(path)
   base <- if (nzchar(ext)) sub(paste0("\\.", ext, "$"), "", path) else path
@@ -190,14 +183,13 @@ with_suffix <- function(path, suffix) {
   paste0(base, suffix, ext_part)
 }
 
-#' Write top-N rows ordered by p-value
-#'
-#' @param df Data frame containing column `pval`.
-#' @param outFile Output path.
-#' @param n Number of rows to keep.
-#' @param mode Optional string; when \"step2\" keep step2-style columns.
-#' @return Invisibly returns the top-N data frame.
-#' @export
+# Write top-N rows ordered by p-value
+#
+# @param df Data frame containing column `pval`.
+# @param outFile Output path.
+# @param n Number of rows to keep.
+# @param mode Optional string; when \"step2\" keep step2-style columns.
+# @return Invisibly returns the top-N data frame.
 write_top_n <- function(df, outFile, n = 10, mode = NULL) {
   if (!("meta_pval" %in% names(df))) stop("Missing meta_pval column for top list.")
   pcol <- "meta_pval"
@@ -226,8 +218,7 @@ write_top_n <- function(df, outFile, n = 10, mode = NULL) {
 
 # ----------------------------- Manhattan helpers -----------------------------
 
-#' Add cumulative base-pair position for Manhattan plotting
-#' @export
+# Add cumulative base-pair position for Manhattan plotting
 add_bp_cum <- function(df) {
   df <- df |>
     dplyr::mutate(
@@ -253,8 +244,7 @@ add_bp_cum <- function(df) {
 }
 
 
-#' Draw a Manhattan plot and save to JPEG
-#' @export
+# Draw a Manhattan plot and save to JPEG
 plot_manhattan <- function(df, outFile, title = NULL,
                            pCut = 1e-5,
                            onlySig = FALSE,
@@ -318,13 +308,12 @@ plot_manhattan <- function(df, outFile, title = NULL,
   invisible(man)
 }
 
-#' Draw a QQ plot and save to file
-#'
-#' @param df Data frame containing a p-value column named `pval`.
-#' @param outFile Output path (png/jpg/etc).
-#' @param title Optional plot title.
-#' @param width,height,dpi Device parameters.
-#' @export
+# Draw a QQ plot and save to file
+#
+# @param df Data frame containing a p-value column named `pval`.
+# @param outFile Output path (png/jpg/etc).
+# @param title Optional plot title.
+# @param width,height,dpi Device parameters.
 plot_qq <- function(df, outFile, title = NULL,
                     width = 6, height = 6, dpi = 300) {
   if (!requireNamespace("qqman", quietly = TRUE)) {
@@ -355,8 +344,7 @@ plot_qq <- function(df, outFile, title = NULL,
 
 # ----------------------------- Forest plot helpers ----------------------------- # nolint: line_length_linter.
 
-#' Convert wide study columns to long format for forest plotting
-#' @export
+# Convert wide study columns to long format for forest plotting
 to_long_study <- function(df_rows, studies, y_col, ciMult = 1.96, studyLabels = NULL) {
   # df_rows: data.frame with multiple y categories (pheno or SNP)
   long <- lapply(studies$ids, function(st) {
@@ -384,8 +372,7 @@ to_long_study <- function(df_rows, studies, y_col, ciMult = 1.96, studyLabels = 
   long
 }
 
-#' Make a forest plot and save to file
-#' @export
+# Make a forest plot and save to file
 forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect",
                         xlim_num = NULL, het_y = NULL, width = 10, height = 7, dpi = 300,
                         show_meta = FALSE, df_meta = NULL, show_het = TRUE) {
@@ -490,8 +477,7 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
   invisible(g)
 }
 
-#' Infix helper: return first non-empty string
-#' @export
+# Infix helper: return first non-empty string
 `%||%` <- function(a, b) if (!is.null(a) && nzchar(a)) a else b
 
 # ----------------------------- Mode implementations -----------------------------
