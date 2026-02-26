@@ -73,7 +73,7 @@ read_result_file <- function(path, sep = "\t", study_id = NULL) {
 
 #' Discover meta-analysis result files
 #'
-#' Utility to list step3 meta files and extract phenotype names from filenames.
+#' Utility to list meta files and extract phenotype names from filenames.
 #'
 #' @param metaDir Directory containing meta files.
 #' @param pattern Regex pattern for filenames; default matches `step3_meta_*.txt`.
@@ -81,45 +81,40 @@ read_result_file <- function(path, sep = "\t", study_id = NULL) {
 #' @return A data frame with columns `pheno` and `file`.
 #' @export
 discover_meta_files <- function(metaDir,
-                                pattern = "step3_meta_.*\\.txt$",
-                                allow_step2 = TRUE,
-                                step2_pattern = "step2_allchr_.*\\.txt$") {
+                                pattern = "step3_meta_.*\\.txt$") {
   files <- list.files(metaDir,
     pattern = pattern,
     full.names = TRUE
   )
 
-  mode <- "step3"
-
-  if (length(files) == 0 && allow_step2) {
-    files <- list.files(metaDir,
-      pattern = step2_pattern,
-      full.names = TRUE
-    )
-    mode <- "step2"
-  }
-
   if (length(files) == 0) {
     stop(
       "No result files found in: ", metaDir,
-      "\nLooked for patterns: ", paste(c(pattern, if (allow_step2) step2_pattern else NULL), collapse = " | "),
+      "\nLooked for pattern: ", pattern,
       "\nFiles present: ",
       paste(list.files(metaDir), collapse = ", ")
     )
   }
 
-  if (mode == "step3") {
-    pheno <- sub(".*step3_meta_", "", basename(files))
-    pheno <- sub("\\.txt$", "", pheno)
-  } else {
-    pheno <- sub(".*step2_allchr_", "", basename(files))
-    pheno <- sub("\\.txt$", "", pheno)
+  # Derive phenotype name from the first `.*` in the pattern (e.g., step3_meta_.*\\.txt$ or step2_allchr_.*\\.txt$)
+  base_names <- basename(files)
+  capture_pattern <- sub("\\.\\*", "(.*)", pattern)
+  capture_pattern <- sub("\\*", "(.*)", capture_pattern, fixed = FALSE)
+  matches <- regexec(capture_pattern, base_names)
+  extracted <- regmatches(base_names, matches)
+  pheno <- vapply(extracted, function(x) {
+    if (length(x) >= 2) x[2] else NA_character_
+  }, character(1))
+
+  # Fallback: strip extension when capture fails
+  if (any(is.na(pheno))) {
+    pheno[is.na(pheno)] <- tools::file_path_sans_ext(base_names[is.na(pheno)])
   }
 
   data.frame(
     pheno = pheno,
     file = files,
-    mode = mode,
+    mode = "pattern",
     stringsAsFactors = FALSE
   ) |>
     dplyr::arrange(pheno)
@@ -630,14 +625,14 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
     )
   }
 
-  if (!is.null(topOutFile)) {
-    write_top_n(
-      df = df,
-      outFile = topOutFile,
-      n = top_n,
-      mode = row$mode[1] %||% NULL
-    )
-  }
+  # if (!is.null(topOutFile)) {
+  #   write_top_n(
+  #     df = df,
+  #     outFile = topOutFile,
+  #     n = top_n,
+  #     mode = row$mode[1] %||% NULL
+  #   )
+  # }
 }
 
 
@@ -713,7 +708,12 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
   df_meta <- NULL
   est_col <- "meta_est"
   se_col <- "meta_stderr"
-  if (show_meta && !is.null(est_col) && !is.null(se_col)) {
+  has_meta_cols <- all(c(est_col, se_col) %in% names(df_all))
+  show_meta_flag <- show_meta && has_meta_cols
+  if (show_meta && !has_meta_cols) {
+    msg("meta_est/meta_stderr not found; skipping meta overlay for SNP forest.")
+  }
+  if (show_meta_flag) {
     df_meta <- df_all |>
       dplyr::transmute(
         y = pheno,
@@ -744,7 +744,7 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
     xlim_num = xlim_num,
     het_y = het_y,
     width = width, height = height, dpi = dpi,
-    show_meta = show_meta,
+    show_meta = show_meta_flag,
     df_meta = df_meta,
     show_het = show_het
   )
@@ -780,7 +780,12 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
   df_meta <- NULL
   est_col <- "meta_est"
   se_col <- "meta_stderr"
-  if (show_meta && !is.null(est_col) && !is.null(se_col)) {
+  has_meta_cols <- all(c(est_col, se_col) %in% names(r))
+  show_meta_flag <- show_meta && has_meta_cols
+  if (show_meta && !has_meta_cols) {
+    msg("meta_est/meta_stderr not found; skipping meta overlay for pheno/SNP forest.")
+  }
+  if (show_meta_flag) {
     df_meta <- r |>
       dplyr::transmute(
         y = y,
@@ -806,7 +811,7 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
     xlim_num = xlim_num,
     het_y = het_y,
     width = width, height = height, dpi = dpi,
-    show_meta = show_meta,
+    show_meta = show_meta_flag,
     df_meta = df_meta,
     show_het = show_het
   )

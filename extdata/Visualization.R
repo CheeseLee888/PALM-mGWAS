@@ -8,6 +8,8 @@ option_list <- list(
               help = "Directory containing step3 meta files [default %default]"),
   make_option(c("--plotDir"), type = "character", default = "",
               help = "Directory to save plots [default %default]"),
+  make_option(c("--pattern"), type = "character", default = "step3_meta_.*\\.txt$",
+              help = "Regex pattern for meta filenames [default %default]"),
   make_option(c("--pheno"), type = "character", default = NA,
               help = "Phenotype name (suffix in step3 meta filename)"),
   make_option(c("--snp"), type = "character", default = NA,
@@ -38,7 +40,7 @@ metaDir <- opt$metaDir
 plotDir <- opt$plotDir
 dir.create(plotDir, recursive = TRUE, showWarnings = FALSE)
 
-metaIndex <- discover_meta_files(metaDir)
+metaIndex <- discover_meta_files(metaDir, pattern = opt$pattern)
 
 pheno <- if (!is.na(opt$pheno)) opt$pheno else NULL
 snp   <- if (!is.na(opt$snp)) opt$snp else NULL
@@ -70,7 +72,7 @@ outFile <- if (!is.na(opt$out)) opt$out else auto_out()
 
 msg("MetaDir: %s", metaDir)
 msg("PlotDir: %s", plotDir)
-msg("Found %d meta files.", nrow(metaIndex))
+msg("Found %d files.", nrow(metaIndex))
 
 if (is.null(pheno) && is.null(snp)) {
   # Mode A

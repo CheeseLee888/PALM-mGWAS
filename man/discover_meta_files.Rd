@@ -4,12 +4,7 @@
 \alias{discover_meta_files}
 \title{Discover meta-analysis result files}
 \usage{
-discover_meta_files(
-  metaDir,
-  pattern = "step3_meta_.*\\\\.txt$",
-  allow_step2 = TRUE,
-  step2_pattern = "step2_allchr_.*\\\\.txt$"
-)
+discover_meta_files(metaDir, pattern = "step3_meta_.*\\\\.txt$")
 }
 \arguments{
 \item{metaDir}{Directory containing meta files.}
@@ -20,5 +15,5 @@ discover_meta_files(
 A data frame with columns `pheno` and `file`.
 }
 \description{
-Utility to list step3 meta files and extract phenotype names from filenames.
+Utility to list meta files and extract phenotype names from filenames; the phenotype substring is captured from the first `.*` in `pattern` (e.g., `step3_meta_.*\\.txt$` or `step2_allchr_.*\\.txt$`).
 }
