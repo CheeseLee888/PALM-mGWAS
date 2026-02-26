@@ -13,26 +13,26 @@ source "$WORK/config.sh"
 ################################# workflow below (do not modify) #################################
 echo "Start: Visualize results."
 apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
-    step_visualization.R \
+    Visualization.R \
     --metaDir=${metaDir} \
     --plotDir=${plotDir} \
     --pheno=${pheno} \
     --snp=${snp}
 
 apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
-    step_visualization.R \
+    Visualization.R \
     --metaDir=${metaDir} \
     --plotDir=${plotDir} \
     --pheno=${pheno}
 
 apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
-    step_visualization.R \
+    Visualization.R \
     --metaDir=${metaDir} \
     --plotDir=${plotDir} \
     --snp=${snp}
 
 apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
-    step_visualization.R \
+    Visualization.R \
     --metaDir=${metaDir} \
     --plotDir=${plotDir}
 echo "Finish: Visualize results."

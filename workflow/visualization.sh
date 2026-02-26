@@ -5,7 +5,7 @@ source "$WORK/config.sh"
 
 ################################# workflow below (do not modify) #################################
 echo "Start: Visualize results."
-pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step_visualization.R \
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir:-${outputFolder}/meta} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --pheno=${pheno:-NA} \
@@ -19,7 +19,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step_visualiz
     --height=${plotHeight:-6} \
     --dpi=${plotDpi:-300}
 
-pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step_visualization.R \
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir:-${outputFolder}/meta} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --pheno=${pheno:-NA} \
@@ -32,7 +32,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step_visualiz
     --height=${plotHeight:-6} \
     --dpi=${plotDpi:-300}
 
-pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step_visualization.R \
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir:-${outputFolder}/meta} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --snp=${snp:-NA} \
@@ -45,7 +45,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step_visualiz
     --height=${plotHeight:-6} \
     --dpi=${plotDpi:-300}
 
-pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step_visualization.R \
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir:-${outputFolder}/meta} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --pCut=${pCut:-1e-5} \
