@@ -1,6 +1,5 @@
 suppressPackageStartupMessages({
     library(PALMmGWAS)
-    library(stringr)
     library(optparse)
 })
 
@@ -15,8 +14,6 @@ option_list <- list(
               help = "SNP ID, e.g. chr1:123:A:G (must match SNP column exactly)"),
   make_option(c("--out"), type = "character", default = NA,
               help = "Output file name (png/pdf). If not set, auto-named."),
-  make_option(c("--sep"), type = "character", default = "\t",
-              help = "Input delimiter [default tab]"),
   make_option(c("--pCut"), type = "double", default = 1e-5,
               help = "p-value cutoff (used if qval missing) [default %default]"),
 
@@ -24,22 +21,14 @@ option_list <- list(
               help = "When --snp only: only plot phenos passing significance cutoff (default: plot ALL phenos containing SNP)."),
   make_option(c("--printCut"), type = "double", default = 1e-8,
               help = "When no pheno/snp: print SNP/pheno pairs whose best p across phenos is below this cutoff [default %default]."),
-  make_option(c("--ciMult"), type = "double", default = 1.96,
-              help = "CI multiplier (1.96 ~ 95%% CI) [default %default]"),
-
-  make_option(c("--studyLabels"), type = "character", default = NA,
-              help = "Optional comma-separated labels for studies, e.g. 'FR-CRC,DE-CRC,UKB' (must match number of study*_est columns)."),
   make_option(c("--showMeta"), type = "logical", default = TRUE,
               help = "Overlay meta est/stderr in black if available [default TRUE]"),
-
-  make_option(c("--xlim"), type = "character", default = NA,
-              help = "Effect axis limits for forest plots: 'min,max' (e.g. '-1.5,1.5')"),
+  make_option(c("--showHet"), type = "logical", default = TRUE,
+              help = "Highlight heterogeneity rows in yellow [default TRUE]"),
   make_option(c("--width"), type = "double", default = 10,
               help = "Plot width inches [default %default]"),
   make_option(c("--height"), type = "double", default = 6,
-              help = "Plot height inches [default %default]"),
-  make_option(c("--dpi"), type = "integer", default = 300,
-              help = "DPI for png [default %default]")
+              help = "Plot height inches [default %default]")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -53,13 +42,6 @@ metaIndex <- discover_meta_files(metaDir)
 
 pheno <- if (!is.na(opt$pheno)) opt$pheno else NULL
 snp   <- if (!is.na(opt$snp)) opt$snp else NULL
-
-studyLabels <- NULL
-if (!is.na(opt$studyLabels)) {
-  studyLabels <- str_split(opt$studyLabels, ",", simplify = TRUE) |> as.character()
-  studyLabels <- trimws(studyLabels)
-  if (length(studyLabels) == 0) studyLabels <- NULL
-}
 
 # auto output filename
 auto_out <- function() {
@@ -96,8 +78,8 @@ if (is.null(pheno) && is.null(snp)) {
   mode_big_combined(
     metaIndex = metaIndex,
     outFile = outFile,
-    sep = opt$sep,
-    width = opt$width, height = opt$height, dpi = opt$dpi,
+    sep = "\t",
+    width = opt$width, height = opt$height, dpi = 300,
     printCut = opt$printCut
   )
 
@@ -112,9 +94,9 @@ if (is.null(pheno) && is.null(snp)) {
     phenoName = pheno,
     outFile = outFile,
     pCut = opt$pCut,
-    sep = opt$sep,
+    sep = "\t",
     onlySig = FALSE,           # Manhattan normally shows all; you can change if you want
-    width = opt$width, height = opt$height, dpi = opt$dpi,
+    width = opt$width, height = opt$height, dpi = 300,
     qqOutFile = qq_out,
     topOutFile = top_out,
     top_n = 10
@@ -128,12 +110,10 @@ if (is.null(pheno) && is.null(snp)) {
     outFile = outFile,
     pCut = opt$pCut,
     sigOnlyPheno = opt$sigOnlyPheno,     # user requested optional; default FALSE => draw all phenos
-    ciMult = opt$ciMult,
-    studyLabels = studyLabels,
-    sep = opt$sep,
-    xlim_str = opt$xlim,
-    width = opt$width, height = opt$height, dpi = opt$dpi,
-    show_meta = opt$showMeta
+    sep = "\t",
+    width = opt$width, height = opt$height, dpi = 300,
+    show_meta = opt$showMeta,
+    show_het = opt$showHet
   )
 
 } else {
@@ -143,12 +123,10 @@ if (is.null(pheno) && is.null(snp)) {
     pheno = pheno,
     snp = snp,
     outFile = outFile,
-    ciMult = opt$ciMult,
-    studyLabels = studyLabels,
-    sep = opt$sep,
-    xlim_str = opt$xlim,
-    width = opt$width, height = opt$height, dpi = opt$dpi,
-    show_meta = opt$showMeta
+    sep = "\t",
+    width = opt$width, height = opt$height, dpi = 300,
+    show_meta = opt$showMeta,
+    show_het = opt$showHet
   )
 }
 

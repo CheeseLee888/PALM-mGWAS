@@ -679,7 +679,8 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
                                           sep = "\t",
                                           xlim_str = NA_character_,
                                           width = 10, height = 7, dpi = 300,
-                                          show_meta = TRUE) {
+                                          show_meta = TRUE,
+                                          show_het = TRUE) {
   rows <- list()
 
   for (i in seq_len(nrow(metaIndex))) {
@@ -758,7 +759,8 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
     het_y = het_y,
     width = width, height = height, dpi = dpi,
     show_meta = show_meta,
-    df_meta = df_meta
+    df_meta = df_meta,
+    show_het = show_het
   )
 }
 
@@ -775,7 +777,8 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
                                   sep = "\t",
                                   xlim_str = NA_character_,
                                   width = 9, height = 4, dpi = 300,
-                                  show_meta = TRUE) {
+                                  show_meta = TRUE,
+                                  show_het = TRUE) {
   row <- metaIndex |> dplyr::filter(.data$pheno == pheno)
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", pheno)
 
@@ -818,6 +821,7 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
     het_y = het_y,
     width = width, height = height, dpi = dpi,
     show_meta = show_meta,
-    df_meta = df_meta
+    df_meta = df_meta,
+    show_het = show_het
   )
 }

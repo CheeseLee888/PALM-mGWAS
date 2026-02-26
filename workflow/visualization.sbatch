@@ -17,22 +17,26 @@ apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
     --metaDir=${metaDir} \
     --plotDir=${plotDir} \
     --pheno=${pheno} \
-    --snp=${snp}
+    --snp=${snp} \
+    --showHet=${showHet:-TRUE}
 
 apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
     Visualization.R \
     --metaDir=${metaDir} \
     --plotDir=${plotDir} \
-    --pheno=${pheno}
+    --pheno=${pheno} \
+    --showHet=${showHet:-TRUE}
 
 apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
     Visualization.R \
     --metaDir=${metaDir} \
     --plotDir=${plotDir} \
-    --snp=${snp}
+    --snp=${snp} \
+    --showHet=${showHet:-TRUE}
 
 apptainer exec --cleanenv --bind $WORK:$WORK $SIF \
     Visualization.R \
     --metaDir=${metaDir} \
-    --plotDir=${plotDir}
+    --plotDir=${plotDir} \
+    --showHet=${showHet:-TRUE}
 echo "Finish: Visualize results."
