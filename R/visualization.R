@@ -388,25 +388,52 @@ to_long_study <- function(df_rows, studies, y_col, ciMult = 1.96, studyLabels = 
 #' @export
 forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect",
                         xlim_num = NULL, het_y = NULL, width = 10, height = 7, dpi = 300,
-                        show_meta = FALSE, df_meta = NULL) {
+                        show_meta = FALSE, df_meta = NULL, show_het = TRUE) {
   df_long <- df_long |> dplyr::mutate(y = factor(y, levels = y_levels))
   study_lvls <- levels(df_long$Study)
 
-  # palette (up to 8 nice colors; recycle if more)
+  # combine studies + meta as plotting elements so ordering is top→bottom
+  meta_ok <- show_meta && length(study_lvls) > 1 && !is.null(df_meta) && nrow(df_meta) > 0
+  if (show_meta && length(study_lvls) <= 1) {
+    msg("Only one study present; skipping meta overlay.")
+  }
+
+  study_lvls_all <- c(study_lvls, if (meta_ok) "Meta" else NULL)
+
+  df_plot <- df_long
+  if (meta_ok) {
+    df_meta <- df_meta |> dplyr::mutate(y = factor(y, levels = y_levels), Study = "Meta")
+    df_plot <- dplyr::bind_rows(df_plot, df_meta)
+  }
+
+  df_plot <- df_plot |> dplyr::mutate(Study = factor(Study, levels = study_lvls_all))
+
+  # palette (up to 8 nice colors; recycle if more) + black for meta
   base_cols <- c("#F8766D", "#CD9600", "#7CAE00", "#00BE67", "#00BFC4", "#00A9FF", "#C77CFF", "#FF61CC")
-  pal <- setNames(rep(base_cols, length.out = length(study_lvls)), study_lvls)
+  pal <- setNames(rep(base_cols, length.out = length(study_lvls_all)), study_lvls_all)
+  if (meta_ok) pal["Meta"] <- "#000000"
+
+  # shapes: circles for studies, diamond for meta
+  shape_vals <- rep(16, length(study_lvls_all))
+  if (meta_ok) shape_vals[length(shape_vals)] <- 18
+
+  # compute vertical offsets so elements draw in order from top to bottom
+  spacing <- 0.22
+  offsets <- setNames(seq(0, by = -spacing, length.out = length(study_lvls_all)), study_lvls_all)
+  df_plot <- df_plot |> dplyr::mutate(y_num = as.numeric(y) + offsets[as.character(Study)])
 
   g <- ggplot2::ggplot()
 
   # heterogeneity highlight background (optional)
-  if (!is.null(het_y) && length(het_y) > 0) {
+  if (show_het && !is.null(het_y) && length(het_y) > 0) {
     df_area <- tibble::tibble(y = factor(het_y, levels = y_levels))
+    df_area <- df_area |> dplyr::mutate(y_num = as.numeric(y))
     g <- g + ggplot2::geom_rect(
       data = df_area,
       ggplot2::aes(
-        xmin = as.numeric(y) - 0.5,
-        xmax = as.numeric(y) + 0.5,
-        ymin = -Inf, ymax = Inf
+        ymin = y_num - 0.5,
+        ymax = y_num + 0.5,
+        xmin = -Inf, xmax = Inf
       ),
       inherit.aes = FALSE,
       fill = "yellow", alpha = 0.18
@@ -414,27 +441,32 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
   }
 
   g <- g +
-    ggplot2::geom_errorbar(
-      data = df_long,
-      ggplot2::aes(x = y, ymin = lower, ymax = upper, group = Study, color = Study),
-      position = ggplot2::position_dodge(width = 0.65),
-      width = 0, linewidth = 0.55
+    ggplot2::geom_errorbarh(
+      data = df_plot,
+      ggplot2::aes(y = y_num, xmin = lower, xmax = upper, color = Study),
+      height = 0,
+      linewidth = 0.55
     ) +
     ggplot2::geom_point(
-      data = df_long,
-      ggplot2::aes(x = y, y = est, color = Study),
-      position = ggplot2::position_dodge(width = 0.65),
+      data = df_plot,
+      ggplot2::aes(y = y_num, x = est, color = Study, shape = Study),
       size = 2.6
     ) +
-    ggplot2::geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.7, color = "#990000") +
-    ggplot2::coord_flip() +
+    ggplot2::geom_vline(xintercept = 0, linetype = "dashed", linewidth = 0.7, color = "#990000") +
     ggplot2::scale_color_manual(values = pal) +
+    ggplot2::scale_shape_manual(values = shape_vals) +
+    ggplot2::scale_y_continuous(
+      breaks = seq_along(y_levels),
+      labels = y_levels,
+      expand = ggplot2::expansion(mult = c(0.04, 0.08))
+    ) +
     ggplot2::theme_minimal(base_size = 12) +
     ggplot2::labs(
-      x = NULL,
-      y = xlab,
+      x = xlab,
+      y = NULL,
       title = title %||% "",
-      color = "Study"
+      color = "Study",
+      shape = "Study"
     ) +
     ggplot2::theme(
       panel.grid = ggplot2::element_blank(),
@@ -444,33 +476,13 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
       plot.margin = ggplot2::margin(10, 12, 10, 20),
       legend.position = "right"
     ) +
-    ggplot2::guides(color = ggplot2::guide_legend(reverse = TRUE))
-
-  # optional meta overlay (only when more than one study exists)
-  meta_ok <- show_meta && length(study_lvls) > 1 && !is.null(df_meta) && nrow(df_meta) > 0
-  if (show_meta && length(study_lvls) <= 1) {
-    msg("Only one study present; skipping meta overlay.")
-  }
-
-  if (meta_ok) {
-    df_meta <- df_meta |> dplyr::mutate(y = factor(y, levels = y_levels))
-    g <- g +
-      ggplot2::geom_errorbar(
-        data = df_meta,
-        ggplot2::aes(x = y, ymin = lower, ymax = upper),
-        inherit.aes = FALSE,
-        width = 0, linewidth = 0.8, color = "black"
-      ) +
-      ggplot2::geom_point(
-        data = df_meta,
-        ggplot2::aes(x = y, y = est),
-        inherit.aes = FALSE,
-        shape = 18, size = 3.2, color = "black"
-      )
-  }
+    ggplot2::guides(
+      color = ggplot2::guide_legend(reverse = TRUE),
+      shape = ggplot2::guide_legend(reverse = TRUE)
+    )
 
   if (!is.null(xlim_num)) {
-    g <- g + ggplot2::ylim(xlim_num[1], xlim_num[2])
+    g <- g + ggplot2::xlim(xlim_num[1], xlim_num[2])
   }
 
   msg("Saving: %s", outFile)
