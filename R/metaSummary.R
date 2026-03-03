@@ -43,21 +43,18 @@ metaSummary <- function(study_dirs,
     paste(sprintf("%s -> %s", study.ID, study_dirs), collapse = "; ")
   )
 
-  if (!is.null(out_dir)) {
-    dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  # ensure study directories exist
+  missing_dir <- study_dirs[!dir.exists(study_dirs)]
+  if (length(missing_dir) > 0) {
+    stop(sprintf(
+      "metaSummary: %d study directory(ies) not found: %s",
+      length(missing_dir),
+      paste(names(missing_dir), missing_dir, sep = " -> ", collapse = "; ")
+    ))
   }
 
-  # infer features from first study dir
-  if (is.null(features)) {
-    d0 <- study_dirs[[1]]
-    ff <- list.files(
-      d0,
-      pattern = paste0("^", in_prefix, ".*", gsub("\\.", "\\\\.", in_suffix), "$"),
-      full.names = FALSE
-    )
-    features <- sub(paste0("^", in_prefix), "", ff)
-    features <- sub(paste0(gsub("\\.", "\\\\.", in_suffix), "$"), "", features)
-    features <- unique(features)
+  if (!is.null(out_dir)) {
+    dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
   # feature (phenotype) availability summary across studies + file matching echo
@@ -91,6 +88,11 @@ metaSummary <- function(study_dirs,
   feat_union <- sort(unique(unlist(feature_lists)))
   feat_inter <- if (length(feature_lists) > 1) Reduce(intersect, feature_lists) else feat_union
 
+  # if user does not specify, use union
+  if (is.null(features)) {
+    features <- feat_union
+  }
+
   considered_feats <- features
   miss_counts <- vapply(feature_lists, function(x) sum(!considered_feats %in% x), integer(1))
 
@@ -105,15 +107,15 @@ metaSummary <- function(study_dirs,
     paste(sprintf("%s missing=%d", names(miss_counts), miss_counts), collapse = "; ")
   )
 
-  # upfront existence check for all requested feature files across studies
+  # existence check for logging only (do not abort; missing files => study skipped for that feature)
   expected <- expand.grid(study = names(study_dirs), feature = considered_feats, stringsAsFactors = FALSE)
   expected$path <- file.path(study_dirs[expected$study], paste0(in_prefix, expected$feature, in_suffix))
   missing_mask <- !file.exists(expected$path)
   if (any(missing_mask)) {
     miss <- expected[missing_mask, , drop = FALSE]
-    msg_lines <- paste0(miss$study, ":", miss$feature, " (", miss$path, ")")
-    stop(sprintf(
-      "metaSummary: missing %d input file(s). Examples: %s",
+    msg_lines <- paste0(miss$study, ":", miss$feature)
+    message(sprintf(
+      "metaSummary: %d missing input file(s); those study-feature pairs will be skipped. Examples: %s",
       nrow(miss), paste(utils::head(msg_lines, 10), collapse = "; ")
     ))
   } else {
