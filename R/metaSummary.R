@@ -39,6 +39,9 @@ metaSummary <- function(study_dirs,
     "metaSummary: reading %d study(ies): %s", length(study.ID),
     paste(study.ID, collapse = ", ")
   ))
+  message("metaSummary: study directories: ",
+    paste(sprintf("%s -> %s", study.ID, study_dirs), collapse = "; ")
+  )
 
   if (!is.null(out_dir)) {
     dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
@@ -55,6 +58,66 @@ metaSummary <- function(study_dirs,
     features <- sub(paste0("^", in_prefix), "", ff)
     features <- sub(paste0(gsub("\\.", "\\\\.", in_suffix), "$"), "", features)
     features <- unique(features)
+  }
+
+  # feature (phenotype) availability summary across studies + file matching echo
+  feature_scan <- lapply(names(study_dirs), function(sid) {
+    d <- study_dirs[[sid]]
+    ff <- list.files(
+      d,
+      pattern = paste0("^", in_prefix, ".*", gsub("\\.", "\\\\.", in_suffix), "$"),
+      full.names = FALSE
+    )
+    feats <- sub(paste0("^", in_prefix), "", ff)
+    feats <- sub(paste0(gsub("\\.", "\\\\.", in_suffix), "$"), "", feats)
+    feats <- unique(feats)
+
+    # verbose but concise logging: matched files and extracted features
+    if (length(ff) == 0) {
+      message("metaSummary: study ", sid, " matched 0 files with pattern ", in_prefix, "*", in_suffix)
+    } else {
+      show_files <- if (length(ff) > 6) c(ff[1:6], "...") else ff
+      show_feats <- if (length(feats) > 10) c(feats[1:10], "...") else feats
+      message("metaSummary: study ", sid, " matched files: ", paste(show_files, collapse = ", "))
+      message("metaSummary: study ", sid, " extracted features: ", paste(show_feats, collapse = ", "))
+    }
+
+    list(files = ff, features = feats)
+  })
+
+  feature_lists <- lapply(feature_scan, `[[`, "features")
+  names(feature_lists) <- names(study_dirs)
+
+  feat_union <- sort(unique(unlist(feature_lists)))
+  feat_inter <- if (length(feature_lists) > 1) Reduce(intersect, feature_lists) else feat_union
+
+  considered_feats <- features
+  miss_counts <- vapply(feature_lists, function(x) sum(!considered_feats %in% x), integer(1))
+
+  feature_counts <- vapply(feature_lists, length, integer(1))
+  message("metaSummary: per-study feature counts: ",
+    paste(sprintf("%s=%d", names(feature_counts), feature_counts), collapse = "; ")
+  )
+  if (length(feature_lists) > 1) {
+    message(sprintf("metaSummary: feature intersection size=%d", length(feat_inter)))
+  }
+  message("metaSummary: per-study missing features (relative to requested set): ",
+    paste(sprintf("%s missing=%d", names(miss_counts), miss_counts), collapse = "; ")
+  )
+
+  # upfront existence check for all requested feature files across studies
+  expected <- expand.grid(study = names(study_dirs), feature = considered_feats, stringsAsFactors = FALSE)
+  expected$path <- file.path(study_dirs[expected$study], paste0(in_prefix, expected$feature, in_suffix))
+  missing_mask <- !file.exists(expected$path)
+  if (any(missing_mask)) {
+    miss <- expected[missing_mask, , drop = FALSE]
+    msg_lines <- paste0(miss$study, ":", miss$feature, " (", miss$path, ")")
+    stop(sprintf(
+      "metaSummary: missing %d input file(s). Examples: %s",
+      nrow(miss), paste(utils::head(msg_lines, 10), collapse = "; ")
+    ))
+  } else {
+    message("metaSummary: all requested input files exist across studies.")
   }
 
   .read_step2 <- function(path) {
@@ -141,6 +204,25 @@ metaSummary <- function(study_dirs,
       if (any(miss_pos)) POS[idx[miss_pos]] <- dat$POS[miss_pos]
     }
 
+    # # progress info: how many SNPs overlap
+    # if (length(used_studies) > 1) {
+    #   union_n <- length(snp.ID)
+    #   per_snp_non_na <- rowSums(!is.na(AA.est))
+    #   inter_n <- sum(per_snp_non_na == length(used_studies))
+    #   dropped_if_intersect <- union_n - inter_n
+
+    #   # per-study missing counts
+    #   per_study_missing <- colSums(is.na(AA.est))
+    #   per_study_present <- colSums(!is.na(AA.est))
+    #   msg1 <- sprintf(
+    #     "metaSummary: feature '%s' SNP union=%d, intersection=%d, would-drop-if-intersect=%d",
+    #     feat, union_n, inter_n, dropped_if_intersect
+    #   )
+    #   msg2 <- paste(sprintf("%s missing=%d present=%d", names(per_study_missing), per_study_missing, per_study_present), collapse = "; ")
+    #   message(msg1)
+    #   message("metaSummary: per-study SNP counts: ", msg2)
+    # }
+
     if (length(used_studies) > 1) {
       # ---- CORE CALC (kept consistent with your old code) ----
       meta_fits <- sapply(seq_len(nrow(AA.est)), function(i) {
@@ -225,5 +307,5 @@ metaSummary <- function(study_dirs,
   }
 
   res <- res[!vapply(res, is.null, logical(1))]
-  return(res)
+  return(invisible(res))
 }
