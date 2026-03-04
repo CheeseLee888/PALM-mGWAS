@@ -24,14 +24,15 @@
   <div class="sidebar">
     <h3>Contents</h3>
     <a href="#workflow">Workflow</a>
+    <a href="#install">Install</a>
     <a href="#env">Environment</a>
     <a href="#input">Inputs</a>
     <a href="#functions">Functions</a>
-    <a href="#step0">Step0 Info</a>
+    <a href="#info">Info (QC)</a>
     <a href="#step1" class="sub">Step1 Null</a>
     <a href="#step2" class="sub">Step2 Summary</a>
     <a href="#step3" class="sub">Step3 Meta</a>
-    <a href="#step4" class="sub">Step4 Plots</a>
+    <a href="#viz" class="sub">Visualization</a>
     <a href="#example">Example</a>
     <a href="#cheatsheet">I/O Sheet</a>
     <a href="#troubleshoot">Troubleshooting</a>
@@ -41,11 +42,11 @@
 
   <h2 id="workflow">Workflow at a Glance</h2>
   <div class="steps">
-    <div class="card"><strong>Step0 Info</strong><br><code>run_info()</code> creates SNP, feature, and sequencing-depth summaries.</div>
+    <div class="card"><strong>Info (QC)</strong><br><code>Info.R</code> creates SNP, feature, and sequencing-depth summaries.</div>
     <div class="card"><strong>Step1 Null</strong><br><code>fitNULL()</code> fits the PALM null model from abundance (and optional covariates).</div>
     <div class="card"><strong>Step2 Summary</strong><br><code>getSummary()</code> reads PLINK genotypes and writes per-phenotype estimates.</div>
     <div class="card"><strong>Step3 Meta</strong><br><code>metaSummary()</code> meta-analyzes multiple studies and adds <code>meta_*</code> columns.</div>
-    <div class="card"><strong>Step4 Plots</strong><br><code>mode_*</code> functions generate Manhattan and forest plots.</div>
+    <div class="card"><strong>Visualization</strong><br><code>Visualization.R</code> generates Manhattan and forest plots.</div>
   </div>
 
   <h2 id="env">Environment & Dependencies</h2>
@@ -54,6 +55,25 @@
     <li>Main deps: PALM, snpStats, data.table, dplyr, metafor, ggplot2, qqman, stringr, tibble.</li>
     <li>Install example: <code>install.packages(c("PALM","snpStats","data.table","dplyr","metafor","ggplot2","qqman","stringr","tibble"))</code></li>
   </ul>
+
+  <h2 id="install">Installation (two options)</h2>
+  <h3>Option A: pixi (recommended for local runs)</h3>
+  <pre><code class="language-bash"># 1) install pixi (if not yet)
+curl -fsSL https://pixi.sh/install.sh | bash
+# 2) set PATH if needed (depends on installer hint)
+# 3) in repo root, create env and fetch deps
+pixi install
+# 4) run workflows with pixi run ... (see steps below)</code></pre>
+  <h3>Option B: Docker image</h3>
+  <pre><code class="language-bash"># build (from repo root)
+docker build -t palm-mgwas .
+
+# run interactively, mounting your data
+docker run --rm -it -v "$PWD":/work -w /work palm-mgwas bash
+
+# inside the container, call packaged scripts (pixi already available)
+pixi run --manifest-path=/app/pixi.toml Rscript /app/extdata/step1_null.R --help</code></pre>
+  <p>The Dockerfile installs pixi, PALM, PLINK1.9, and wrapper scripts under <code>/app/extdata/</code>; mount your data into the container and reference it via absolute paths (e.g., <code>/work/...</code>). Info and visualization scripts can be run in any order depending on your pipeline.</p>
 
   <h2 id="input">Input Requirements</h2>
   <table>
@@ -93,7 +113,7 @@
     </tr>
   </table>
 
-  <h2 id="step0">Step0: Information</h2>
+  <h2 id="info">Info (QC summaries)</h2>
   <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Info.R \
     --genoFile=${genoFile} \
     --abdFile=${abdFile} \
@@ -185,7 +205,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step3_meta.R 
     </li>
   </ul>
 
-  <h2 id="step4">Step4: Visualization</h2>
+  <h2 id="viz">Visualization</h2>
   <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir} \
     --pattern=${pattern} \
@@ -208,7 +228,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step3_meta.R 
   <h2 id="example">End-to-End Minimal Example</h2>
   <pre><code class="language-bash"># assumes config.sh already exported variables (WORK, paths, prefixes, etc.)
 
-# Step0 info
+# Info (QC summaries)
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Info.R \
     --genoFile=${genoFile} \
     --abdFile=${abdFile} \
@@ -239,7 +259,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step3_meta.R 
     --metaMethod=${metaMethod} \
     --featuresFile=${featuresFile}
 
-# Step4 plots (combined / auto-detected mode)
+# Visualization (auto-detected mode)
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir} \
     --pattern=${pattern} \
