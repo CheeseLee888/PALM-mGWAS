@@ -57,6 +57,9 @@ metaSummary <- function(study_dirs,
     dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
+  # high-level run context (output directory printed near end)
+  message("metaSummary: meta method = ", meta.method)
+
   # feature (phenotype) availability summary across studies + file matching echo
   feature_scan <- lapply(names(study_dirs), function(sid) {
     d <- study_dirs[[sid]]
@@ -69,14 +72,12 @@ metaSummary <- function(study_dirs,
     feats <- sub(paste0(gsub("\\.", "\\\\.", in_suffix), "$"), "", feats)
     feats <- unique(feats)
 
-    # verbose but concise logging: matched files and extracted features
+    # logging: only counts, suppress listing file names or phenotype names
     if (length(ff) == 0) {
       message("metaSummary: study ", sid, " matched 0 files with pattern ", in_prefix, "*", in_suffix)
     } else {
-      show_files <- if (length(ff) > 6) c(ff[1:6], "...") else ff
-      show_feats <- if (length(feats) > 10) c(feats[1:10], "...") else feats
-      message("metaSummary: study ", sid, " matched files: ", paste(show_files, collapse = ", "))
-      message("metaSummary: study ", sid, " extracted features: ", paste(show_feats, collapse = ", "))
+      message("metaSummary: study ", sid, " matched ", length(ff), " file(s) with pattern ", in_prefix, "*", in_suffix)
+      message("metaSummary: study ", sid, " extracted ", length(feats), " feature(s)")
     }
 
     list(files = ff, features = feats)
@@ -309,5 +310,7 @@ metaSummary <- function(study_dirs,
   }
 
   res <- res[!vapply(res, is.null, logical(1))]
+  # output directory echoed at the end of processing
+  message("metaSummary: output directory = ", if (is.null(out_dir)) "NULL" else out_dir)
   return(invisible(res))
 }
