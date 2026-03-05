@@ -27,14 +27,28 @@ option_list <- list(
               help = "Overlay meta est/stderr in black if available [default TRUE]"),
   make_option(c("--showHet"), type = "logical", default = TRUE,
               help = "Highlight heterogeneity rows in yellow [default TRUE]"),
-  make_option(c("--width"), type = "double", default = NA_real_,
+  make_option(c("--width"), type = "character", default = NA_character_,
               help = "Plot width inches; NA lets the script auto-size"),
-  make_option(c("--height"), type = "double", default = NA_real_,
+  make_option(c("--height"), type = "character", default = NA_character_,
               help = "Plot height inches; NA lets the script auto-size")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
 
+# coerce width/height strings (including "NA"/"null"/empty) to numeric or NA_real_
+parse_dim <- function(x) {
+  if (is.null(x) || length(x) == 0) return(NA_real_)
+  if (is.na(x)) return(NA_real_)
+  if (is.character(x)) {
+    up <- toupper(trimws(x))
+    if (up %in% c("", "NA", "NULL")) return(NA_real_)
+  }
+  val <- suppressWarnings(as.numeric(x))
+  if (is.na(val)) return(NA_real_)
+  val
+}
+width_in  <- parse_dim(opt$width)
+height_in <- parse_dim(opt$height)
 
 metaDir <- opt$metaDir
 plotDir <- opt$plotDir
@@ -81,7 +95,7 @@ if (is.null(pheno) && is.null(snp)) {
     metaIndex = metaIndex,
     outFile = outFile,
     sep = "\t",
-    width = opt$width, height = opt$height, dpi = 300,
+    width = width_in, height = height_in, dpi = 300,
     printCut = opt$printCut
   )
 
@@ -98,7 +112,7 @@ if (is.null(pheno) && is.null(snp)) {
     pCut = opt$pCut,
     sep = "\t",
     onlySig = FALSE,           # Manhattan normally shows all; you can change if you want
-    width = opt$width, height = opt$height, dpi = 300,
+    width = width_in, height = height_in, dpi = 300,
     qqOutFile = qq_out,
     topOutFile = top_out,
     top_n = 10
@@ -113,7 +127,7 @@ if (is.null(pheno) && is.null(snp)) {
     pCut = opt$pCut,
     sigOnlyPheno = opt$sigOnlyPheno,     # user requested optional; default FALSE => draw all phenos
     sep = "\t",
-    width = opt$width, height = opt$height, dpi = 300,
+    width = width_in, height = height_in, dpi = 300,
     show_meta = opt$showMeta,
     show_het = opt$showHet
   )
@@ -126,7 +140,7 @@ if (is.null(pheno) && is.null(snp)) {
     snp = snp,
     outFile = outFile,
     sep = "\t",
-    width = opt$width, height = opt$height, dpi = 300,
+    width = width_in, height = height_in, dpi = 300,
     show_meta = opt$showMeta,
     show_het = opt$showHet
   )

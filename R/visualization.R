@@ -278,11 +278,11 @@ plot_manhattan <- function(df, outFile, title = NULL,
     )
 
   auto_width <- if (is.na(width)) {
-    max(8, length(unique(man$CHR)) * 0.45)
+    max(11, length(unique(man$CHR)) * 0.45)
   } else {
     width
   }
-  auto_height <- if (is.na(height)) 4.5 else height
+  auto_height <- if (is.na(height)) 5 else height
 
   msg("Saving: %s", outFile)
 
@@ -410,7 +410,7 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
   if (meta_ok) shape_vals[length(shape_vals)] <- 18
 
   # compute vertical offsets so elements draw in order from top to bottom
-  spacing <- 0.22
+  spacing <- 0.30
   offsets <- setNames(seq(0, by = -spacing, length.out = length(study_lvls_all)), study_lvls_all)
   df_plot <- df_plot |> dplyr::mutate(y_num = as.numeric(y) + offsets[as.character(Study)])
 
@@ -484,7 +484,7 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
     width
   }
   auto_height <- if (is.na(height)) {
-    max(4, length(y_levels) * 0.45 + 1.5 + if (meta_ok) 0.4 else 0)
+    max(6, length(y_levels) * 0.60 + 2 + if (meta_ok) 0.6 else 0)
   } else {
     height
   }
