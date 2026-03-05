@@ -16,11 +16,8 @@ option_list <- list(
               help = "SNP ID, e.g. chr1:123:A:G (must match SNP column exactly)"),
   make_option(c("--out"), type = "character", default = NA,
               help = "Output file name (png/pdf). If not set, auto-named."),
-  make_option(c("--pCut"), type = "double", default = 1e-5,
-              help = "p-value cutoff (used if qval missing) [default %default]"),
-
-  make_option(c("--sigOnlyPheno"), type = "logical", default = FALSE,
-              help = "When --snp only: only plot phenos passing significance cutoff (default: plot ALL phenos containing SNP)."),
+  make_option(c("--pCut"), type = "character", default = "1e-5",
+              help = "p-value cutoff; use NA to disable significance filtering/suggestive line [default %default]"),
   make_option(c("--printCut"), type = "double", default = 1e-8,
               help = "When no pheno/snp: print SNP/pheno pairs whose best p across phenos is below this cutoff [default %default]."),
   make_option(c("--showMeta"), type = "logical", default = TRUE,
@@ -47,8 +44,22 @@ parse_dim <- function(x) {
   if (is.na(val)) return(NA_real_)
   val
 }
+
+parse_pcut <- function(x) {
+  if (is.null(x) || length(x) == 0) return(NA_real_)
+  if (is.na(x)) return(NA_real_)
+  up <- toupper(trimws(as.character(x)))
+  if (up %in% c("", "NA", "NULL")) return(NA_real_)
+  val <- suppressWarnings(as.numeric(x))
+  if (is.na(val)) {
+    stop("--pCut must be numeric or NA.")
+  }
+  val
+}
+
 width_in  <- parse_dim(opt$width)
 height_in <- parse_dim(opt$height)
+p_cut <- parse_pcut(opt$pCut)
 
 metaDir <- opt$metaDir
 plotDir <- opt$plotDir
@@ -70,11 +81,7 @@ auto_out <- function() {
   }
   if (is.null(pheno) && !is.null(snp)) {
     tag <- sanitize_filename(snp)
-    if (opt$sigOnlyPheno) {
-      return(file.path(plotDir, paste0(base, "forest_snp_", tag, "_sigPheno.png")))
-    } else {
-      return(file.path(plotDir, paste0(base, "forest_snp_", tag, "_allPheno.png")))
-    }
+    return(file.path(plotDir, paste0(base, "forest_", tag, ".png")))
   }
   # both
   return(file.path(plotDir, paste0(base, "forest_", sanitize_filename(pheno), "_", sanitize_filename(snp), ".png")))
@@ -109,9 +116,7 @@ if (is.null(pheno) && is.null(snp)) {
     metaIndex = metaIndex,
     phenoName = pheno,
     outFile = outFile,
-    pCut = opt$pCut,
     sep = "\t",
-    onlySig = FALSE,           # Manhattan normally shows all; you can change if you want
     width = width_in, height = height_in, dpi = 300,
     qqOutFile = qq_out,
     topOutFile = top_out,
@@ -124,8 +129,7 @@ if (is.null(pheno) && is.null(snp)) {
     metaIndex = metaIndex,
     snp = snp,
     outFile = outFile,
-    pCut = opt$pCut,
-    sigOnlyPheno = opt$sigOnlyPheno,     # user requested optional; default FALSE => draw all phenos
+    pCut = p_cut,
     sep = "\t",
     width = width_in, height = height_in, dpi = 300,
     show_meta = opt$showMeta,

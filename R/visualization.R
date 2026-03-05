@@ -133,6 +133,7 @@ detect_studies <- function(df) {
 
 # Test if a row is significant at pCut
 is_sig_row <- function(row, pCut = 1e-5) {
+  if (is.na(pCut)) return(FALSE)
   if ("meta_pval" %in% names(row) && !is.na(row$meta_pval)) return(row$meta_pval <= pCut)
   FALSE
 }
@@ -242,7 +243,6 @@ add_bp_cum <- function(df) {
 # Draw a Manhattan plot and save to JPEG
 plot_manhattan <- function(df, outFile, title = NULL,
                            pCut = 1e-5,
-                           onlySig = FALSE,
                            width = NA_real_, height = NA_real_, dpi = 300) {
   if (!requireNamespace("qqman", quietly = TRUE)) {
     stop("Package 'qqman' is required.")
@@ -260,10 +260,6 @@ plot_manhattan <- function(df, outFile, title = NULL,
   # ---- prepare ----
   df <- df |>
     dplyr::filter(!is.na(.data[[pcol]]), .data[[pcol]] > 0)
-
-  if (onlySig) {
-    df <- dplyr::filter(df, .data[[pcol]] <= pCut)
-  }
 
   if (nrow(df) == 0) {
     stop("No points to plot.")
@@ -301,7 +297,7 @@ plot_manhattan <- function(df, outFile, title = NULL,
     col = c("grey20", "grey70"),
     cex = 0.55,
     main = title %||% "",
-    suggestiveline = pCut,
+    suggestiveline = if (is.na(pCut)) FALSE else pCut,
     genomewideline = 5e-8
   )
 
@@ -614,7 +610,6 @@ mode_big_combined <- function(metaIndex, outFile,
     df = best,
     outFile = outFile,
     title = "Best phenotype per SNP (minimum p across phenotypes)",
-    onlySig = FALSE,
     width = width,
     height = height,
     dpi = dpi
@@ -626,17 +621,14 @@ mode_big_combined <- function(metaIndex, outFile,
 #' Manhattan plot for a single phenotype
 #'
 #' @inheritParams mode_big_combined
-#' @param pCut P-value cutoff used for Manhattan suggestive line and optional
-#'   filtering.
 #' @param phenoName Phenotype name matching a row in `metaIndex$pheno`.
-#' @param onlySig If TRUE, keep only points passing `pCut`.
 #' @param qqOutFile Optional output path for QQ plot.
 #' @param topOutFile Optional output path for top-N hits (ordered by p-value).
 #' @param top_n How many hits to keep if `topOutFile` is provided.
 #'
 #' @export
-mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
-                                 sep = "\t", onlySig = FALSE,
+mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
+                                 sep = "\t",
                                  width = NA_real_, height = NA_real_, dpi = 300,
                                  qqOutFile = NULL, qq_width = NA_real_, qq_height = NA_real_,
                                  topOutFile = NULL, top_n = 10) {
@@ -648,8 +640,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
     df = df,
     outFile = outFile,
     title = paste0("Manhattan: ", phenoName),
-    pCut = pCut,
-    onlySig = onlySig,
+    pCut = NA_real_,
     width = width, height = height, dpi = dpi
   )
 
@@ -676,15 +667,12 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
 
 
 # Mode C: SNP fixed; forest across phenos
-# sigOnlyPheno is OPTIONAL (user request): default FALSE => draw ALL phenos that contain this SNP.
 #' Forest plot for a SNP across all phenotypes
 #'
 #' @inheritParams mode_big_combined
-#' @param pCut P-value cutoff used to decide significance across phenotypes
-#'   when `sigOnlyPheno` is TRUE.
+#' @param pCut P-value cutoff used to filter phenotypes for this SNP. Use `NA`
+#'   to disable filtering and keep all phenotypes containing the SNP.
 #' @param snp SNP ID to plot.
-#' @param sigOnlyPheno If TRUE, keep only phenotypes where this SNP passes
-#'   `pCut`.
 #' @param ciMult Multiplier for confidence interval width.
 #' @param studyLabels Optional labels replacing study IDs in the legend.
 #' @param xlim_str Optional comma-separated numeric limits for the x-axis.
@@ -693,7 +681,6 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
 #' @export
 mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
                                           pCut = 1e-5,
-                                          sigOnlyPheno = FALSE,
                                           ciMult = 1.96,
                                           studyLabels = NULL,
                                           sep = "\t",
@@ -713,7 +700,7 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
     if (nrow(r) == 0) next
 
     # optionally filter by significance across phenos
-    if (sigOnlyPheno) {
+    if (!is.na(pCut)) {
       if (!is_sig_row(r[1, , drop = FALSE], pCut = pCut)) next
     }
 
@@ -722,8 +709,8 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
   }
 
   if (length(rows) == 0) {
-    if (sigOnlyPheno) {
-      stop("No phenotypes found (with this SNP) passing significance cutoff. Try --sigOnlyPheno FALSE or loosen pCut.")
+    if (!is.na(pCut)) {
+      stop("No phenotypes found (with this SNP) passing significance cutoff. Try pCut=NA or loosen pCut.")
     } else {
       stop("No phenotypes contain this SNP in meta files: ", snp)
     }
