@@ -15,5 +15,5 @@ discover_meta_files(metaDir, pattern = "step3_meta_.*\\\\.txt$")
 A data frame with columns `pheno` and `file`.
 }
 \description{
-Utility to list meta files and extract phenotype names from filenames; the phenotype substring is captured from the first `.*` in `pattern` (e.g., `step3_meta_.*\\.txt$` or `step2_allchr_.*\\.txt$`).
+Utility to list meta files and extract phenotype names from filenames.
 }

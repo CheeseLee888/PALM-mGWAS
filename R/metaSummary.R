@@ -8,10 +8,10 @@
 #' @param out_prefix Output meta file prefix, e.g. "meta_step2_allchr_"
 #' @param out_suffix Output file suffix, default ".txt"
 #' @param keep_het If TRUE and multi-study, keep pval.het column; if FALSE, drop it to match 6-column step2 format exactly.
-#' @param meta.method Passed to metafor::rma(method=...), consistent with your old code.
+#' @param meta.method (deprecated) no longer used; meta-analysis now uses fixed-effect inverse-variance weighting.
 #'
 #' @return Named list: each element is a data.frame/tibble in step2 format.
-#' @import dplyr metafor
+#' @import dplyr
 #' @export
 metaSummary <- function(study_dirs,
                         in_prefix,
@@ -21,12 +21,9 @@ metaSummary <- function(study_dirs,
                         out_prefix = "meta_step2_allchr_",
                         out_suffix = ".txt",
                         keep_het = TRUE,
-                        meta.method = "EE") {
+                        meta.method = NULL) {
   if (!requireNamespace("dplyr", quietly = TRUE)) {
     stop("Package 'dplyr' is required but not installed.")
-  }
-  if (!requireNamespace("metafor", quietly = TRUE)) {
-    stop("Package 'metafor' is required but not installed.")
   }
 
   if (is.null(names(study_dirs)) || any(names(study_dirs) == "")) {
@@ -226,51 +223,30 @@ metaSummary <- function(study_dirs,
     # }
 
     if (length(used_studies) > 1) {
-      # two paths: fast vectorized fixed-effect vs legacy per-SNP rma
-      if (toupper(meta.method) %in% c("FE", "IVW")) {
-        # fixed-effect inverse-variance weighting in matrix form (whole-column ops)
-        w <- 1 / AA.var
-        # rows with all NA will have wsum=0; guard to avoid inf
-        wsum <- rowSums(w, na.rm = TRUE)
-        wsum[wsum == 0] <- NA_real_
+      # fixed-effect inverse-variance weighting in matrix form (whole-column ops)
+      w <- 1 / AA.var
+      # rows with all NA will have wsum=0; guard to avoid inf
+      wsum <- rowSums(w, na.rm = TRUE)
+      wsum[wsum == 0] <- NA_real_
 
-        meta_est <- rowSums(w * AA.est, na.rm = TRUE) / wsum
-        meta_stderr <- sqrt(1 / wsum)
-        z <- meta_est / meta_stderr
-        meta_pval <- 2 * stats::pnorm(-abs(z))
+      meta_est <- rowSums(w * AA.est, na.rm = TRUE) / wsum
+      meta_stderr <- sqrt(1 / wsum)
+      z <- meta_est / meta_stderr
+      meta_pval <- 2 * stats::pnorm(-abs(z))
 
-        # heterogeneity Q (still vectorized) ----
-        # uses per-row meta_est above
-        # note: if all NA in a row, Q becomes NA and df<1; pval.het NA
-        centered <- AA.est - meta_est
-        Q <- rowSums(w * centered * centered, na.rm = TRUE)
-        df <- rowSums(!is.na(AA.est)) - 1
-        meta_pval.het <- stats::pchisq(Q, df = df, lower.tail = FALSE)
+      # heterogeneity Q (still vectorized)
+      centered <- AA.est - meta_est
+      Q <- rowSums(w * centered * centered, na.rm = TRUE)
+      df <- rowSums(!is.na(AA.est)) - 1
+      meta_pval.het <- stats::pchisq(Q, df = df, lower.tail = FALSE)
 
-        meta_fits <- data.frame(
-          est = meta_est,
-          stderr = meta_stderr,
-          pval = meta_pval,
-          pval.het = meta_pval.het,
-          stringsAsFactors = FALSE
-        )
-      } else {
-        # ---- Legacy per-SNP rma (kept for random-effects / EE / REML) ----
-        meta_fits <- sapply(seq_len(nrow(AA.est)), function(i) {
-          non.id <- !is.na(AA.est[i, ])
-          m <- try(
-            metafor::rma(yi = AA.est[i, non.id], vi = AA.var[i, non.id], method = meta.method),
-            silent = TRUE
-          )
-          if (class(m)[1] != "try-error") {
-            return(c(est = m$beta, stderr = m$se, pval = m$QMp, pval.het = m$QEp))
-          } else {
-            return(c(est = NA, stderr = NA, pval = NA, pval.het = NA))
-          }
-        })
-        meta_fits <- data.frame(t(meta_fits), stringsAsFactors = FALSE)
-      }
-      # -------------------------------------------------------
+      meta_fits <- data.frame(
+        est = meta_est,
+        stderr = meta_stderr,
+        pval = meta_pval,
+        pval.het = meta_pval.het,
+        stringsAsFactors = FALSE
+      )
 
       out <- dplyr::tibble(
         SNP = snp.ID,

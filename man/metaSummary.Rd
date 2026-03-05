@@ -13,7 +13,7 @@ metaSummary(
   out_prefix = "meta_step2_allchr_",
   out_suffix = ".txt",
   keep_het = TRUE,
-  meta.method = "EE"
+  meta.method = NULL
 )
 }
 \arguments{
@@ -33,7 +33,7 @@ metaSummary(
 
 \item{keep_het}{If TRUE and multi-study, keep pval.het column; if FALSE, drop it to match 6-column step2 format exactly.}
 
-\item{meta.method}{Passed to metafor::rma(method=...), consistent with your old code.}
+\item{meta.method}{(deprecated) no longer used; meta-analysis now uses fixed-effect inverse-variance weighting.}
 }
 \value{
 Named list: each element is a data.frame/tibble in step2 format.

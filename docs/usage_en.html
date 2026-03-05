@@ -51,8 +51,8 @@
   <h2 id="env">Environment & Dependencies</h2>
   <ul>
     <li>R ≥ 4.2; use a clean renv/conda environment if possible.</li>
-    <li>Main deps: PALM, snpStats, data.table, dplyr, metafor, ggplot2, qqman, stringr, tibble.</li>
-    <li>Install example: <code>install.packages(c("PALM","snpStats","data.table","dplyr","metafor","ggplot2","qqman","stringr","tibble"))</code></li>
+    <li>Main deps: PALM, snpStats, data.table, dplyr, ggplot2, qqman, stringr, tibble.</li>
+    <li>Install example: <code>install.packages(c("PALM","snpStats","data.table","dplyr","ggplot2","qqman","stringr","tibble"))</code></li>
   </ul>
 
   <h2 id="input">Input Requirements</h2>
@@ -166,21 +166,18 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step3_meta.R 
     --outDir=${outDir} \
     --outPrefix=${outPrefix} \
     --keepHet=${keepHet} \
-    --metaMethod=${metaMethod} \
     --featuresFile=${featuresFile}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> <code>study_dirs</code> is a named vector/list mapping study IDs to Step2 directories; files inside must match <code>in_prefix</code> + <code>&lt;pheno&gt;</code> + <code>in_suffix</code>.</li>
     <li><strong>Outputs:</strong> one file per phenotype in <code>out_dir</code> named <code>step3_meta_&lt;pheno&gt;.txt</code>, containing <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
     <li><strong>Single-study mode:</strong> still useful to standardize column names for plotting.</li>
     <li><strong>Heterogeneity:</strong> set <code>keep_het = FALSE</code> to drop the het column and mimic 6-column Step2 format.</li>
-    <li><strong>Meta method:</strong> <code>meta.method</code> is passed to <code>metafor::rma()</code>; default "EE" follows legacy code.</li>
     <li><strong>Key tunables:</strong>
       <ul>
         <li><code>in_prefix</code>/<code>in_suffix</code>: match your Step2 filenames.</li>
         <li><code>features</code>: optionally supply a feature list; otherwise inferred.</li>
         <li><code>out_dir/out_prefix/out_suffix</code>: control where meta files are written.</li>
         <li><code>keep_het</code>: keep/drop heterogeneity p-values.</li>
-        <li><code>meta.method</code>: passed to <code>metafor::rma(method=...)</code>.</li>
       </ul>
     </li>
   </ul>
