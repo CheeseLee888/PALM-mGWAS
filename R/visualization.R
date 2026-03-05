@@ -410,8 +410,15 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
   if (meta_ok) shape_vals[length(shape_vals)] <- 18
 
   # compute vertical offsets so elements draw in order from top to bottom
-  spacing <- 0.30
-  offsets <- setNames(seq(0, by = -spacing, length.out = length(study_lvls_all)), study_lvls_all)
+  spacing <- 0.28
+  offsets <- setNames(
+    seq(from = -((length(study_lvls_all) - 1) / 2) * spacing,
+        by = spacing,
+        length.out = length(study_lvls_all)),
+    study_lvls_all
+  )
+  offset_min <- min(offsets)
+  offset_max <- max(offsets)
   df_plot <- df_plot |> dplyr::mutate(y_num = as.numeric(y) + offsets[as.character(Study)])
 
   g <- ggplot2::ggplot()
@@ -419,12 +426,22 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
   # heterogeneity highlight background (optional)
   if (show_het && !is.null(het_y) && length(het_y) > 0) {
     df_area <- tibble::tibble(y = factor(het_y, levels = y_levels))
-    df_area <- df_area |> dplyr::mutate(y_num = as.numeric(y))
+    df_area <- df_area |> dplyr::mutate(
+      y_center = as.numeric(y),
+      raw_ymin = y_center + offset_min - spacing / 2,
+      raw_ymax = y_center + offset_max + spacing / 2
+    )
+    # clamp band to avoid overlap between adjacent rows
+    band_half <- 0.48
+    df_area <- df_area |> dplyr::mutate(
+      ymin = pmax(y_center - band_half, raw_ymin),
+      ymax = pmin(y_center + band_half, raw_ymax)
+    )
     g <- g + ggplot2::geom_rect(
       data = df_area,
       ggplot2::aes(
-        ymin = y_num - 0.5,
-        ymax = y_num + 0.5,
+        ymin = ymin,
+        ymax = ymax,
         xmin = -Inf, xmax = Inf
       ),
       inherit.aes = FALSE,
