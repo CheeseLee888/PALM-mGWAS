@@ -13,6 +13,5 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step3_meta.R 
     --outDir=${outDir} \
     --outPrefix=${outPrefix} \
     --keepHet=${keepHet:-TRUE} \
-    --metaMethod=${metaMethod:-EE} \
     --featuresFile=${featuresFile:-NULL}
 echo "Finish: Performe meta analysis."

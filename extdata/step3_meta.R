@@ -16,8 +16,6 @@ option_list <- list(
               help="Output file prefix"),
   make_option("--keepHet", type="character", default="TRUE",
               help="TRUE/FALSE"),
-  make_option("--metaMethod", type="character", default="EE",
-              help="metafor::rma method"),
   make_option("--featuresFile", type="character", default="NULL",
               help="Optional: feature names, one per line; NULL=infer")
 )
@@ -58,6 +56,5 @@ metaSummary(
   features   = features,
   out_dir    = opt$outDir,
   out_prefix = opt$outPrefix,
-  keep_het   = opt$keepHet,
-  meta.method = opt$metaMethod
+  keep_het   = opt$keepHet
 )
