@@ -27,10 +27,10 @@ option_list <- list(
               help = "Overlay meta est/stderr in black if available [default TRUE]"),
   make_option(c("--showHet"), type = "logical", default = TRUE,
               help = "Highlight heterogeneity rows in yellow [default TRUE]"),
-  make_option(c("--width"), type = "double", default = 10,
-              help = "Plot width inches [default %default]"),
-  make_option(c("--height"), type = "double", default = 6,
-              help = "Plot height inches [default %default]")
+  make_option(c("--width"), type = "double", default = NA_real_,
+              help = "Plot width inches; NA lets the script auto-size"),
+  make_option(c("--height"), type = "double", default = NA_real_,
+              help = "Plot height inches; NA lets the script auto-size")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))

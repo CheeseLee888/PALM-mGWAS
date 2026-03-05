@@ -14,9 +14,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --pCut=${pCut:-1e-5} \
     --sigOnlyPheno=${sigOnlyPheno:-FALSE} \
     --showMeta=${showMeta:-TRUE} \
-    --showHet=${showHet:-TRUE} \
-    --width=${plotWidth:-10} \
-    --height=${plotHeight:-6}
+    --showHet=${showHet:-TRUE}
 
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir:-${outputFolder}/meta} \
@@ -26,9 +24,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --pCut=${pCut:-1e-5} \
     --sigOnlyPheno=${sigOnlyPheno:-FALSE} \
     --showMeta=${showMeta:-TRUE} \
-    --showHet=${showHet:-TRUE} \
-    --width=${plotWidth:-10} \
-    --height=${plotHeight:-6}
+    --showHet=${showHet:-TRUE}
 
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir:-${outputFolder}/meta} \
@@ -38,9 +34,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --pCut=${pCut:-1e-5} \
     --sigOnlyPheno=${sigOnlyPheno:-FALSE} \
     --showMeta=${showMeta:-TRUE} \
-    --showHet=${showHet:-TRUE} \
-    --width=${plotWidth:-10} \
-    --height=${plotHeight:-6}
+    --showHet=${showHet:-TRUE}
 
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir:-${outputFolder}/meta} \
@@ -50,7 +44,5 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --printCut=${printCut:-1e-8} \
     --sigOnlyPheno=${sigOnlyPheno:-FALSE} \
     --showMeta=${showMeta:-TRUE} \
-    --showHet=${showHet:-TRUE} \
-    --width=${plotWidth:-10} \
-    --height=${plotHeight:-6}
+    --showHet=${showHet:-TRUE}
 echo "Finish: Visualize results."

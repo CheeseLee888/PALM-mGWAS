@@ -243,7 +243,7 @@ add_bp_cum <- function(df) {
 plot_manhattan <- function(df, outFile, title = NULL,
                            pCut = 1e-5,
                            onlySig = FALSE,
-                           width = 11, height = 4.5, dpi = 300) {
+                           width = NA_real_, height = NA_real_, dpi = 300) {
   if (!requireNamespace("qqman", quietly = TRUE)) {
     stop("Package 'qqman' is required.")
   }
@@ -277,10 +277,17 @@ plot_manhattan <- function(df, outFile, title = NULL,
       SNP = as.character(.data$SNP)
     )
 
+  auto_width <- if (is.na(width)) {
+    max(8, length(unique(man$CHR)) * 0.45)
+  } else {
+    width
+  }
+  auto_height <- if (is.na(height)) 4.5 else height
+
   msg("Saving: %s", outFile)
 
   grDevices::jpeg(outFile,
-    width = width, height = height,
+    width = auto_width, height = auto_height,
     units = "in", res = dpi
   )
 
@@ -310,7 +317,7 @@ plot_manhattan <- function(df, outFile, title = NULL,
 # @param title Optional plot title.
 # @param width,height,dpi Device parameters.
 plot_qq <- function(df, outFile, title = NULL,
-                    width = 6, height = 6, dpi = 300) {
+                    width = NA_real_, height = NA_real_, dpi = 300) {
   if (!requireNamespace("qqman", quietly = TRUE)) {
     stop("Package 'qqman' is required.")
   }
@@ -325,8 +332,11 @@ plot_qq <- function(df, outFile, title = NULL,
 
   msg("Saving: %s", outFile)
 
+  auto_width <- if (is.na(width)) 6 else width
+  auto_height <- if (is.na(height)) 6 else height
+
   grDevices::jpeg(outFile,
-    width = width, height = height,
+    width = auto_width, height = auto_height,
     units = "in", res = dpi
   )
 
@@ -369,7 +379,7 @@ to_long_study <- function(df_rows, studies, y_col, ciMult = 1.96, studyLabels = 
 
 # Make a forest plot and save to file
 forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect",
-                        xlim_num = NULL, het_y = NULL, width = 10, height = 7, dpi = 300,
+                        xlim_num = NULL, het_y = NULL, width = NA_real_, height = NA_real_, dpi = 300,
                         show_meta = FALSE, df_meta = NULL, show_het = TRUE) {
   df_long <- df_long |> dplyr::mutate(y = factor(y, levels = y_levels))
   study_lvls <- levels(df_long$Study)
@@ -467,8 +477,20 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
     g <- g + ggplot2::xlim(xlim_num[1], xlim_num[2])
   }
 
+  # auto width/height when not provided: scale height by number of rows, width by studies
+  auto_width <- if (is.na(width)) {
+    max(7, length(study_lvls_all) * 1.1 + 3)
+  } else {
+    width
+  }
+  auto_height <- if (is.na(height)) {
+    max(4, length(y_levels) * 0.45 + 1.5 + if (meta_ok) 0.4 else 0)
+  } else {
+    height
+  }
+
   msg("Saving: %s", outFile)
-  ggplot2::ggsave(outFile, g, width = width, height = height, dpi = dpi)
+  ggplot2::ggsave(outFile, g, width = auto_width, height = auto_height, dpi = dpi)
   invisible(g)
 }
 
@@ -494,7 +516,7 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
 #' @export
 mode_big_combined <- function(metaIndex, outFile,
                               sep = "\t",
-                              width = 12, height = 5, dpi = 300,
+                              width = NA_real_, height = NA_real_, dpi = 300,
                               printCut = 1e-8) {
   all_hits <- list()
 
@@ -598,8 +620,8 @@ mode_big_combined <- function(metaIndex, outFile,
 #' @export
 mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
                                  sep = "\t", onlySig = FALSE,
-                                 width = 12, height = 4.5, dpi = 300,
-                                 qqOutFile = NULL, qq_width = 6, qq_height = 6,
+                                 width = NA_real_, height = NA_real_, dpi = 300,
+                                 qqOutFile = NULL, qq_width = NA_real_, qq_height = NA_real_,
                                  topOutFile = NULL, top_n = 10) {
   row <- metaIndex |> dplyr::filter(.data$pheno == phenoName)
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", phenoName)
@@ -659,7 +681,7 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
                                           studyLabels = NULL,
                                           sep = "\t",
                                           xlim_str = NA_character_,
-                                          width = 10, height = 7, dpi = 300,
+                                          width = NA_real_, height = NA_real_, dpi = 300,
                                           show_meta = TRUE,
                                           show_het = TRUE) {
   rows <- list()
@@ -762,7 +784,7 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
                                   studyLabels = NULL,
                                   sep = "\t",
                                   xlim_str = NA_character_,
-                                  width = 9, height = 4, dpi = 300,
+                                  width = NA_real_, height = NA_real_, dpi = 300,
                                   show_meta = TRUE,
                                   show_het = TRUE) {
   row <- metaIndex |> dplyr::filter(.data$pheno == pheno)
