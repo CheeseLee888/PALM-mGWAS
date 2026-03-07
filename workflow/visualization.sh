@@ -7,7 +7,7 @@ source "$WORK/config.sh"
 echo "Start: Visualize results."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir:-${outputFolder}/meta} \
-    --pattern=${pattern:-step3_meta_.*\\.txt$} \
+    --pattern=${visPattern:-step3_meta_.*\\.txt$} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --pheno=${pheno:-NA} \
     --snp=${snp:-NA} \
@@ -18,17 +18,15 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
 
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir:-${outputFolder}/meta} \
-    --pattern=${pattern:-step3_meta_.*\\.txt$} \
+    --pattern=${visPattern:-step3_meta_.*\\.txt$} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --pheno=${pheno:-NA} \
-    --showMeta=${showMeta:-TRUE} \
-    --showHet=${showHet:-TRUE} \
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
 
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir:-${outputFolder}/meta} \
-    --pattern=${pattern:-step3_meta_.*\\.txt$} \
+    --pattern=${visPattern:-step3_meta_.*\\.txt$} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --snp=${snp:-NA} \
     --pCut=${pCut:-NA} \
@@ -39,11 +37,9 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
 
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir:-${outputFolder}/meta} \
-    --pattern=${pattern:-step3_meta_.*\\.txt$} \
+    --pattern=${visPattern:-step3_meta_.*\\.txt$} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --printCut=${printCut:-1e-8} \
-    --showMeta=${showMeta:-TRUE} \
-    --showHet=${showHet:-TRUE} \
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
 echo "Finish: Visualize results."

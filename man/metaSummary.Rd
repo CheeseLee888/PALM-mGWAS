@@ -6,8 +6,7 @@
 \usage{
 metaSummary(
   study_dirs,
-  in_prefix,
-  in_suffix = ".txt",
+  pattern,
   features = NULL,
   out_dir = NULL,
   out_prefix = "meta_step2_allchr_",
@@ -19,9 +18,8 @@ metaSummary(
 \arguments{
 \item{study_dirs}{Named character vector/list. Names are study IDs, values are directories.}
 
-\item{in_prefix}{Input file prefix in each study dir, e.g. "palm1_step2_allchr_"}
-
-\item{in_suffix}{Input file suffix, default ".txt"}
+\item{pattern}{Regex pattern for input filenames, e.g. \code{step2_allchr_.*\\.txt$}.
+The phenotype/feature name is extracted from the first wildcard capture.}
 
 \item{features}{Optional feature names (without prefix/suffix). If NULL, infer from first study dir.}
 

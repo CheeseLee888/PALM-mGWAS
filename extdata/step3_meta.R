@@ -8,8 +8,8 @@ suppressPackageStartupMessages({
 option_list <- list(
   make_option("--studyDirList", type="character", default="",
               help="TSV: each line 'studyID<TAB>dir'"),
-  make_option("--inPrefix", type="character", default="",
-              help="Input step2 prefix"),
+  make_option("--pattern", type="character", default="step2_allchr_.*\\.txt$",
+              help="Regex pattern for input step2 filenames [default %default]"),
   make_option("--outDir", type="character", default="",
               help="Output directory"),
   make_option("--outPrefix", type="character", default="",
@@ -36,9 +36,6 @@ sd <- read.table(opt$studyDirList, header = FALSE, sep = "", stringsAsFactors = 
 if (ncol(sd) < 2) stop("studyDirList must have >=2 columns: studyID and dir")
 study_dirs <- setNames(as.character(sd[[2]]), as.character(sd[[1]]))
 
-
-study_dirs <- setNames(as.character(sd[[2]]), as.character(sd[[1]]))
-
 # optional features
 features <- NULL
 if (!is.null(opt$featuresFile)) {
@@ -52,7 +49,7 @@ dir.create(opt$outDir, recursive=TRUE, showWarnings=FALSE)
 
 metaSummary(
   study_dirs = study_dirs,
-  in_prefix  = opt$inPrefix,
+  pattern    = opt$pattern,
   features   = features,
   out_dir    = opt$outDir,
   out_prefix = opt$outPrefix,
