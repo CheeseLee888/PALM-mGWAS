@@ -522,15 +522,16 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
 #' @param outFile Path to the output JPEG.
 #' @param sep Field separator for meta files.
 #' @param width,height,dpi Graphics device parameters passed to `ggsave`.
-#' @param printCut Optional cutoff; SNP/phenotype pairs with best p below this
-#'   value are printed to the console and written to `<outFile>_printCut.txt`.
+#' @param pCut Optional cutoff. When using the combined mode, SNP/phenotype
+#'   pairs with best p below this value are printed to the console and written
+#'   to `<outFile>_pCut.txt`.
 #'
 #' @return Invisibly returns the data frame passed to `qqman::manhattan()`.
 #' @export
 mode_big_combined <- function(metaIndex, outFile,
                               sep = "\t",
                               width = NA_real_, height = NA_real_, dpi = 300,
-                              printCut = 1e-8) {
+                              pCut = 1e-5) {
   all_hits <- list()
 
   for (i in seq_len(nrow(metaIndex))) {
@@ -568,9 +569,9 @@ mode_big_combined <- function(metaIndex, outFile,
     dplyr::ungroup()
 
   # optionally report pairs that beat the user threshold
-  if (!is.na(printCut)) {
+  if (!is.na(pCut)) {
     hits_to_print <- best |>
-      dplyr::filter(!is.na(.data$meta_pval), .data$meta_pval < printCut) |>
+      dplyr::filter(!is.na(.data$meta_pval), .data$meta_pval < pCut) |>
       dplyr::arrange(.data$meta_pval)
 
     # For single-study (step2-only), output columns: SNP CHR POS est stderr pval pheno
@@ -585,7 +586,7 @@ mode_big_combined <- function(metaIndex, outFile,
     }
 
     if (nrow(hits_to_print) > 0) {
-      msg("SNP/pheno pairs with p < %g (best per SNP):", printCut)
+      msg("SNP/pheno pairs with p < %g (best per SNP):", pCut)
       apply(hits_to_print, 1, function(r) {
         p_out <- if ("meta_pval" %in% names(r)) as.numeric(r[["meta_pval"]]) else as.numeric(r[["pval"]])
         msg("  %s\t%s\t%.3e", r[["SNP"]], r[["pheno"]], p_out)
@@ -594,7 +595,7 @@ mode_big_combined <- function(metaIndex, outFile,
 
       # save alongside plot, force .txt (strip any existing extension)
       base_no_ext <- tools::file_path_sans_ext(outFile)
-      list_out <- paste0(base_no_ext, "_printCut.txt")
+      list_out <- paste0(base_no_ext, "_pCut.txt")
       msg("Saving list: %s", list_out)
       if (requireNamespace("data.table", quietly = TRUE)) {
         data.table::fwrite(hits_to_print, list_out, sep = "\t")
@@ -602,7 +603,7 @@ mode_big_combined <- function(metaIndex, outFile,
         utils::write.table(hits_to_print, list_out, sep = "\t", quote = FALSE, row.names = FALSE)
       }
     } else {
-      msg("No SNP/pheno pairs found with p < %g (best per SNP).", printCut)
+      msg("No SNP/pheno pairs found with p < %g (best per SNP).", pCut)
     }
   }
 

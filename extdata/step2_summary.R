@@ -6,7 +6,7 @@ suppressPackageStartupMessages({
 })
 
 option_list <- list(
-    make_option("--inFile",
+    make_option("--genoPrefix",
         type = "character", default = "",
         help = ""
     ),
@@ -38,11 +38,10 @@ if (is.null(opt$correct) || !nzchar(opt$correct) || toupper(opt$correct) == "NUL
 }
 
 getSummary(
-  inFile = opt$inFile,
+  genoPrefix = opt$genoPrefix,
   NULLmodelFile = opt$NULLmodelFile,
   PALMOutputFile = opt$PALMOutputFile,
   chrom = opt$chrom,
   correct = opt$correct,
   useCluster = opt$useCluster
 )
-

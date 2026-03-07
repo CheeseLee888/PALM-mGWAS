@@ -6,13 +6,13 @@
 #' @param abdFile Path to abundance table with sample IDs in the first column.
 #' @param covFile Optional path to covariate table with matching sample IDs.
 #'   Use `NULL` (default) to fit without covariates.
-#' @param outputPrefix File prefix (without extension) for the saved `.rda` file.
+#' @param NULLmodelFile Full output path for the saved `.rda` file.
 #'
 #' @return Invisibly returns the fitted PALM null model object.
 #' @export
 fitNULL <- function(abdFile,
                     covFile = NULL,
-                    outputPrefix) {
+                    NULLmodelFile) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
   }
@@ -23,8 +23,11 @@ fitNULL <- function(abdFile,
   if (!file.exists(abdFile)) {
     stop("'abdFile' does not exist: ", abdFile)
   }
-  if (missing(outputPrefix) || !nzchar(outputPrefix)) {
-    stop("'outputPrefix' must be provided.")
+  if (missing(NULLmodelFile) || !nzchar(NULLmodelFile)) {
+    stop("'NULLmodelFile' must be provided.")
+  }
+  if (!grepl("\\.rda$", NULLmodelFile, ignore.case = TRUE)) {
+    stop("'NULLmodelFile' must include the .rda suffix.")
   }
 
   abd <- read_firstcol_as_rownames(abdFile)
@@ -48,8 +51,8 @@ fitNULL <- function(abdFile,
     )
   }
 
-  dir.create(dirname(outputPrefix), recursive = TRUE, showWarnings = FALSE)
-  save(modglmm, file = paste0(outputPrefix, ".rda"))
-  message("Done. PALM null model saved to ", paste0(outputPrefix, ".rda"))
+  dir.create(dirname(NULLmodelFile), recursive = TRUE, showWarnings = FALSE)
+  save(modglmm, file = NULLmodelFile)
+  message("Done. PALM null model saved to ", NULLmodelFile)
   invisible(modglmm)
 }

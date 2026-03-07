@@ -6,7 +6,7 @@ suppressPackageStartupMessages({
 })
 
 option_list <- list(
-  make_option("--genoFile", type = "character", default = NULL,
+  make_option("--genoPrefix", type = "character", default = NULL,
               help = "PLINK prefix (without .bed/.bim/.fam)"),
   make_option("--abdFile", type = "character", default = NULL,
               help = "Path to the microbiome abundance data file"),
@@ -20,13 +20,13 @@ option_list <- list(
 
 opt <- parse_args(OptionParser(option_list = option_list))
 
-if (is.null(opt$genoFile) || is.null(opt$abdFile) ||
+if (is.null(opt$genoPrefix) || is.null(opt$abdFile) ||
     is.null(opt$outputSnpFile) || is.null(opt$outputFeatureFile) || is.null(opt$outputSeqDepthFile)) {
-  stop("All arguments (--genoFile, --abdFile, --outputSnpFile, --outputFeatureFile, --outputSeqDepthFile) are required.")
+  stop("All arguments (--genoPrefix, --abdFile, --outputSnpFile, --outputFeatureFile, --outputSeqDepthFile) are required.")
 }
 
 run_info(
-  geno_file = opt$genoFile,
+  geno_file = opt$genoPrefix,
   abd_file = opt$abdFile,
   output_snp = opt$outputSnpFile,
   output_feature = opt$outputFeatureFile,

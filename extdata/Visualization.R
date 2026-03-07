@@ -22,12 +22,10 @@ option_list <- list(
               help = "Phenotype name (suffix in step3 meta filename)"),
   make_option(c("--snp"), type = "character", default = NA,
               help = "SNP ID, e.g. chr1:123:A:G (must match SNP column exactly)"),
-  make_option(c("--out"), type = "character", default = NA,
+  make_option(c("--PlotOutputFile"), type = "character", default = NA,
               help = "Output file name (png/pdf). If not set, auto-named."),
   make_option(c("--pCut"), type = "character", default = "1e-5",
-              help = "Only valid with --snp and without --pheno; p-value cutoff. Use NA to disable significance filtering/suggestive line [default %default]"),
-  make_option(c("--printCut"), type = "double", default = 1e-8,
-              help = "Only valid when neither --pheno nor --snp is given; print SNP/pheno pairs whose best p across phenos is below this cutoff [default %default]."),
+              help = "When neither --pheno nor --snp is given, print SNP/pheno pairs whose best p across phenos is below this cutoff; when only --snp is given, filter phenotypes by this cutoff. Use NA to disable filtering/printing [default %default]"),
   make_option(c("--showMeta"), type = "logical", default = TRUE,
               help = "Only valid when --snp is given; overlay meta est/stderr in black if available [default TRUE]"),
   make_option(c("--showHet"), type = "logical", default = TRUE,
@@ -78,12 +76,8 @@ metaIndex <- discover_meta_files(metaDir, pattern = opt$pattern)
 pheno <- if (!is.na(opt$pheno)) opt$pheno else NULL
 snp   <- if (!is.na(opt$snp)) opt$snp else NULL
 
-if (arg_supplied("pCut") && (is.null(snp) || !is.null(pheno))) {
-  stop("--pCut can only be used when --snp is specified and --pheno is not specified.")
-}
-
-if (arg_supplied("printCut") && (!is.null(pheno) || !is.null(snp))) {
-  stop("--printCut can only be used when neither --pheno nor --snp is specified.")
+if (arg_supplied("pCut") && !((is.null(pheno) && is.null(snp)) || (is.null(pheno) && !is.null(snp)))) {
+  stop("--pCut can only be used when neither --pheno nor --snp is specified, or when only --snp is specified.")
 }
 
 if (arg_supplied("showMeta") && is.null(snp)) {
@@ -111,7 +105,7 @@ auto_out <- function() {
   return(file.path(plotDir, paste0(base, "forest_", sanitize_filename(pheno), "_", sanitize_filename(snp), ".png")))
 }
 
-outFile <- if (!is.na(opt$out)) opt$out else auto_out()
+outFile <- if (!is.na(opt$PlotOutputFile)) opt$PlotOutputFile else auto_out()
 
 # ----------------------------- dispatch -----------------------------
 
@@ -127,7 +121,7 @@ if (is.null(pheno) && is.null(snp)) {
     outFile = outFile,
     sep = "\t",
     width = width_in, height = height_in, dpi = 300,
-    printCut = opt$printCut
+    pCut = p_cut
   )
 
 } else if (!is.null(pheno) && is.null(snp)) {

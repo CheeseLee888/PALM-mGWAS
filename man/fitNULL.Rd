@@ -4,7 +4,7 @@
 \alias{fitNULL}
 \title{Fit a PALM null model}
 \usage{
-fitNULL(abdFile, covFile = NULL, outputPrefix)
+fitNULL(abdFile, covFile = NULL, NULLmodelPrefix)
 }
 \arguments{
 \item{abdFile}{Path to abundance table with sample IDs in the first column.}
@@ -12,7 +12,7 @@ fitNULL(abdFile, covFile = NULL, outputPrefix)
 \item{covFile}{Optional path to covariate table with matching sample IDs.
 Use `NULL` (default) to fit without covariates.}
 
-\item{outputPrefix}{File prefix (without extension) for the saved `.rda` file.}
+\item{NULLmodelPrefix}{File prefix (without extension) for the saved `.rda` file.}
 }
 \value{
 Invisibly returns the fitted PALM null model object.
