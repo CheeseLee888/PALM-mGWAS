@@ -3,6 +3,14 @@ suppressPackageStartupMessages({
     library(optparse)
 })
 
+raw_args <- commandArgs(trailingOnly = TRUE)
+
+arg_supplied <- function(flag, args = raw_args) {
+  bare <- paste0("--", flag)
+  prefix <- paste0(bare, "=")
+  any(args == bare | startsWith(args, prefix))
+}
+
 option_list <- list(
   make_option(c("--metaDir"), type = "character", default = "",
               help = "Directory containing step3 meta files [default %default]"),
@@ -17,13 +25,13 @@ option_list <- list(
   make_option(c("--out"), type = "character", default = NA,
               help = "Output file name (png/pdf). If not set, auto-named."),
   make_option(c("--pCut"), type = "character", default = "1e-5",
-              help = "p-value cutoff; use NA to disable significance filtering/suggestive line [default %default]"),
+              help = "Only valid with --snp and without --pheno; p-value cutoff. Use NA to disable significance filtering/suggestive line [default %default]"),
   make_option(c("--printCut"), type = "double", default = 1e-8,
-              help = "When no pheno/snp: print SNP/pheno pairs whose best p across phenos is below this cutoff [default %default]."),
+              help = "Only valid when neither --pheno nor --snp is given; print SNP/pheno pairs whose best p across phenos is below this cutoff [default %default]."),
   make_option(c("--showMeta"), type = "logical", default = TRUE,
-              help = "Overlay meta est/stderr in black if available [default TRUE]"),
+              help = "Only valid when --snp is given; overlay meta est/stderr in black if available [default TRUE]"),
   make_option(c("--showHet"), type = "logical", default = TRUE,
-              help = "Highlight heterogeneity rows in yellow [default TRUE]"),
+              help = "Only valid when --snp is given; highlight heterogeneity rows in yellow [default TRUE]"),
   make_option(c("--width"), type = "character", default = NA_character_,
               help = "Plot width inches; NA lets the script auto-size"),
   make_option(c("--height"), type = "character", default = NA_character_,
@@ -69,6 +77,22 @@ metaIndex <- discover_meta_files(metaDir, pattern = opt$pattern)
 
 pheno <- if (!is.na(opt$pheno)) opt$pheno else NULL
 snp   <- if (!is.na(opt$snp)) opt$snp else NULL
+
+if (arg_supplied("pCut") && (is.null(snp) || !is.null(pheno))) {
+  stop("--pCut can only be used when --snp is specified and --pheno is not specified.")
+}
+
+if (arg_supplied("printCut") && (!is.null(pheno) || !is.null(snp))) {
+  stop("--printCut can only be used when neither --pheno nor --snp is specified.")
+}
+
+if (arg_supplied("showMeta") && is.null(snp)) {
+  stop("--showMeta requires --snp.")
+}
+
+if (arg_supplied("showHet") && is.null(snp)) {
+  stop("--showHet requires --snp.")
+}
 
 # auto output filename
 auto_out <- function() {
