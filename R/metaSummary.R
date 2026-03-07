@@ -1,32 +1,28 @@
 #' Meta-analyze step2 results across studies (meta columns prefixed with `meta_`)
 #'
 #' @param study_dirs Named character vector/list. Names are study IDs, values are directories.
-#' @param in_prefix Input file prefix in each study dir, e.g. "palm1_step2_allchr_"
-#' @param in_suffix Input file suffix, default ".txt"
+#' @param pattern Regex pattern for input filenames, e.g. `step2_allchr_.*\\.txt$`.
+#'   The phenotype/feature name is extracted from the first wildcard capture.
 #' @param features Optional feature names (without prefix/suffix). If NULL, infer from first study dir.
 #' @param out_dir If not NULL, write per-feature meta files to this directory.
 #' @param out_prefix Output meta file prefix, e.g. "meta_step2_allchr_"
 #' @param out_suffix Output file suffix, default ".txt"
 #' @param keep_het If TRUE and multi-study, keep pval.het column; if FALSE, drop it to match 6-column step2 format exactly.
-#' @param meta.method Passed to metafor::rma(method=...), consistent with your old code.
+#' @param meta.method (deprecated) no longer used; meta-analysis now uses fixed-effect inverse-variance weighting.
 #'
 #' @return Named list: each element is a data.frame/tibble in step2 format.
-#' @import dplyr metafor
+#' @import dplyr
 #' @export
 metaSummary <- function(study_dirs,
-                        in_prefix,
-                        in_suffix = ".txt",
+                        pattern,
                         features = NULL,
                         out_dir = NULL,
                         out_prefix = "meta_step2_allchr_",
                         out_suffix = ".txt",
                         keep_het = TRUE,
-                        meta.method = "EE") {
+                        meta.method = NULL) {
   if (!requireNamespace("dplyr", quietly = TRUE)) {
     stop("Package 'dplyr' is required but not installed.")
-  }
-  if (!requireNamespace("metafor", quietly = TRUE)) {
-    stop("Package 'metafor' is required but not installed.")
   }
 
   if (is.null(names(study_dirs)) || any(names(study_dirs) == "")) {
@@ -60,27 +56,54 @@ metaSummary <- function(study_dirs,
   # high-level run context (output directory printed near end)
   message("metaSummary: meta method = ", meta.method)
 
+  capture_pattern <- sub("\\.\\*", "(.*)", pattern)
+  capture_pattern <- sub("\\*", "(.*)", capture_pattern, fixed = FALSE)
+
+  extract_feature_names <- function(files) {
+    base_names <- basename(files)
+    matches <- regexec(capture_pattern, base_names)
+    extracted <- regmatches(base_names, matches)
+    feats <- vapply(extracted, function(x) {
+      if (length(x) >= 2) x[2] else NA_character_
+    }, character(1))
+
+    if (any(is.na(feats))) {
+      feats[is.na(feats)] <- tools::file_path_sans_ext(base_names[is.na(feats)])
+    }
+
+    feats
+  }
+
   # feature (phenotype) availability summary across studies + file matching echo
   feature_scan <- lapply(names(study_dirs), function(sid) {
     d <- study_dirs[[sid]]
     ff <- list.files(
       d,
-      pattern = paste0("^", in_prefix, ".*", gsub("\\.", "\\\\.", in_suffix), "$"),
+      pattern = pattern,
       full.names = FALSE
     )
-    feats <- sub(paste0("^", in_prefix), "", ff)
-    feats <- sub(paste0(gsub("\\.", "\\\\.", in_suffix), "$"), "", feats)
-    feats <- unique(feats)
+    feats <- extract_feature_names(ff)
+
+    dup_feats <- unique(feats[duplicated(feats)])
+    if (length(dup_feats) > 0) {
+      stop(
+        "metaSummary: duplicated extracted feature names in study ", sid, ": ",
+        paste(dup_feats, collapse = ", "),
+        ". Please refine --pattern so each feature matches exactly one file."
+      )
+    }
+
+    file_map <- stats::setNames(ff, feats)
 
     # logging: only counts, suppress listing file names or phenotype names
     if (length(ff) == 0) {
-      message("metaSummary: study ", sid, " matched 0 files with pattern ", in_prefix, "*", in_suffix)
+      message("metaSummary: study ", sid, " matched 0 files with pattern ", pattern)
     } else {
-      message("metaSummary: study ", sid, " matched ", length(ff), " file(s) with pattern ", in_prefix, "*", in_suffix)
-      message("metaSummary: study ", sid, " extracted ", length(feats), " feature(s)")
+      message("metaSummary: study ", sid, " matched ", length(ff), " file(s) with pattern ", pattern)
+      message("metaSummary: study ", sid, " extracted ", length(unique(feats)), " feature(s)")
     }
 
-    list(files = ff, features = feats)
+    list(files = ff, features = unique(feats), file_map = file_map)
   })
 
   feature_lists <- lapply(feature_scan, `[[`, "features")
@@ -110,8 +133,13 @@ metaSummary <- function(study_dirs,
 
   # existence check for logging only (do not abort; missing files => study skipped for that feature)
   expected <- expand.grid(study = names(study_dirs), feature = considered_feats, stringsAsFactors = FALSE)
-  expected$path <- file.path(study_dirs[expected$study], paste0(in_prefix, expected$feature, in_suffix))
-  missing_mask <- !file.exists(expected$path)
+  expected$path <- mapply(function(study, feature) {
+    fmap <- feature_scan[[study]][["file_map"]]
+    rel <- unname(fmap[[feature]])
+    if (is.null(rel) || is.na(rel) || !nzchar(rel)) return(NA_character_)
+    file.path(study_dirs[[study]], rel)
+  }, expected$study, expected$feature, USE.NAMES = FALSE)
+  missing_mask <- is.na(expected$path) | !file.exists(expected$path)
   if (any(missing_mask)) {
     miss <- expected[missing_mask, , drop = FALSE]
     msg_lines <- paste0(miss$study, ":", miss$feature)
@@ -124,7 +152,7 @@ metaSummary <- function(study_dirs,
   }
 
   .read_step2 <- function(path) {
-    if (!file.exists(path)) {
+    if (is.null(path) || is.na(path) || !nzchar(path) || !file.exists(path)) {
       return(NULL)
     }
     dat <- tryCatch(
@@ -158,7 +186,9 @@ metaSummary <- function(study_dirs,
   .meta_one_feature <- function(feat) {
     per_study <- setNames(vector("list", length(study.ID)), study.ID)
     for (d in study.ID) {
-      fpath <- file.path(study_dirs[[d]], paste0(in_prefix, feat, in_suffix))
+      fmap <- feature_scan[[d]][["file_map"]]
+      rel <- unname(fmap[[feat]])
+      fpath <- if (is.null(rel) || is.na(rel) || !nzchar(rel)) NA_character_ else file.path(study_dirs[[d]], rel)
       per_study[[d]] <- .read_step2(fpath)
     }
 
@@ -227,21 +257,30 @@ metaSummary <- function(study_dirs,
     # }
 
     if (length(used_studies) > 1) {
-      # ---- CORE CALC (kept consistent with your old code) ----
-      meta_fits <- sapply(seq_len(nrow(AA.est)), function(i) {
-        non.id <- !is.na(AA.est[i, ])
-        m <- try(
-          metafor::rma(yi = AA.est[i, non.id], vi = AA.var[i, non.id], method = meta.method),
-          silent = TRUE
-        )
-        if (class(m)[1] != "try-error") {
-          return(c(est = m$beta, stderr = m$se, pval = m$QMp, pval.het = m$QEp))
-        } else {
-          return(c(est = NA, stderr = NA, pval = NA, pval.het = NA))
-        }
-      })
-      meta_fits <- data.frame(t(meta_fits), stringsAsFactors = FALSE)
-      # -------------------------------------------------------
+      # fixed-effect inverse-variance weighting in matrix form (whole-column ops)
+      w <- 1 / AA.var
+      # rows with all NA will have wsum=0; guard to avoid inf
+      wsum <- rowSums(w, na.rm = TRUE)
+      wsum[wsum == 0] <- NA_real_
+
+      meta_est <- rowSums(w * AA.est, na.rm = TRUE) / wsum
+      meta_stderr <- sqrt(1 / wsum)
+      z <- meta_est / meta_stderr
+      meta_pval <- 2 * stats::pnorm(-abs(z))
+
+      # heterogeneity Q (still vectorized)
+      centered <- AA.est - meta_est
+      Q <- rowSums(w * centered * centered, na.rm = TRUE)
+      df <- rowSums(!is.na(AA.est)) - 1
+      meta_pval.het <- stats::pchisq(Q, df = df, lower.tail = FALSE)
+
+      meta_fits <- data.frame(
+        est = meta_est,
+        stderr = meta_stderr,
+        pval = meta_pval,
+        pval.het = meta_pval.het,
+        stringsAsFactors = FALSE
+      )
 
       out <- dplyr::tibble(
         SNP = snp.ID,

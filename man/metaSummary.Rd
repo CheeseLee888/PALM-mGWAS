@@ -6,22 +6,20 @@
 \usage{
 metaSummary(
   study_dirs,
-  in_prefix,
-  in_suffix = ".txt",
+  pattern,
   features = NULL,
   out_dir = NULL,
   out_prefix = "meta_step2_allchr_",
   out_suffix = ".txt",
   keep_het = TRUE,
-  meta.method = "EE"
+  meta.method = NULL
 )
 }
 \arguments{
 \item{study_dirs}{Named character vector/list. Names are study IDs, values are directories.}
 
-\item{in_prefix}{Input file prefix in each study dir, e.g. "palm1_step2_allchr_"}
-
-\item{in_suffix}{Input file suffix, default ".txt"}
+\item{pattern}{Regex pattern for input filenames, e.g. \code{step2_allchr_.*\\.txt$}.
+The phenotype/feature name is extracted from the first wildcard capture.}
 
 \item{features}{Optional feature names (without prefix/suffix). If NULL, infer from first study dir.}
 
@@ -33,7 +31,7 @@ metaSummary(
 
 \item{keep_het}{If TRUE and multi-study, keep pval.het column; if FALSE, drop it to match 6-column step2 format exactly.}
 
-\item{meta.method}{Passed to metafor::rma(method=...), consistent with your old code.}
+\item{meta.method}{(deprecated) no longer used; meta-analysis now uses fixed-effect inverse-variance weighting.}
 }
 \value{
 Named list: each element is a data.frame/tibble in step2 format.

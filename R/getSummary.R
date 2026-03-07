@@ -3,8 +3,8 @@
 #' Reads PLINK bed/bim/fam files, applies a pre-fitted PALM null model, and
 #' writes per-phenotype summary statistics (one file per phenotype).
 #'
-#' @param inFile Path prefix to PLINK files (without extension); expects
-#'   `<inFile>.bed/.bim/.fam` to exist.
+#' @param genoPrefix Path prefix to PLINK files (without extension); expects
+#'   `<genoPrefix>.bed/.bim/.fam` to exist.
 #' @param NULLmodelFile Path to `.rda` containing the fitted null model
 #'   object named `modglmm`.
 #' @param PALMOutputFile Output prefix for per-phenotype result files; each
@@ -17,7 +17,7 @@
 #'
 #' @return Invisibly returns a character vector of written file paths.
 #' @export
-getSummary <- function(inFile,
+getSummary <- function(genoPrefix,
                        NULLmodelFile,
                        PALMOutputFile,
                        chrom = NULL,
@@ -30,8 +30,8 @@ getSummary <- function(inFile,
     stop("Package 'snpStats' is required but not installed.")
   }
 
-  if (missing(inFile) || !nzchar(inFile)) {
-    stop("'inFile' must be provided (PLINK prefix without extension).")
+  if (missing(genoPrefix) || !nzchar(genoPrefix)) {
+    stop("'genoPrefix' must be provided (PLINK prefix without extension).")
   }
   if (missing(NULLmodelFile) || !nzchar(NULLmodelFile)) {
     stop("'NULLmodelFile' must be provided.")
@@ -56,9 +56,9 @@ getSummary <- function(inFile,
   }
 
   # read genotype data and make it a data.frame
-  bed <- paste0(inFile, ".bed")
-  bim <- paste0(inFile, ".bim")
-  fam <- paste0(inFile, ".fam")
+  bed <- paste0(genoPrefix, ".bed")
+  bim <- paste0(genoPrefix, ".bim")
+  fam <- paste0(genoPrefix, ".fam")
   for (f in c(bed, bim, fam)) if (!file.exists(f)) stop("Missing PLINK file: ", f)
 
   # read fam to get cluster info (make sure IDs align with abdFile's)

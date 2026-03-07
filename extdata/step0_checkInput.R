@@ -8,12 +8,12 @@ suppressPackageStartupMessages({
 option_list <- list(
   make_option("--abdFile",  type = "character"),
   make_option("--covFile",  type = "character"),
-  make_option("--genoFile", type = "character")  # plink prefix, e.g. input/geno
+  make_option("--genoPrefix", type = "character")  # plink prefix, e.g. input/geno
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
-if (is.null(opt$abdFile) || is.null(opt$covFile) || is.null(opt$genoFile)) {
-  stop("abdFile, covFile, and genoFile must all be provided.")
+if (is.null(opt$abdFile) || is.null(opt$covFile) || is.null(opt$genoPrefix)) {
+  stop("abdFile, covFile, and genoPrefix must all be provided.")
 }
 
 read_ids_firstcol <- function(path) {
@@ -54,11 +54,11 @@ cat("Checking IIDs...\n")
 
 abd_ids <- read_ids_firstcol(opt$abdFile)
 cov_ids <- read_ids_firstcol(opt$covFile)
-geno_ids <- read_fam_iid(opt$genoFile)
+geno_ids <- read_fam_iid(opt$genoPrefix)
 
 # 1) Strict set check (no auto-drop)
 if (!setequal(abd_ids, cov_ids)) stop("IID set mismatch: abdFile vs covFile.")
-if (!setequal(abd_ids, geno_ids)) stop("IID set mismatch: abdFile vs genoFile (.fam).")
+if (!setequal(abd_ids, geno_ids)) stop("IID set mismatch: abdFile vs genoPrefix (.fam).")
 
 # 2) If order differs, reorder abd/cov to match geno (.fam) order
 changed <- FALSE

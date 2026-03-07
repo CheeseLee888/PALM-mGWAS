@@ -8,11 +8,8 @@ source "$WORK/config.sh"
 # step3: meta-analysis
 echo "Start: Performe meta analysis."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step3_meta.R \
-    --studyDirList=${studyDirList} \
-    --inPrefix=${inPrefix} \
-    --outDir=${outDir} \
-    --outPrefix=${outPrefix} \
-    --keepHet=${keepHet:-TRUE} \
-    --metaMethod=${metaMethod:-EE} \
-    --featuresFile=${featuresFile:-NULL}
+    --studyFile=${studyFile} \
+    --pattern=${pattern} \
+    --metaDir=${metaDir} \
+    --metaPrefix=${metaPrefix}
 echo "Finish: Performe meta analysis."

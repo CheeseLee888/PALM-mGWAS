@@ -5,7 +5,7 @@
 \title{Run PALM summary statistics for PLINK genotype inputs}
 \usage{
 getSummary(
-  inFile,
+  genoPrefix,
   NULLmodelFile,
   PALMOutputFile,
   chrom = NULL,
@@ -14,8 +14,8 @@ getSummary(
 )
 }
 \arguments{
-\item{inFile}{Path prefix to PLINK files (without extension); expects
-`<inFile>.bed/.bim/.fam` to exist.}
+\item{genoPrefix}{Path prefix to PLINK files (without extension); expects
+`<genoPrefix>.bed/.bim/.fam` to exist.}
 
 \item{NULLmodelFile}{Path to `.rda` containing the fitted null model
 object named `modglmm`.}

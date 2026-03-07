@@ -14,7 +14,7 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
-    make_option("--outputPrefix",
+    make_option("--NULLmodelFile",
         type = "character", default = "",
         help = ""
     )
@@ -29,5 +29,5 @@ if (is.null(opt$covFile) || !nzchar(opt$covFile) || toupper(opt$covFile) == "NUL
 fitNULL(
   abdFile = opt$abdFile,
   covFile = opt$covFile,
-  outputPrefix = opt$outputPrefix
+  NULLmodelFile = opt$NULLmodelFile
 )

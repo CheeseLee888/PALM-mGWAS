@@ -133,6 +133,7 @@ detect_studies <- function(df) {
 
 # Test if a row is significant at pCut
 is_sig_row <- function(row, pCut = 1e-5) {
+  if (is.na(pCut)) return(FALSE)
   if ("meta_pval" %in% names(row) && !is.na(row$meta_pval)) return(row$meta_pval <= pCut)
   FALSE
 }
@@ -242,8 +243,7 @@ add_bp_cum <- function(df) {
 # Draw a Manhattan plot and save to JPEG
 plot_manhattan <- function(df, outFile, title = NULL,
                            pCut = 1e-5,
-                           onlySig = FALSE,
-                           width = 11, height = 4.5, dpi = 300) {
+                           width = NA_real_, height = NA_real_, dpi = 300) {
   if (!requireNamespace("qqman", quietly = TRUE)) {
     stop("Package 'qqman' is required.")
   }
@@ -261,10 +261,6 @@ plot_manhattan <- function(df, outFile, title = NULL,
   df <- df |>
     dplyr::filter(!is.na(.data[[pcol]]), .data[[pcol]] > 0)
 
-  if (onlySig) {
-    df <- dplyr::filter(df, .data[[pcol]] <= pCut)
-  }
-
   if (nrow(df) == 0) {
     stop("No points to plot.")
   }
@@ -277,10 +273,17 @@ plot_manhattan <- function(df, outFile, title = NULL,
       SNP = as.character(.data$SNP)
     )
 
+  auto_width <- if (is.na(width)) {
+    max(11, length(unique(man$CHR)) * 0.45)
+  } else {
+    width
+  }
+  auto_height <- if (is.na(height)) 5 else height
+
   msg("Saving: %s", outFile)
 
   grDevices::jpeg(outFile,
-    width = width, height = height,
+    width = auto_width, height = auto_height,
     units = "in", res = dpi
   )
 
@@ -294,7 +297,7 @@ plot_manhattan <- function(df, outFile, title = NULL,
     col = c("grey20", "grey70"),
     cex = 0.55,
     main = title %||% "",
-    suggestiveline = pCut,
+    suggestiveline = if (is.na(pCut)) FALSE else pCut,
     genomewideline = 5e-8
   )
 
@@ -310,7 +313,7 @@ plot_manhattan <- function(df, outFile, title = NULL,
 # @param title Optional plot title.
 # @param width,height,dpi Device parameters.
 plot_qq <- function(df, outFile, title = NULL,
-                    width = 6, height = 6, dpi = 300) {
+                    width = NA_real_, height = NA_real_, dpi = 300) {
   if (!requireNamespace("qqman", quietly = TRUE)) {
     stop("Package 'qqman' is required.")
   }
@@ -325,8 +328,11 @@ plot_qq <- function(df, outFile, title = NULL,
 
   msg("Saving: %s", outFile)
 
+  auto_width <- if (is.na(width)) 6 else width
+  auto_height <- if (is.na(height)) 6 else height
+
   grDevices::jpeg(outFile,
-    width = width, height = height,
+    width = auto_width, height = auto_height,
     units = "in", res = dpi
   )
 
@@ -369,7 +375,7 @@ to_long_study <- function(df_rows, studies, y_col, ciMult = 1.96, studyLabels = 
 
 # Make a forest plot and save to file
 forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect",
-                        xlim_num = NULL, het_y = NULL, width = 10, height = 7, dpi = 300,
+                        xlim_num = NULL, het_y = NULL, width = NA_real_, height = NA_real_, dpi = 300,
                         show_meta = FALSE, df_meta = NULL, show_het = TRUE) {
   df_long <- df_long |> dplyr::mutate(y = factor(y, levels = y_levels))
   study_lvls <- levels(df_long$Study)
@@ -400,8 +406,15 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
   if (meta_ok) shape_vals[length(shape_vals)] <- 18
 
   # compute vertical offsets so elements draw in order from top to bottom
-  spacing <- 0.22
-  offsets <- setNames(seq(0, by = -spacing, length.out = length(study_lvls_all)), study_lvls_all)
+  spacing <- 0.28
+  offsets <- setNames(
+    seq(from = -((length(study_lvls_all) - 1) / 2) * spacing,
+        by = spacing,
+        length.out = length(study_lvls_all)),
+    study_lvls_all
+  )
+  offset_min <- min(offsets)
+  offset_max <- max(offsets)
   df_plot <- df_plot |> dplyr::mutate(y_num = as.numeric(y) + offsets[as.character(Study)])
 
   g <- ggplot2::ggplot()
@@ -409,12 +422,22 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
   # heterogeneity highlight background (optional)
   if (show_het && !is.null(het_y) && length(het_y) > 0) {
     df_area <- tibble::tibble(y = factor(het_y, levels = y_levels))
-    df_area <- df_area |> dplyr::mutate(y_num = as.numeric(y))
+    df_area <- df_area |> dplyr::mutate(
+      y_center = as.numeric(y),
+      raw_ymin = y_center + offset_min - spacing / 2,
+      raw_ymax = y_center + offset_max + spacing / 2
+    )
+    # clamp band to avoid overlap between adjacent rows
+    band_half <- 0.48
+    df_area <- df_area |> dplyr::mutate(
+      ymin = pmax(y_center - band_half, raw_ymin),
+      ymax = pmin(y_center + band_half, raw_ymax)
+    )
     g <- g + ggplot2::geom_rect(
       data = df_area,
       ggplot2::aes(
-        ymin = y_num - 0.5,
-        ymax = y_num + 0.5,
+        ymin = ymin,
+        ymax = ymax,
         xmin = -Inf, xmax = Inf
       ),
       inherit.aes = FALSE,
@@ -467,8 +490,20 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
     g <- g + ggplot2::xlim(xlim_num[1], xlim_num[2])
   }
 
+  # auto width/height when not provided: scale height by number of rows, width by studies
+  auto_width <- if (is.na(width)) {
+    max(7, length(study_lvls_all) * 1.1 + 3)
+  } else {
+    width
+  }
+  auto_height <- if (is.na(height)) {
+    max(6, length(y_levels) * 0.60 + 2 + if (meta_ok) 0.6 else 0)
+  } else {
+    height
+  }
+
   msg("Saving: %s", outFile)
-  ggplot2::ggsave(outFile, g, width = width, height = height, dpi = dpi)
+  ggplot2::ggsave(outFile, g, width = auto_width, height = auto_height, dpi = dpi)
   invisible(g)
 }
 
@@ -487,15 +522,16 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
 #' @param outFile Path to the output JPEG.
 #' @param sep Field separator for meta files.
 #' @param width,height,dpi Graphics device parameters passed to `ggsave`.
-#' @param printCut Optional cutoff; SNP/phenotype pairs with best p below this
-#'   value are printed to the console and written to `<outFile>_printCut.txt`.
+#' @param pCut Optional cutoff. When using the combined mode, SNP/phenotype
+#'   pairs with best p below this value are printed to the console and written
+#'   to `<outFile>_pCut.txt`.
 #'
 #' @return Invisibly returns the data frame passed to `qqman::manhattan()`.
 #' @export
 mode_big_combined <- function(metaIndex, outFile,
                               sep = "\t",
-                              width = 12, height = 5, dpi = 300,
-                              printCut = 1e-8) {
+                              width = NA_real_, height = NA_real_, dpi = 300,
+                              pCut = 1e-5) {
   all_hits <- list()
 
   for (i in seq_len(nrow(metaIndex))) {
@@ -533,9 +569,9 @@ mode_big_combined <- function(metaIndex, outFile,
     dplyr::ungroup()
 
   # optionally report pairs that beat the user threshold
-  if (!is.na(printCut)) {
+  if (!is.na(pCut)) {
     hits_to_print <- best |>
-      dplyr::filter(!is.na(.data$meta_pval), .data$meta_pval < printCut) |>
+      dplyr::filter(!is.na(.data$meta_pval), .data$meta_pval < pCut) |>
       dplyr::arrange(.data$meta_pval)
 
     # For single-study (step2-only), output columns: SNP CHR POS est stderr pval pheno
@@ -550,7 +586,7 @@ mode_big_combined <- function(metaIndex, outFile,
     }
 
     if (nrow(hits_to_print) > 0) {
-      msg("SNP/pheno pairs with p < %g (best per SNP):", printCut)
+      msg("SNP/pheno pairs with p < %g (best per SNP):", pCut)
       apply(hits_to_print, 1, function(r) {
         p_out <- if ("meta_pval" %in% names(r)) as.numeric(r[["meta_pval"]]) else as.numeric(r[["pval"]])
         msg("  %s\t%s\t%.3e", r[["SNP"]], r[["pheno"]], p_out)
@@ -559,7 +595,7 @@ mode_big_combined <- function(metaIndex, outFile,
 
       # save alongside plot, force .txt (strip any existing extension)
       base_no_ext <- tools::file_path_sans_ext(outFile)
-      list_out <- paste0(base_no_ext, "_printCut.txt")
+      list_out <- paste0(base_no_ext, "_pCut.txt")
       msg("Saving list: %s", list_out)
       if (requireNamespace("data.table", quietly = TRUE)) {
         data.table::fwrite(hits_to_print, list_out, sep = "\t")
@@ -567,7 +603,7 @@ mode_big_combined <- function(metaIndex, outFile,
         utils::write.table(hits_to_print, list_out, sep = "\t", quote = FALSE, row.names = FALSE)
       }
     } else {
-      msg("No SNP/pheno pairs found with p < %g (best per SNP).", printCut)
+      msg("No SNP/pheno pairs found with p < %g (best per SNP).", pCut)
     }
   }
 
@@ -575,7 +611,6 @@ mode_big_combined <- function(metaIndex, outFile,
     df = best,
     outFile = outFile,
     title = "Best phenotype per SNP (minimum p across phenotypes)",
-    onlySig = FALSE,
     width = width,
     height = height,
     dpi = dpi
@@ -587,19 +622,16 @@ mode_big_combined <- function(metaIndex, outFile,
 #' Manhattan plot for a single phenotype
 #'
 #' @inheritParams mode_big_combined
-#' @param pCut P-value cutoff used for Manhattan suggestive line and optional
-#'   filtering.
 #' @param phenoName Phenotype name matching a row in `metaIndex$pheno`.
-#' @param onlySig If TRUE, keep only points passing `pCut`.
 #' @param qqOutFile Optional output path for QQ plot.
 #' @param topOutFile Optional output path for top-N hits (ordered by p-value).
 #' @param top_n How many hits to keep if `topOutFile` is provided.
 #'
 #' @export
-mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
-                                 sep = "\t", onlySig = FALSE,
-                                 width = 12, height = 4.5, dpi = 300,
-                                 qqOutFile = NULL, qq_width = 6, qq_height = 6,
+mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
+                                 sep = "\t",
+                                 width = NA_real_, height = NA_real_, dpi = 300,
+                                 qqOutFile = NULL, qq_width = NA_real_, qq_height = NA_real_,
                                  topOutFile = NULL, top_n = 10) {
   row <- metaIndex |> dplyr::filter(.data$pheno == phenoName)
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", phenoName)
@@ -609,8 +641,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
     df = df,
     outFile = outFile,
     title = paste0("Manhattan: ", phenoName),
-    pCut = pCut,
-    onlySig = onlySig,
+    pCut = NA_real_,
     width = width, height = height, dpi = dpi
   )
 
@@ -637,15 +668,12 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
 
 
 # Mode C: SNP fixed; forest across phenos
-# sigOnlyPheno is OPTIONAL (user request): default FALSE => draw ALL phenos that contain this SNP.
 #' Forest plot for a SNP across all phenotypes
 #'
 #' @inheritParams mode_big_combined
-#' @param pCut P-value cutoff used to decide significance across phenotypes
-#'   when `sigOnlyPheno` is TRUE.
+#' @param pCut P-value cutoff used to filter phenotypes for this SNP. Use `NA`
+#'   to disable filtering and keep all phenotypes containing the SNP.
 #' @param snp SNP ID to plot.
-#' @param sigOnlyPheno If TRUE, keep only phenotypes where this SNP passes
-#'   `pCut`.
 #' @param ciMult Multiplier for confidence interval width.
 #' @param studyLabels Optional labels replacing study IDs in the legend.
 #' @param xlim_str Optional comma-separated numeric limits for the x-axis.
@@ -654,12 +682,11 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile, pCut,
 #' @export
 mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
                                           pCut = 1e-5,
-                                          sigOnlyPheno = FALSE,
                                           ciMult = 1.96,
                                           studyLabels = NULL,
                                           sep = "\t",
                                           xlim_str = NA_character_,
-                                          width = 10, height = 7, dpi = 300,
+                                          width = NA_real_, height = NA_real_, dpi = 300,
                                           show_meta = TRUE,
                                           show_het = TRUE) {
   rows <- list()
@@ -674,7 +701,7 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
     if (nrow(r) == 0) next
 
     # optionally filter by significance across phenos
-    if (sigOnlyPheno) {
+    if (!is.na(pCut)) {
       if (!is_sig_row(r[1, , drop = FALSE], pCut = pCut)) next
     }
 
@@ -683,8 +710,8 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
   }
 
   if (length(rows) == 0) {
-    if (sigOnlyPheno) {
-      stop("No phenotypes found (with this SNP) passing significance cutoff. Try --sigOnlyPheno FALSE or loosen pCut.")
+    if (!is.na(pCut)) {
+      stop("No phenotypes found (with this SNP) passing significance cutoff. Try pCut=NA or loosen pCut.")
     } else {
       stop("No phenotypes contain this SNP in meta files: ", snp)
     }
@@ -762,7 +789,7 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
                                   studyLabels = NULL,
                                   sep = "\t",
                                   xlim_str = NA_character_,
-                                  width = 9, height = 4, dpi = 300,
+                                  width = NA_real_, height = NA_real_, dpi = 300,
                                   show_meta = TRUE,
                                   show_het = TRUE) {
   row <- metaIndex |> dplyr::filter(.data$pheno == pheno)

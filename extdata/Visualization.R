@@ -3,6 +3,14 @@ suppressPackageStartupMessages({
     library(optparse)
 })
 
+raw_args <- commandArgs(trailingOnly = TRUE)
+
+arg_supplied <- function(flag, args = raw_args) {
+  bare <- paste0("--", flag)
+  prefix <- paste0(bare, "=")
+  any(args == bare | startsWith(args, prefix))
+}
+
 option_list <- list(
   make_option(c("--metaDir"), type = "character", default = "",
               help = "Directory containing step3 meta files [default %default]"),
@@ -14,27 +22,50 @@ option_list <- list(
               help = "Phenotype name (suffix in step3 meta filename)"),
   make_option(c("--snp"), type = "character", default = NA,
               help = "SNP ID, e.g. chr1:123:A:G (must match SNP column exactly)"),
-  make_option(c("--out"), type = "character", default = NA,
+  make_option(c("--PlotOutputFile"), type = "character", default = NA,
               help = "Output file name (png/pdf). If not set, auto-named."),
-  make_option(c("--pCut"), type = "double", default = 1e-5,
-              help = "p-value cutoff (used if qval missing) [default %default]"),
-
-  make_option(c("--sigOnlyPheno"), type = "logical", default = FALSE,
-              help = "When --snp only: only plot phenos passing significance cutoff (default: plot ALL phenos containing SNP)."),
-  make_option(c("--printCut"), type = "double", default = 1e-8,
-              help = "When no pheno/snp: print SNP/pheno pairs whose best p across phenos is below this cutoff [default %default]."),
+  make_option(c("--pCut"), type = "character", default = "1e-5",
+              help = "When neither --pheno nor --snp is given, print SNP/pheno pairs whose best p across phenos is below this cutoff; when only --snp is given, filter phenotypes by this cutoff. Use NA to disable filtering/printing [default %default]"),
   make_option(c("--showMeta"), type = "logical", default = TRUE,
-              help = "Overlay meta est/stderr in black if available [default TRUE]"),
+              help = "Only valid when --snp is given; overlay meta est/stderr in black if available [default TRUE]"),
   make_option(c("--showHet"), type = "logical", default = TRUE,
-              help = "Highlight heterogeneity rows in yellow [default TRUE]"),
-  make_option(c("--width"), type = "double", default = 10,
-              help = "Plot width inches [default %default]"),
-  make_option(c("--height"), type = "double", default = 6,
-              help = "Plot height inches [default %default]")
+              help = "Only valid when --snp is given; highlight heterogeneity rows in yellow [default TRUE]"),
+  make_option(c("--width"), type = "character", default = NA_character_,
+              help = "Plot width inches; NA lets the script auto-size"),
+  make_option(c("--height"), type = "character", default = NA_character_,
+              help = "Plot height inches; NA lets the script auto-size")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
 
+# coerce width/height strings (including "NA"/"null"/empty) to numeric or NA_real_
+parse_dim <- function(x) {
+  if (is.null(x) || length(x) == 0) return(NA_real_)
+  if (is.na(x)) return(NA_real_)
+  if (is.character(x)) {
+    up <- toupper(trimws(x))
+    if (up %in% c("", "NA", "NULL")) return(NA_real_)
+  }
+  val <- suppressWarnings(as.numeric(x))
+  if (is.na(val)) return(NA_real_)
+  val
+}
+
+parse_pcut <- function(x) {
+  if (is.null(x) || length(x) == 0) return(NA_real_)
+  if (is.na(x)) return(NA_real_)
+  up <- toupper(trimws(as.character(x)))
+  if (up %in% c("", "NA", "NULL")) return(NA_real_)
+  val <- suppressWarnings(as.numeric(x))
+  if (is.na(val)) {
+    stop("--pCut must be numeric or NA.")
+  }
+  val
+}
+
+width_in  <- parse_dim(opt$width)
+height_in <- parse_dim(opt$height)
+p_cut <- parse_pcut(opt$pCut)
 
 metaDir <- opt$metaDir
 plotDir <- opt$plotDir
@@ -44,6 +75,18 @@ metaIndex <- discover_meta_files(metaDir, pattern = opt$pattern)
 
 pheno <- if (!is.na(opt$pheno)) opt$pheno else NULL
 snp   <- if (!is.na(opt$snp)) opt$snp else NULL
+
+if (arg_supplied("pCut") && !((is.null(pheno) && is.null(snp)) || (is.null(pheno) && !is.null(snp)))) {
+  stop("--pCut can only be used when neither --pheno nor --snp is specified, or when only --snp is specified.")
+}
+
+if (arg_supplied("showMeta") && is.null(snp)) {
+  stop("--showMeta requires --snp.")
+}
+
+if (arg_supplied("showHet") && is.null(snp)) {
+  stop("--showHet requires --snp.")
+}
 
 # auto output filename
 auto_out <- function() {
@@ -56,17 +99,13 @@ auto_out <- function() {
   }
   if (is.null(pheno) && !is.null(snp)) {
     tag <- sanitize_filename(snp)
-    if (opt$sigOnlyPheno) {
-      return(file.path(plotDir, paste0(base, "forest_snp_", tag, "_sigPheno.png")))
-    } else {
-      return(file.path(plotDir, paste0(base, "forest_snp_", tag, "_allPheno.png")))
-    }
+    return(file.path(plotDir, paste0(base, "forest_", tag, ".png")))
   }
   # both
   return(file.path(plotDir, paste0(base, "forest_", sanitize_filename(pheno), "_", sanitize_filename(snp), ".png")))
 }
 
-outFile <- if (!is.na(opt$out)) opt$out else auto_out()
+outFile <- if (!is.na(opt$PlotOutputFile)) opt$PlotOutputFile else auto_out()
 
 # ----------------------------- dispatch -----------------------------
 
@@ -81,8 +120,8 @@ if (is.null(pheno) && is.null(snp)) {
     metaIndex = metaIndex,
     outFile = outFile,
     sep = "\t",
-    width = opt$width, height = opt$height, dpi = 300,
-    printCut = opt$printCut
+    width = width_in, height = height_in, dpi = 300,
+    pCut = p_cut
   )
 
 } else if (!is.null(pheno) && is.null(snp)) {
@@ -95,10 +134,8 @@ if (is.null(pheno) && is.null(snp)) {
     metaIndex = metaIndex,
     phenoName = pheno,
     outFile = outFile,
-    pCut = opt$pCut,
     sep = "\t",
-    onlySig = FALSE,           # Manhattan normally shows all; you can change if you want
-    width = opt$width, height = opt$height, dpi = 300,
+    width = width_in, height = height_in, dpi = 300,
     qqOutFile = qq_out,
     topOutFile = top_out,
     top_n = 10
@@ -110,10 +147,9 @@ if (is.null(pheno) && is.null(snp)) {
     metaIndex = metaIndex,
     snp = snp,
     outFile = outFile,
-    pCut = opt$pCut,
-    sigOnlyPheno = opt$sigOnlyPheno,     # user requested optional; default FALSE => draw all phenos
+    pCut = p_cut,
     sep = "\t",
-    width = opt$width, height = opt$height, dpi = 300,
+    width = width_in, height = height_in, dpi = 300,
     show_meta = opt$showMeta,
     show_het = opt$showHet
   )
@@ -126,7 +162,7 @@ if (is.null(pheno) && is.null(snp)) {
     snp = snp,
     outFile = outFile,
     sep = "\t",
-    width = opt$width, height = opt$height, dpi = 300,
+    width = width_in, height = height_in, dpi = 300,
     show_meta = opt$showMeta,
     show_het = opt$showHet
   )
