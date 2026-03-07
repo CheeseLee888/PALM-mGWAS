@@ -12,6 +12,10 @@
     th, td {border: 1px solid #d0d7de; padding: 8px; text-align: left;}
     th {background: #eef3f8;}
     .steps {display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;}
+    .gallery {display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 16px 0;}
+    .gallery figure {margin: 0; border: 1px solid #d0d7de; border-radius: 8px; background: #fbfdff; padding: 10px;}
+    .gallery img {width: 100%; height: auto; border-radius: 6px; display: block;}
+    .gallery figcaption {font-size: 13px; color: #555; margin-top: 8px;}
     .card {border: 1px solid #d0d7de; border-radius: 8px; padding: 12px; background: #fbfdff;}
     .sidebar {position: fixed; top: 24px; left: 20px; width: 180px; border: 1px solid #d0d7de; border-radius: 8px; padding: 12px; background: #fbfdff;}
     .sidebar h3 {margin-top: 0; color: #0f3b66; font-size: 15px;}
@@ -24,14 +28,17 @@
   <div class="sidebar">
     <h3>Contents</h3>
     <a href="#workflow">Workflow</a>
+    <a href="#install">Install</a>
     <a href="#env">Environment</a>
     <a href="#input">Inputs</a>
     <a href="#functions">Functions</a>
-    <a href="#step0">Step0 Info</a>
+    <a href="#info" class="sub">Info</a>
+    <a href="#step0" class="sub">Step0 Check</a>
     <a href="#step1" class="sub">Step1 Null</a>
     <a href="#step2" class="sub">Step2 Summary</a>
     <a href="#step3" class="sub">Step3 Meta</a>
-    <a href="#step4" class="sub">Step4 Plots</a>
+    <a href="#viz" class="sub">Visualization</a>
+    <a href="#exampledata">Example Data</a>
     <a href="#example">Example</a>
     <a href="#cheatsheet">I/O Sheet</a>
     <a href="#troubleshoot">Troubleshooting</a>
@@ -41,11 +48,12 @@
 
   <h2 id="workflow">Workflow at a Glance</h2>
   <div class="steps">
-    <div class="card"><strong>Step0 Info</strong><br><code>run_info()</code> creates SNP, feature, and sequencing-depth summaries.</div>
-    <div class="card"><strong>Step1 Null</strong><br><code>fitNULL()</code> fits the PALM null model from abundance (and optional covariates).</div>
-    <div class="card"><strong>Step2 Summary</strong><br><code>getSummary()</code> reads PLINK genotypes and writes per-phenotype estimates.</div>
-    <div class="card"><strong>Step3 Meta</strong><br><code>metaSummary()</code> meta-analyzes multiple studies and adds <code>meta_*</code> columns.</div>
-    <div class="card"><strong>Step4 Plots</strong><br><code>mode_*</code> functions generate Manhattan and forest plots.</div>
+    <div class="card"><strong>Info</strong><br><code>Info.R</code> creates SNP, feature, and sequencing-depth summaries.</div>
+    <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> checks IID consistency across abundance, covariates, and PLINK <code>.fam</code>, and reorders tables to match genotype order.</div>
+    <div class="card"><strong>Step1 Null</strong><br><code>step1_null.R</code> fits the PALM null model from abundance (and optional covariates).</div>
+    <div class="card"><strong>Step2 Summary</strong><br><code>step2_summary.R</code> reads PLINK genotypes and writes per-phenotype estimates.</div>
+    <div class="card"><strong>Step3 Meta</strong><br><code>step3_meta.R</code> meta-analyzes multiple studies and adds <code>meta_*</code> columns.</div>
+    <div class="card"><strong>Visualization</strong><br><code>Visualization.R</code> generates Manhattan and forest plots.</div>
   </div>
 
   <h2 id="env">Environment & Dependencies</h2>
@@ -54,6 +62,25 @@
     <li>Main deps: PALM, snpStats, data.table, dplyr, ggplot2, qqman, stringr, tibble.</li>
     <li>Install example: <code>install.packages(c("PALM","snpStats","data.table","dplyr","ggplot2","qqman","stringr","tibble"))</code></li>
   </ul>
+
+  <h2 id="install">Installation (two options)</h2>
+  <h3>Option A: pixi (recommended for local runs)</h3>
+  <pre><code class="language-bash"># 1) install pixi (if not yet)
+curl -fsSL https://pixi.sh/install.sh | bash
+# 2) set PATH if needed (depends on installer hint)
+# 3) in repo root, create env and fetch deps
+pixi install
+# 4) run workflows with pixi run ... (see steps below)</code></pre>
+  <h3>Option B: Docker image</h3>
+  <pre><code class="language-bash"># build (from repo root)
+docker build -t palm-mgwas .
+
+# run interactively, mounting your data
+docker run --rm -it -v "$PWD":/work -w /work palm-mgwas bash
+
+# inside the container, call packaged scripts (pixi already available)
+pixi run --manifest-path=/app/pixi.toml Rscript /app/extdata/step1_null.R --help</code></pre>
+  <p>The Dockerfile installs pixi, PALM, PLINK1.9, and wrapper scripts under <code>/app/extdata/</code>; mount your data into the container and reference it via absolute paths (e.g., <code>/work/...</code>). Info and visualization scripts can be run in any order depending on your pipeline.</p>
 
   <h2 id="input">Input Requirements</h2>
   <table>
@@ -72,30 +99,35 @@
       <td>Three TSVs: SNP info, feature prevalence, sequencing depth per sample</td>
     </tr>
     <tr>
-      <td><code>fitNULL(abdFile, covFile = NULL, outputPrefix)</code></td>
-      <td>abdFile: abundance; covFile: optional; outputPrefix: output prefix</td>
+      <td><code>step0_checkInput.R --abdFile --covFile --genoFile</code></td>
+      <td><code>abdFile</code>: abundance table; <code>covFile</code>: covariates; <code>genoFile</code>: PLINK prefix</td>
+      <td>Overwrites <code>abdFile</code>/<code>covFile</code> if needed so row order matches PLINK <code>.fam</code> IID order</td>
+    </tr>
+    <tr>
+      <td><code>step1_null.R --abdFile --covFile --outputPrefix</code></td>
+      <td><code>abdFile</code>: abundance; <code>covFile</code>: optional or <code>NULL</code>; <code>outputPrefix</code>: output prefix</td>
       <td><code>outputPrefix.rda</code> containing <code>modglmm</code> (PALM null model)</td>
     </tr>
     <tr>
-      <td><code>getSummary(inFile, NULLmodelFile, PALMOutputFile, chrom = NULL, correct = "NULL", useCluster = TRUE)</code></td>
-      <td>inFile: PLINK prefix; NULLmodelFile: Step1 result; chrom: optional chromosome filter</td>
+      <td><code>step2_summary.R --inFile --NULLmodelFile --PALMOutputFile [--chrom] [--correct] [--useCluster]</code></td>
+      <td><code>inFile</code>: PLINK prefix; <code>NULLmodelFile</code>: Step1 result; <code>chrom</code>: optional chromosome filter</td>
       <td>Per-phenotype TSVs: <code>PALMOutputFile_<pheno>.txt</code> with SNP/CHR/POS/est/stderr/pval</td>
     </tr>
     <tr>
-      <td><code>metaSummary(study_dirs, in_prefix, ...)</code></td>
-      <td>study_dirs: named vector (names are study IDs); in_prefix: Step2 file prefix</td>
+      <td><code>step3_meta.R --studyDirList --inPrefix --outDir --outPrefix [--keepHet] [--metaMethod] [--featuresFile]</code></td>
+      <td><code>studyDirList</code>: TSV of <code>studyID dir</code>; <code>inPrefix</code>: Step2 file prefix</td>
       <td>List or TSVs with <code>meta_est</code>/<code>meta_stderr</code>/<code>meta_pval</code> plus per-study columns</td>
     </tr>
     <tr>
-      <td><code>discover_meta_files()</code> + <code>mode_*</code></td>
-      <td>Plot meta results; see visualization below</td>
+      <td><code>Visualization.R --metaDir --plotDir [--pattern] [--pheno] [--snp] [--out] ...</code></td>
+      <td>Plot Step3 meta outputs or Step2-style per-study results; mode selected from <code>--pheno</code>/<code>--snp</code></td>
       <td>JPEG/PNG figures and optional toplist text</td>
     </tr>
   </table>
 
-  <h2 id="step0">Step0: Information</h2>
+  <h2 id="info">Info</h2>
   <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Info.R \
-    --genoFile=${genoFile} \
+    --genoFile=${genoPrefix} \
     --abdFile=${abdFile} \
     --outputSnpFile=${outputSnpFile} \
     --outputFeatureFile=${outputFeatureFile} \
@@ -114,28 +146,34 @@
     <li><strong>Key tunables:</strong> none in code; filtering thresholds (e.g., prevalence, AF, depth) are user-defined after these tables are produced.</li>
   </ul>
 
+  <h2 id="step0">Step0: Check and Align Input IDs</h2>
+  <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step0_checkInput.R \
+    --abdFile=${abdFile} \
+    --covFile=${covFile} \
+    --genoFile=${genoPrefix}</code></pre>
+  <ul>
+    <li><strong>Purpose:</strong> verify that abundance, covariates, and PLINK <code>.fam</code> contain the same IID set before modeling.</li>
+    <li><strong>Behavior:</strong> if IID sets match but row order differs, the script rewrites <code>abdFile</code> and <code>covFile</code> in PLINK <code>.fam</code> order.</li>
+    <li><strong>Requirement:</strong> all three inputs are mandatory in the current CLI.</li>
+    <li><strong>Failure cases:</strong> duplicated IDs, missing values, missing <code>.fam</code>, or non-identical IID sets.</li>
+  </ul>
+
   <h2 id="step1">Step1: Fit Null Model</h2>
   <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step1_null.R \
     --abdFile=${abdFile} \
-    --covFile=${covFile} \    # set to NULL to drop covariates
+    --covFile=${covFile} \
     --outputPrefix=${palm1_step1_prefix}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> abundance table; optional covariate table (same sample IDs/order as abundance).</li>
-    <li><strong>Outputs:</strong> <code>palm_null.rda</code> containing <code>modglmm</code>; directories are created if missing.</li>
-    <li><strong>Behavior:</strong> when <code>covFile = NULL</code> runs covariate-free; current code fixes <code>prev.filter = 0</code> for PALM.</li>
+    <li><strong>Outputs:</strong> <code>outputPrefix.rda</code> containing <code>modglmm</code>; directories are created if missing.</li>
+    <li><strong>Behavior:</strong> pass <code>--covFile=NULL</code> to run covariate-free; the CLI converts empty string or <code>NULL</code> to R <code>NULL</code>.</li>
     <li><strong>Tips:</strong> ensure no duplicated sample IDs; use relative abundance; keep sessionInfo for reproducibility.</li>
-    <li><strong>Key tunables:</strong>
-      <ul>
-        <li><code>abdFile</code>: abundance table path.</li>
-        <li><code>covFile</code>: covariates (set <code>NULL</code> to drop).</li>
-        <li><code>outputPrefix</code>: target prefix; folders auto-created.</li>
-      </ul>
-    </li>
+    <li><strong>Key args:</strong> <code>abdFile</code>, <code>covFile</code>, <code>outputPrefix</code>.</li>
   </ul>
 
   <h2 id="step2">Step2: Per-study Summary</h2>
   <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary.R \
-    --inFile=${genoFile} \
+    --inFile=${genoPrefix} \
     --NULLmodelFile=${palm1_step1_prefix}.rda \
     --PALMOutputFile=${palm1_step2_prefix} \
     --chrom=${chrom} \
@@ -145,73 +183,258 @@
     <li><strong>Inputs:</strong> PLINK prefix (<code>.bed/.bim/.fam</code>), null model <code>.rda</code>.</li>
     <li><strong>Outputs:</strong> per-phenotype TSVs named <code>PREFIX_<pheno>.txt</code>; columns <code>SNP, CHR, POS, est, stderr, pval</code>.</li>
     <li><strong>SNP format:</strong> dots are replaced by colons, e.g., <code>chr1:12345:REF:ALT</code>.</li>
-    <li><strong>Chrom filter:</strong> set <code>chrom = "chr1"</code> or <code>"1"</code> to restrict; NULL keeps all chromosomes.</li>
+    <li><strong>Chrom filter:</strong> current CLI default is empty string; use <code>--chrom=1</code> or <code>--chrom=chr1</code> to restrict, otherwise leave empty to keep all chromosomes.</li>
     <li><strong>Clustering:</strong> if <code>useCluster = TRUE</code>, FID from <code>.fam</code> is passed to PALM; automatically disabled when all FIDs are 0.</li>
-    <li><strong>correct:</strong> forwarded to <code>PALM::palm.get.summary()</code>; default string <code>"NULL"</code> keeps PALM defaults.</li>
-    <li><strong>Key tunables:</strong>
-      <ul>
-        <li><code>chrom</code>: subset chromosome (e.g., <code>"chr1"</code>).</li>
-        <li><code>correct</code>: method string for PALM; keep <code>"NULL"</code> unless you need PALM corrections.</li>
-        <li><code>useCluster</code>: toggle FID-based clustering.</li>
-        <li><code>PALMOutputFile</code>: prefix controlling output location/naming.</li>
-      </ul>
-    </li>
+    <li><strong>correct:</strong> forwarded to <code>PALM::palm.get.summary()</code>; the CLI converts <code>NULL</code> or empty string to R <code>NULL</code>.</li>
+    <li><strong>Key args:</strong> <code>inFile</code>, <code>NULLmodelFile</code>, <code>PALMOutputFile</code>, <code>chrom</code>, <code>correct</code>, <code>useCluster</code>.</li>
   </ul>
 
   <h2 id="step3">Step3: Meta Analysis</h2>
   <pre><code class="language-bash"># studyDirList TSV lines: studyID<TAB>dir (e.g., "study1\t${outputFolder}/study1")
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step3_meta.R \
-    --studyDirList=${studyDirList} \
-    --inPrefix=${inPrefix} \
-    --outDir=${outDir} \
-    --outPrefix=${outPrefix} \
-    --keepHet=${keepHet} \
-    --featuresFile=${featuresFile}</code></pre>
+    --studyDirList=${studyFile} \
+    --inPrefix=${metaPrefix} \
+    --outDir=${metaDir} \
+    --outPrefix=${metaPrefix} \
+    --keepHet=TRUE \
+    --metaMethod=EE \
+    --featuresFile=NULL</code></pre>
   <ul>
-    <li><strong>Inputs:</strong> <code>study_dirs</code> is a named vector/list mapping study IDs to Step2 directories; files inside must match <code>in_prefix</code> + <code>&lt;pheno&gt;</code> + <code>in_suffix</code>.</li>
-    <li><strong>Outputs:</strong> one file per phenotype in <code>out_dir</code> named <code>step3_meta_&lt;pheno&gt;.txt</code>, containing <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
+    <li><strong>Inputs:</strong> <code>studyDirList</code> is a text file with two columns per line: <code>studyID</code> and Step2 output directory. Files inside those directories must match <code>inPrefix + &lt;pheno&gt; + ".txt"</code>.</li>
+    <li><strong>Outputs:</strong> one file per phenotype in <code>outDir</code> named <code>outPrefix&lt;pheno&gt;.txt</code>, containing <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
     <li><strong>Single-study mode:</strong> still useful to standardize column names for plotting.</li>
-    <li><strong>Heterogeneity:</strong> set <code>keep_het = FALSE</code> to drop the het column and mimic 6-column Step2 format.</li>
-    <li><strong>Key tunables:</strong>
-      <ul>
-        <li><code>in_prefix</code>/<code>in_suffix</code>: match your Step2 filenames.</li>
-        <li><code>features</code>: optionally supply a feature list; otherwise inferred.</li>
-        <li><code>out_dir/out_prefix/out_suffix</code>: control where meta files are written.</li>
-        <li><code>keep_het</code>: keep/drop heterogeneity p-values.</li>
-      </ul>
-    </li>
+    <li><strong>Heterogeneity:</strong> set <code>--keepHet=FALSE</code> to drop the het column and mimic 6-column Step2 format.</li>
+    <li><strong>Meta method:</strong> <code>--metaMethod</code> is passed to <code>metafor::rma()</code>; default is <code>EE</code>.</li>
+    <li><strong>Feature subset:</strong> <code>--featuresFile</code> is optional and should contain one phenotype per line; use <code>NULL</code> or omit content to infer features automatically.</li>
+    <li><strong>Key args:</strong> <code>studyDirList</code>, <code>inPrefix</code>, <code>outDir</code>, <code>outPrefix</code>, <code>keepHet</code>, <code>metaMethod</code>, <code>featuresFile</code>.</li>
   </ul>
 
-  <h2 id="step4">Step4: Visualization</h2>
+  <h2 id="viz">Visualization</h2>
   <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir} \
     --pattern=${pattern} \
     --plotDir=${plotDir} \
-    --pheno=${pheno:-NA} \    # optional; NA disables
-    --snp=${snp:-NA} \        # optional; NA disables
+    --pheno=${pheno:-NA} \
+    --snp=${snp:-NA} \
+    --out=${outFile:-NA} \
     --pCut=${pCut} \
-    --sigOnlyPheno=${sigOnlyPheno} \
-    --printCut=${printCut} \
+    --sigOnlyPheno=FALSE \
+    --printCut=1e-8 \
     --showMeta=${showMeta} \
     --showHet=${showHet} \
     --width=${plotWidth} \
     --height=${plotHeight}</code></pre>
   <ul>
-    <li><strong>Mode auto-detect:</strong> no <code>--pheno/--snp</code> → combined Manhattan; <code>--pheno</code> only → Manhattan+QQ; <code>--snp</code> only → forest across phenotypes; both → forest across studies.</li>
-    <li><strong>Outputs:</strong> plots saved to <code>--plotDir</code> with auto filenames; QQ/top-list generated in single-pheno mode.</li>
-    <li><strong>Key tunables:</strong> <code>pCut</code>, <code>sigOnlyPheno</code>, <code>printCut</code>, <code>showMeta</code>, <code>showHet</code>, <code>width/height</code>, <code>pattern</code> for meta files.</li>
+    <li><strong>Case 1:</strong> no <code>--pheno</code> and no <code>--snp</code> gives a combined overview across phenotypes and writes <code>combined_hits.png</code>.</li>
+    <li><strong>Case 2:</strong> <code>--pheno</code> only gives a phenotype-specific Manhattan plot and QQ plot.</li>
+    <li><strong>Case 3:</strong> <code>--snp</code> only gives a forest plot for one SNP across all phenotypes found in the input files.</li>
+    <li><strong>Case 4:</strong> both <code>--pheno</code> and <code>--snp</code> give a forest plot for one phenotype-SNP pair across studies.</li>
+    <li><strong>Outputs:</strong> plots saved to <code>--plotDir</code>; if <code>--out</code> is not provided, the script auto-generates a file name based on mode, phenotype, and SNP.</li>
+    <li><strong>Input scope:</strong> <code>--metaDir</code> can point to Step3 outputs or any directory of Step2/Step3-like files matching <code>--pattern</code>.</li>
+    <li><strong>Key args:</strong> <code>metaDir</code>, <code>plotDir</code>, <code>pattern</code>, <code>pheno</code>, <code>snp</code>, <code>out</code>, <code>pCut</code>, <code>sigOnlyPheno</code>, <code>printCut</code>, <code>showMeta</code>, <code>showHet</code>, <code>width</code>, <code>height</code>.</li>
   </ul>
+
+  <h2 id="exampledata">Example Data in This Repo</h2>
+  <p>The repository already contains a small three-study example under <code>example/input/</code> and matching outputs under <code>example/output/</code>. These files are useful for understanding the expected formats before running your own data.</p>
+
+  <h3>Example Input: abundance</h3>
+  <pre><code class="language-tsv"># file: example/input/study1/abd.txt
+IID	g1	g2	g3
+ID_001	729	73	835
+ID_002	1824	17	91
+ID_003	581	0	31
+ID_004	2349	0	8833</code></pre>
+  <p>The first column is sample ID (<code>IID</code>), and each remaining column is a microbial feature/phenotype (<code>g1</code>, <code>g2</code>, <code>g3</code>).</p>
+
+  <h3>Example Input: covariates</h3>
+  <pre><code class="language-tsv"># file: example/input/study1/cov.txt
+IID	AGE	SEX	PC01	PC02	PC03	PC04	PC05
+ID_001	0.199426813268783	0	-0.0109014	0.0462363	-0.0272948	-0.00748014	0.00470315
+ID_002	-0.829764647357603	0	0.00637629	-0.00200517	-0.00108298	0.00540607	0.000137391
+ID_003	-1.03560293948288	0	0.0103864	-0.00676172	0.000785164	-0.00612183	0.00100164
+ID_004	-0.848477219368992	1	0.0108307	-0.00694051	-0.000638697	-0.0077418	0.00113121</code></pre>
+  <p>The first column must still be the sample ID. Remaining columns can be numeric or factor-like covariates used in the null model.</p>
+
+  <h3>Example Input: study list for meta-analysis</h3>
+  <pre><code class="language-tsv"># file: example/input/study_dirs.txt
+study1  /Users/peterli/Desktop/PALM-mGWAS/example/output/study1
+study2  /Users/peterli/Desktop/PALM-mGWAS/example/output/study2
+study3  /Users/peterli/Desktop/PALM-mGWAS/example/output/study3</code></pre>
+  <p>This file lists the studies included in the example meta-analysis and the location of each study's result directory. Each line maps one study ID to one folder.</p>
+
+  <h3>Example Input: genotype</h3>
+  <p>The genotype input for each study is stored as a PLINK dataset with prefix <code>example/input/study1/geno</code>, corresponding to the files <code>geno.bed</code>, <code>geno.bim</code>, and <code>geno.fam</code>. These files are not printed here because PLINK genotype data are stored in special formats rather than plain text tables.</p>
+
+  <h3>Example Workflow: from input to output</h3>
+  <p>The same example data can be read as a concrete workflow: what goes in, which script is called, which parameters matter, and what files come out.</p>
+
+  <h3>1. Info: abundance + genotype to QC tables</h3>
+  <p><strong>Input:</strong> <code>example/input/study1/abd.txt</code> and PLINK files <code>example/input/study1/geno.bed/.bim/.fam</code>.</p>
+  <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Info.R \
+    --genoFile=${WORK}/example/input/study1/geno \
+    --abdFile=${WORK}/example/input/study1/abd.txt \
+    --outputSnpFile=${WORK}/example/output/study1/info_snp.txt \
+    --outputFeatureFile=${WORK}/example/output/study1/info_feature.txt \
+    --outputSeqDepthFile=${WORK}/example/output/study1/info_seqdepth.txt</code></pre>
+  <p><strong>Output:</strong> three QC tables, including <code>example/output/study1/info_feature.txt</code> shown below.</p>
+
+  <h3>Example Output: Info SNP summary</h3>
+  <pre><code class="language-tsv"># file: example/output/study1/info_snp.txt
+CHR	SNP	POS	A1	A2	N	AF
+1	chr1:1837340:C:T	1837340	T	C	100	0.875
+1	chr1:2261200:G:C	2261200	C	G	100	0.505
+1	chr1:14678191:A:C	14678191	C	A	100	0.54
+1	chr1:14985097:C:T	14985097	T	C	100	0.825</code></pre>
+  <p>This table summarizes marker-level information from the PLINK genotype input, including chromosome, position, alleles, sample size, and allele frequency.</p>
+
+  <h3>Example Output: Info feature summary</h3>
+  <pre><code class="language-tsv"># file: example/output/study1/info_feature.txt
+FeatureID	Prevalence	AvgProportion
+g1	1	0.598438833276798
+g2	0.64	0.113333766863047
+g3	0.79	0.288227399860156</code></pre>
+  <p>This tells users, for example, that <code>g1</code> appears in all samples in study1, while <code>g2</code> is less prevalent.</p>
+
+  <h3>Example Output: Info sequencing depth summary</h3>
+  <pre><code class="language-tsv"># file: example/output/study1/info_seqdepth.txt
+SampleID	SeqDepth
+ID_001	1637
+ID_002	1932
+ID_003	612
+ID_004	11182</code></pre>
+  <p>This table reports total sequencing depth per sample and is useful for spotting unusually low-depth or high-depth samples before downstream analysis.</p>
+
+  <h3>2. Step0 + Step1: aligned IDs to null model</h3>
+  <p><strong>Input:</strong> <code>example/input/study1/abd.txt</code>, <code>example/input/study1/cov.txt</code>, and <code>example/input/study1/geno.fam</code>.</p>
+  <pre><code class="language-bash"># Step0 checks that IID sets match and reorders abd/cov if needed
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step0_checkInput.R \
+    --abdFile=${WORK}/example/input/study1/abd.txt \
+    --covFile=${WORK}/example/input/study1/cov.txt \
+    --genoFile=${WORK}/example/input/study1/geno
+
+# Step1 fits the null model used by association testing
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step1_null.R \
+    --abdFile=${WORK}/example/input/study1/abd.txt \
+    --covFile=${WORK}/example/input/study1/cov.txt \
+    --outputPrefix=${WORK}/example/output/study1/step1_allpheno</code></pre>
+  <p><strong>Output:</strong> <code>example/output/study1/step1_allpheno.rda</code>, which is then passed into Step2 as <code>--NULLmodelFile</code>.</p>
+
+  <h3>3. Step2: null model + genotype to per-phenotype association files</h3>
+  <p><strong>Input:</strong> PLINK prefix <code>example/input/study1/geno</code> and null model <code>example/output/study1/step1_allpheno.rda</code>.</p>
+  <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary.R \
+    --inFile=${WORK}/example/input/study1/geno \
+    --NULLmodelFile=${WORK}/example/output/study1/step1_allpheno.rda \
+    --PALMOutputFile=${WORK}/example/output/study1/step2_allchr \
+    --chrom=NULL \
+    --correct=NULL \
+    --useCluster=TRUE</code></pre>
+  <p><strong>Output:</strong> one file per phenotype, such as <code>example/output/study1/step2_allchr_g1.txt</code>, <code>example/output/study1/step2_allchr_g2.txt</code>, and so on.</p>
+
+  <h3>Example Output: Step2 per-phenotype summary</h3>
+  <pre><code class="language-tsv"># file: example/output/study1/step2_allchr_g1.txt
+SNP	CHR	POS	est	stderr	pval
+chr1:1837340:C:T	1	1837340	-0.316932872955275	0.21203715194326	0.134991594407711
+chr1:2261200:G:C	1	2261200	0.10676258024368	0.133826875292607	0.42500608166281
+chr1:14678191:A:C	1	14678191	0.0971053087659925	0.132707270963333	0.464336061914255
+chr1:14985097:C:T	1	14985097	-0.121627364114563	0.173042255456721	0.482132612055732</code></pre>
+  <p>Each Step2 file corresponds to one phenotype. Here, <code>g1</code> has one file containing association statistics for all tested SNPs.</p>
+
+  <h3>4. Step3: multiple Step2 folders to meta-analysis tables</h3>
+  <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code> plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>.</p>
+  <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step3_meta.R \
+    --studyDirList=${WORK}/example/input/study_dirs.txt \
+    --inPrefix=step2_allchr_ \
+    --outDir=${WORK}/example/output/meta \
+    --outPrefix=step3_meta_ \
+    --keepHet=TRUE \
+    --metaMethod=EE \
+    --featuresFile=NULL</code></pre>
+  <p><strong>Output:</strong> one meta file per phenotype, such as <code>example/output/meta/step3_meta_g1.txt</code>, <code>step3_meta_g2.txt</code>, and <code>step3_meta_g3.txt</code>.</p>
+
+  <h3>Example Output: Step3 meta-analysis</h3>
+  <pre><code class="language-tsv"># file: example/output/meta/step3_meta_g1.txt
+SNP	CHR	POS	meta_est	meta_stderr	meta_pval	meta_pval.het	study1_est	study1_stderr	study2_est	study2_stderr	study3_est	study3_stderr
+chr1:1837340:C:T	1	1837340	-0.129574489546144	0.0966224391408968	0.179907688532042	0.19571879544742	-0.316932872955275	0.21203715194326	-0.180047159672568	0.127032822231402	0.188936768706123	0.208954382630693
+chr1:2261200:G:C	1	2261200	0.0557973411006643	0.0750842030192679	0.457402838724081	0.463875674515422	0.10676258024368	0.133826875292607	-0.0389369902959047	0.109852921023794	0.185190347961917	0.160794747067096
+chr1:14678191:A:C	1	14678191	0.083985850532746	0.0728994751282263	0.249289197161069	0.960537202790035	0.0971053087659925	0.132707270963333	0.0588468956571921	0.115362794683499	0.104323698269771	0.133334708463596</code></pre>
+  <p>The meta file keeps the combined estimate in <code>meta_*</code> columns and also carries study-specific estimates, which is why the downstream forest plots can show both overall and per-study effects.</p>
+
+  <h3>5. Visualization: meta tables to figures</h3>
+  <p><strong>Input:</strong> meta result files in <code>example/output/meta</code>. The example below shows all four visualization modes separately.</p>
+
+  <h3>5.1 Visualization case 1: no <code>--pheno</code>, no <code>--snp</code></h3>
+  <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
+    --metaDir=${WORK}/example/output/meta \
+    --pattern=step3_meta_.*\\.txt$ \
+    --plotDir=${WORK}/example/output/plot \
+    --printCut=1e-8</code></pre>
+  <p><strong>Output:</strong> <code>example/output/plot/combined_hits.png</code>.</p>
+  <div class="gallery">
+    <figure>
+      <img src="../example/output/plot/combined_hits.png" alt="Example combined hits plot">
+      <figcaption><code>example/output/plot/combined_hits.png</code>: combined overview across phenotypes using the best hit per SNP.</figcaption>
+    </figure>
+  </div>
+
+  <h3>5.2 Visualization case 2: <code>--pheno</code> only</h3>
+  <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
+    --metaDir=${WORK}/example/output/meta \
+    --pattern=step3_meta_.*\\.txt$ \
+    --plotDir=${WORK}/example/output/plot \
+    --pheno=g1</code></pre>
+  <p><strong>Output:</strong> <code>example/output/plot/manhattan_g1.png</code> and the auxiliary QQ plot <code>example/output/plot/manhattan_g1_qq.png</code>.</p>
+  <div class="gallery">
+    <figure>
+      <img src="../example/output/plot/manhattan_g1.png" alt="Example Manhattan plot for g1">
+      <figcaption><code>example/output/plot/manhattan_g1.png</code>: phenotype-specific Manhattan plot for <code>g1</code>.</figcaption>
+    </figure>
+  </div>
+
+  <h3>5.3 Visualization case 3: <code>--snp</code> only</h3>
+  <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
+    --metaDir=${WORK}/example/output/meta \
+    --pattern=step3_meta_.*\\.txt$ \
+    --plotDir=${WORK}/example/output/plot \
+    --snp=chr1:1837340:C:T</code></pre>
+  <p><strong>Output:</strong> <code>example/output/plot/forest_snp_chr1_1837340_C_T_allPheno.png</code>.</p>
+  <div class="gallery">
+    <figure>
+      <img src="../example/output/plot/forest_snp_chr1_1837340_C_T_allPheno.png" alt="Example SNP-across-phenotypes forest plot">
+      <figcaption><code>example/output/plot/forest_snp_chr1_1837340_C_T_allPheno.png</code>: one SNP plotted across all phenotypes.</figcaption>
+    </figure>
+  </div>
+
+  <h3>5.4 Visualization case 4: both <code>--pheno</code> and <code>--snp</code></h3>
+  <pre><code class="language-bash">pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
+    --metaDir=${WORK}/example/output/meta \
+    --pattern=step3_meta_.*\\.txt$ \
+    --plotDir=${WORK}/example/output/plot \
+    --pheno=g1 \
+    --snp=chr1:1837340:C:T</code></pre>
+  <p><strong>Output:</strong> <code>example/output/plot/forest_g1_chr1_1837340_C_T.png</code>.</p>
+  <div class="gallery">
+    <figure>
+      <img src="../example/output/plot/forest_g1_chr1_1837340_C_T.png" alt="Example forest plot for g1 and chr1:1837340:C:T">
+      <figcaption><code>example/output/plot/forest_g1_chr1_1837340_C_T.png</code>: one phenotype-SNP pair plotted across studies.</figcaption>
+    </figure>
+  </div>
 
   <h2 id="example">End-to-End Minimal Example</h2>
   <pre><code class="language-bash"># assumes config.sh already exported variables (WORK, paths, prefixes, etc.)
 
-# Step0 info
+# Info (QC summaries)
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Info.R \
-    --genoFile=${genoFile} \
+    --genoFile=${genoPrefix} \
     --abdFile=${abdFile} \
     --outputSnpFile=${outputSnpFile} \
     --outputFeatureFile=${outputFeatureFile} \
     --outputSeqDepthFile=${outputSeqDepthFile}
+
+# Step0 check and reorder
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step0_checkInput.R \
+    --abdFile=${abdFile} \
+    --covFile=${covFile} \
+    --genoFile=${genoPrefix}
 
 # Step1 null
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step1_null.R \
@@ -221,31 +444,32 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step1_null.R 
 
 # Step2 summary
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary.R \
-    --inFile=${genoFile} \
+    --inFile=${genoPrefix} \
     --NULLmodelFile=${palm1_step1_prefix}.rda \
     --PALMOutputFile=${palm1_step2_prefix} \
     --chrom=${chrom} --correct=${correct} --useCluster=${useCluster}
 
 # Step3 meta
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step3_meta.R \
-    --studyDirList=${studyDirList} \
-    --inPrefix=${inPrefix} \
-    --outDir=${outDir} \
-    --outPrefix=${outPrefix} \
-    --keepHet=${keepHet} \
-    --metaMethod=${metaMethod} \
-    --featuresFile=${featuresFile}
+    --studyDirList=${studyFile} \
+    --inPrefix=${metaPrefix} \
+    --outDir=${metaDir} \
+    --outPrefix=${metaPrefix} \
+    --keepHet=TRUE \
+    --metaMethod=EE \
+    --featuresFile=NULL
 
-# Step4 plots (combined / auto-detected mode)
+# Visualization (auto-detected mode)
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization.R \
     --metaDir=${metaDir} \
-    --pattern=${pattern} \
+    --pattern=${visPattern} \
     --plotDir=${plotDir} \
     --pheno=${pheno:-NA} \
     --snp=${snp:-NA} \
+    --out=NA \
     --pCut=${pCut} \
-    --sigOnlyPheno=${sigOnlyPheno} \
-    --printCut=${printCut} \
+    --sigOnlyPheno=FALSE \
+    --printCut=1e-8 \
     --showMeta=${showMeta} \
     --showHet=${showHet} \
     --width=${plotWidth} \
@@ -254,13 +478,14 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
 
   <h2 id="cheatsheet">Inputs/Outputs Cheat Sheet</h2>
   <ul>
-    <li><strong>Inputs:</strong> abundance table, optional covariates, PLINK genotype prefix.</li>
-    <li><strong>Intermediates:</strong> <code>palm_null.rda</code> (null model), Step2 per-phenotype files.</li>
+    <li><strong>Inputs:</strong> abundance table, covariates for current Step0 CLI, and PLINK genotype prefix.</li>
+    <li><strong>Intermediates:</strong> Step0 may rewrite <code>abdFile</code>/<code>covFile</code>; Step1 writes <code>*.rda</code>; Step2 writes per-phenotype files.</li>
     <li><strong>Outputs:</strong> meta result tables (<code>meta_*</code> columns), Manhattan/QQ/forest JPEGs, optional top lists.</li>
   </ul>
 
   <h2 id="troubleshoot">Troubleshooting</h2>
   <ul>
+    <li><em>IID mismatch</em>: run <code>step0_checkInput.R</code> first; it requires identical IID sets across abundance, covariates, and PLINK <code>.fam</code>.</li>
     <li><em>“modglmm not found”</em>: ensure the <code>.rda</code> from <code>fitNULL()</code> is correctly passed to Step2.</li>
     <li><em>Missing columns</em>: Step2/3 files must contain <code>SNP, CHR, POS, est, stderr, pval</code>; meta files need <code>meta_pval</code>.</li>
     <li><em>FID all zero</em>: <code>getSummary()</code> auto-disables clustering; fill FID in <code>.fam</code> if clusters are needed.</li>
