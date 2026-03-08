@@ -105,6 +105,7 @@ metaSummary <- function(study_dirs,
 
     list(files = ff, features = unique(feats), file_map = file_map)
   })
+  names(feature_scan) <- names(study_dirs)
 
   feature_lists <- lapply(feature_scan, `[[`, "features")
   names(feature_lists) <- names(study_dirs)

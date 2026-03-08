@@ -171,20 +171,20 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R --help</code></p
   <pre><code class="language-bash"># studyFile lines: studyID<TAB>dir (e.g., "study1\t${outputFolder}/study1")
 pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --studyFile=${studyFile} \
-    --pattern=${pattern} \
+    --pattern='${pattern}' \
     --metaDir=${metaDir} \
     --metaPrefix=${metaPrefix}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> <code>studyFile</code> is a text file with two columns per line: <code>studyID</code> and Step2 output directory. Files inside those directories are selected by <code>pattern</code>.</li>
     <li><strong>Outputs:</strong> one file per phenotype in <code>metaDir</code> named <code>metaPrefix&lt;pheno&gt;.txt</code>, containing <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
     <li><strong>Single-study mode:</strong> still useful to standardize column names for plotting.</li>
-    <li><strong>Pattern:</strong> this is the key setting for Step3. Step2 writes files such as <code>step2_allchr_g1.txt</code> and <code>step2_allchr_g2.txt</code>, where the phenotype name is embedded in the filename. Your <code>pattern</code> should match the fixed prefix and suffix, but leave the phenotype part to be captured from the filename, for example <code>step2_allchr_.*\.txt$</code> or <code>step2_chr1_.*\.txt$</code>. In other words, the regex should include the position where <code>g1</code>, <code>g2</code>, etc. appear, rather than hard-coding one phenotype.</li>
+    <li><strong>Pattern:</strong> this is the key setting for Step3. Step2 writes files such as <code>step2_allchr_g1.txt</code> and <code>step2_allchr_g2.txt</code>, where the phenotype name is embedded in the filename. Your <code>pattern</code> should match the fixed prefix and suffix, but leave the phenotype part to be captured from the filename, for example <code>step2_allchr_.*[.]txt$</code> or <code>step2_chr1_.*[.]txt$</code>. In other words, the regex should include the position where <code>g1</code>, <code>g2</code>, etc. appear, rather than hard-coding one phenotype.</li>
     <li><strong>Current CLI behavior:</strong> the wrapper fixes <code>features = NULL</code> and <code>keep_het = TRUE</code>.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Meaning</th><th>Example</th></tr>
     <tr><td><code>--studyFile</code></td><td>Study list file mapping study IDs to result directories</td><td><code>--studyFile=example/input/study_dirs.txt</code></td></tr>
-    <tr><td><code>--pattern</code></td><td>Regex selecting which Step2 result files to meta-analyze. Step2 filenames contain the phenotype in the middle, such as <code>step2_allchr_g1.txt</code>, so the regex should match the fixed prefix/suffix and leave the phenotype part variable for extraction.</td><td><code>--pattern=step2_allchr_.*\.txt$</code>; <code>--pattern=step2_chr1_.*\.txt$</code>; do not write <code>--pattern=step2_allchr_g1.txt</code> if you want all phenotypes</td></tr>
+    <tr><td><code>--pattern</code></td><td>Regex selecting which Step2 result files to meta-analyze. Step2 filenames contain the phenotype in the middle, such as <code>step2_allchr_g1.txt</code>, so the regex should match the fixed prefix/suffix and leave the phenotype part variable for extraction. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step2_allchr_.*[.]txt$'</code>; <code>--pattern='step2_chr1_.*[.]txt$'</code>; do not write <code>--pattern=step2_allchr_g1.txt</code> if you want all phenotypes</td></tr>
     <tr><td><code>--metaDir</code></td><td>Output directory for meta-analysis tables</td><td><code>--metaDir=example/output/meta</code></td></tr>
     <tr><td><code>--metaPrefix</code></td><td>Filename prefix for meta-analysis outputs</td><td><code>--metaPrefix=step3_meta_</code></td></tr>
   </table>
@@ -192,7 +192,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
   <h2 id="viz">Visualization</h2>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --metaDir=${metaDir} \
-    --pattern=${visPattern} \
+    --pattern='${visPattern}' \
     --plotDir=${plotDir} \
     --pheno=${pheno:-NA} \
     --snp=${snp:-NA} \
@@ -216,7 +216,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     <tr><th>Name</th><th>Meaning</th><th>Example</th></tr>
     <tr><td><code>--metaDir</code></td><td>Directory containing Step3 meta files or single-study Step2 files</td><td><code>--metaDir=example/output/meta</code></td></tr>
     <tr><td><code>--plotDir</code></td><td>Directory where plots will be written</td><td><code>--plotDir=example/output/plot</code></td></tr>
-    <tr><td><code>--pattern</code></td><td>Regex matching result files to plot. It should usually match all phenotype files in the target directory, so that the script can later subset by <code>--pheno</code> and/or <code>--snp</code>.</td><td><code>--pattern=step3_meta_.*\.txt$</code>; <code>--pattern=step2_allchr_.*\.txt$</code> for single-study Step2 plots</td></tr>
+    <tr><td><code>--pattern</code></td><td>Regex matching result files to plot. It should usually match all phenotype files in the target directory, so that the script can later subset by <code>--pheno</code> and/or <code>--snp</code>. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step3_meta_.*[.]txt$'</code>; <code>--pattern='step2_allchr_.*[.]txt$'</code> for single-study Step2 plots</td></tr>
     <tr><td><code>--pheno</code></td><td>Phenotype name; used in case 2 and case 4</td><td><code>--pheno=g1</code>; omit it for case 1 or case 3</td></tr>
     <tr><td><code>--snp</code></td><td>SNP identifier; used in case 3 and case 4</td><td><code>--snp=chr1:1837340:C:T</code>; omit it for case 1 or case 2</td></tr>
     <tr><td><code>--PlotOutputFile</code></td><td>Optional explicit output filename; otherwise auto-generated</td><td><code>--PlotOutputFile=example/output/plot/custom.png</code>; <code>--PlotOutputFile=NA</code>; omit it to auto-name</td></tr>
@@ -338,7 +338,7 @@ chr1:14985097:C:T	1	14985097	-0.121627364114563	0.173042255456721	0.482132612055
   <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code> plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --studyFile=example/input/study_dirs.txt \
-    --pattern=step2_allchr_.*\\.txt$ \
+    --pattern='step2_allchr_.*[.]txt$' \
     --metaDir=example/output/meta \
     --metaPrefix=step3_meta_</code></pre>
   <p><strong>Output:</strong> one meta file per phenotype, such as <code>example/output/meta/step3_meta_g1.txt</code>, <code>step3_meta_g2.txt</code>, and <code>step3_meta_g3.txt</code>.</p>
@@ -357,7 +357,7 @@ chr1:14678191:A:C	1	14678191	0.083985850532746	0.0728994751282263	0.249289197161
   <h3>Visualization case 1: no <code>--pheno</code>, no <code>--snp</code></h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --metaDir=example/output/meta \
-    --pattern=step3_meta_.*\\.txt$ \
+    --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
     --pCut=1e-2</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/combined_hits.png</code> and the filtered hit list <code>example/output/plot/combined_hits_printCut.txt</code>.</p>
@@ -378,7 +378,7 @@ chr5:153541577:C:T	5	153541577	0.000878962028710375	g2</code></pre>
   <h3>Visualization case 2: <code>--pheno</code> only</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --metaDir=example/output/meta \
-    --pattern=step3_meta_.*\\.txt$ \
+    --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
     --pheno=g1</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/manhattan_g1.png</code> and the auxiliary QQ plot <code>example/output/plot/manhattan_g1_qq.png</code>.</p>
@@ -398,7 +398,7 @@ chr5:153541577:C:T	5	153541577	0.000878962028710375	g2</code></pre>
   <h3>Visualization case 3: <code>--snp</code> only</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --metaDir=example/output/meta \
-    --pattern=step3_meta_.*\\.txt$ \
+    --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
     --snp=chr1:1837340:C:T \
     --pCut=NA</code></pre>
@@ -413,7 +413,7 @@ chr5:153541577:C:T	5	153541577	0.000878962028710375	g2</code></pre>
   <h3>Visualization case 4: both <code>--pheno</code> and <code>--snp</code></h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --metaDir=example/output/meta \
-    --pattern=step3_meta_.*\\.txt$ \
+    --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
     --pheno=g1 \
     --snp=chr1:1837340:C:T</code></pre>
