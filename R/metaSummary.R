@@ -136,6 +136,9 @@ metaSummary <- function(study_dirs,
   expected <- expand.grid(study = names(study_dirs), feature = considered_feats, stringsAsFactors = FALSE)
   expected$path <- mapply(function(study, feature) {
     fmap <- feature_scan[[study]][["file_map"]]
+    if (is.null(fmap) || !(feature %in% names(fmap))) {
+      return(NA_character_)
+    }
     rel <- unname(fmap[[feature]])
     if (is.null(rel) || is.na(rel) || !nzchar(rel)) return(NA_character_)
     file.path(study_dirs[[study]], rel)
@@ -188,7 +191,11 @@ metaSummary <- function(study_dirs,
     per_study <- setNames(vector("list", length(study.ID)), study.ID)
     for (d in study.ID) {
       fmap <- feature_scan[[d]][["file_map"]]
-      rel <- unname(fmap[[feat]])
+      if (is.null(fmap) || !(feat %in% names(fmap))) {
+        rel <- NA_character_
+      } else {
+        rel <- unname(fmap[[feat]])
+      }
       fpath <- if (is.null(rel) || is.na(rel) || !nzchar(rel)) NA_character_ else file.path(study_dirs[[d]], rel)
       per_study[[d]] <- .read_step2(fpath)
     }
