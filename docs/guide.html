@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>PALM-mGWAS Usage Guide</title>
   <style>
-    body {font-family: "Helvetica Neue", Arial, sans-serif; margin: 24px; color: #222; line-height: 1.6;}
+    body {font-family: "Helvetica Neue", Arial, sans-serif; margin: 0; color: #222; line-height: 1.6; background: #f7fafc;}
     h1, h2, h3 {color: #0f3b66; margin-top: 1.2em;}
     code {background: #f4f6f8; padding: 2px 4px; border-radius: 4px;}
     pre {background: #f4f6f8; padding: 12px; overflow: auto; border-radius: 6px; position: relative;}
@@ -12,19 +12,24 @@
     th, td {border: 1px solid #d0d7de; padding: 8px; text-align: left;}
     th {background: #eef3f8;}
     .steps {display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;}
+    .env-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 16px 0;}
     .gallery {display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 16px 0;}
     .gallery figure {margin: 0; border: 1px solid #d0d7de; border-radius: 8px; background: #fbfdff; padding: 10px;}
     .gallery img {width: 80%; height: auto; border-radius: 6px; display: block; margin: 0 auto;}
     .gallery figcaption {font-size: 13px; color: #555; margin-top: 8px;}
     .card {border: 1px solid #d0d7de; border-radius: 8px; padding: 12px; background: #fbfdff;}
-    .sidebar {position: fixed; top: 24px; left: 20px; width: 180px; border: 1px solid #d0d7de; border-radius: 8px; padding: 12px; background: #fbfdff;}
-    .content {max-width: 1280px; margin: 0 48px 0 240px; padding: 0 32px;}
-    .sidebar h3 {margin-top: 0; color: #0f3b66; font-size: 15px;}
-    .sidebar a {display: block; color: #0f3b66; text-decoration: none; padding: 4px 0; font-size: 14px;}
+    .sidebar {position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 14px 24px; border-bottom: 1px solid #d0d7de; background: rgba(251, 253, 255, 0.96); backdrop-filter: blur(8px);}
+    .content {max-width: 900px; margin: 0 auto; padding: 24px 32px 48px;}
+    .sidebar h3 {margin: 0 8px 0 0; color: #0f3b66; font-size: 15px;}
+    .sidebar a {display: inline-block; color: #0f3b66; text-decoration: none; padding: 2px 0; font-size: 14px;}
     .sidebar a:hover {text-decoration: underline;}
-    .sidebar .sub {padding-left: 10px; color: #555;}
+    .sidebar .sub {color: #555;}
     .copy-btn {position: absolute; top: 8px; right: 8px; border: 1px solid #c6d1dc; background: #fff; color: #0f3b66; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer;}
     .copy-btn:hover {background: #eef3f8;}
+    @media (max-width: 900px) {
+      .sidebar {position: static; padding: 12px 16px;}
+      .content {padding: 20px 16px 40px;}
+    }
   </style>
 </head>
 <body>
@@ -46,11 +51,28 @@
   <p>This page explains how to run the PALM-mGWAS R package: key functions, required inputs, outputs, and visualization workflows.</p>
 
   <h2 id="env">Environment & Dependencies</h2>
+  <p>Set up the runtime environment before installing or running any PALM-mGWAS command. The package depends on compiled R libraries, so the most reliable workflow is to keep <code>R</code>, <code>PALM</code>, and all supporting packages inside one isolated environment instead of mixing system-level and project-level installs.</p>
+  <div class="env-grid">
+    <div class="card">
+      <strong>Recommended runtime</strong><br>
+      Use the repository's <code>pixi</code> environment for local runs. It keeps the R version, BLAS/LAPACK libraries, and package installation path aligned with the scripts in this guide.
+    </div>
+    <div class="card">
+      <strong>Supported alternative</strong><br>
+      Use the published Docker image if you want a prebuilt runtime with PALM-mGWAS, PALM, <code>abess</code>, and PLINK already installed.
+    </div>
+    <div class="card">
+      <strong>What to avoid</strong><br>
+      Do not install <code>PALM</code> into a different R library and then run PALM-mGWAS from another environment. Mixed BLAS or mixed R libraries are the main source of setup failures.
+    </div>
+  </div>
   <ul>
-    <li>R ≥ 4.2; use a clean renv/conda environment if possible.</li>
-    <li>Main deps: PALM, snpStats, data.table, dplyr, ggplot2, qqman, stringr, tibble.</li>
-    <li>Install example: <code>install.packages(c("PALM","snpStats","data.table","dplyr","ggplot2","qqman","stringr","tibble"))</code></li>
+    <li><strong>R version:</strong> use <code>R &gt;= 4.2</code>. The bundled pixi setup already pins a compatible runtime.</li>
+    <li><strong>Core R packages:</strong> <code>PALM</code>, <code>snpStats</code>, <code>data.table</code>, <code>dplyr</code>, <code>ggplot2</code>, <code>qqman</code>, <code>stringr</code>, and <code>tibble</code>.</li>
+    <li><strong>System consistency:</strong> install PALM and PALM-mGWAS into the same library tree that will be used at runtime.</li>
+    <li><strong>If you do not use pixi or Docker:</strong> create a clean isolated R environment yourself and install the required packages there before running the CLI.</li>
   </ul>
+  <p>In practice, you should choose exactly one execution mode for a project directory: either local <code>pixi run ...</code> commands or Docker-based commands. Both are documented below; the rest of the workflow examples keep the two styles parallel.</p>
 
   <h2 id="install">Installation (two options)</h2>
   <h3>Option A: pixi source installation</h3>
