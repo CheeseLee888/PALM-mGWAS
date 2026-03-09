@@ -89,8 +89,8 @@ cd /path/to/PALM-mGWAS
 docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work \
   cheeselee/palm-mgwas:latest \
-  pixi run Rscript /app/extdata/step1_null.R --help</code></pre>
-  <p>This published Docker image already contains pixi, <code>abess</code>, PALM, <code>PALMmGWAS</code>, and PLINK1.9, so Docker users do not need to repeat the local source installation steps from Option A. Mount your working directory to <code>/work</code> and call the packaged R scripts through <code>pixi run Rscript ...</code> or the installed wrapper scripts.</p>
+  step1_null.R --help</code></pre>
+  <p>This published Docker image already contains pixi, <code>abess</code>, PALM, <code>PALMmGWAS</code>, and PLINK1.9, so Docker users do not need to repeat the local source installation steps from Option A. Mount your working directory to <code>/work</code> and call the installed wrapper scripts directly.</p>
 
   <h2 id="workflow">Workflow</h2>
   <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Info</code> to <code>Visualization</code>.</p>
@@ -110,6 +110,15 @@ docker run --rm --platform=linux/amd64 \
     --outputSnpFile=${outputSnpFile} \
     --outputFeatureFile=${outputFeatureFile} \
     --outputSeqDepthFile=${outputSeqDepthFile}</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  Info.R \
+    --genoPrefix=/work/${genoPrefix} \
+    --abdFile=/work/${abdFile} \
+    --outputSnpFile=/work/${outputSnpFile} \
+    --outputFeatureFile=/work/${outputFeatureFile} \
+    --outputSeqDepthFile=/work/${outputSeqDepthFile}</code></pre>
   <ul>
     <li><strong>Purpose:</strong> quick QC summaries before modeling.</li>
     <li><strong>Inputs:</strong> PLINK prefix (<code>.bed/.bim/.fam</code>) and abundance txt (sample IDs in column 1).</li>
@@ -133,6 +142,13 @@ docker run --rm --platform=linux/amd64 \
     --abdFile=${abdFile} \
     --covFile=${covFile} \
     --genoPrefix=${genoPrefix}</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  step0_checkInput.R \
+    --abdFile=/work/${abdFile} \
+    --covFile=/work/${covFile} \
+    --genoPrefix=/work/${genoPrefix}</code></pre>
   <ul>
     <li><strong>Purpose:</strong> verify that abundance, covariates, and PLINK <code>.fam</code> contain the same IID set before modeling.</li>
     <li><strong>Behavior:</strong> if IID sets match but row order differs, the script rewrites <code>abdFile</code> and <code>covFile</code> in PLINK <code>.fam</code> order.</li>
@@ -151,6 +167,13 @@ docker run --rm --platform=linux/amd64 \
     --abdFile=${abdFile} \
     --covFile=${covFile} \
     --NULLmodelFile=${NULLmodelFile}</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  step1_null.R \
+    --abdFile=/work/${abdFile} \
+    --covFile=/work/${covFile} \
+    --NULLmodelFile=/work/${NULLmodelFile}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> abundance table; optional covariate table (same sample IDs/order as abundance).</li>
     <li><strong>Outputs:</strong> <code>NULLmodelFile</code> containing <code>modglmm</code>; directories are created if missing.</li>
@@ -169,6 +192,16 @@ docker run --rm --platform=linux/amd64 \
     --genoPrefix=${genoPrefix} \
     --NULLmodelFile=${NULLmodelFile} \
     --PALMOutputFile=${palm1_step2_prefix} \
+    --chrom=${chrom} \
+    --correct=${correct} \
+    --useCluster=${useCluster}</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  step2_summary.R \
+    --genoPrefix=/work/${genoPrefix} \
+    --NULLmodelFile=/work/${NULLmodelFile} \
+    --PALMOutputFile=/work/${palm1_step2_prefix} \
     --chrom=${chrom} \
     --correct=${correct} \
     --useCluster=${useCluster}</code></pre>
@@ -197,6 +230,14 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --pattern='${pattern}' \
     --metaDir=${metaDir} \
     --metaPrefix=${metaPrefix}</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  step3_meta.R \
+    --studyFile=/work/${studyFile} \
+    --pattern='${pattern}' \
+    --metaDir=/work/${metaDir} \
+    --metaPrefix=${metaPrefix}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> <code>studyFile</code> is a text file with two columns per line: <code>studyID</code> and Step2 output directory. Files inside those directories are selected by <code>pattern</code>.</li>
     <li><strong>Outputs:</strong> one file per phenotype in <code>metaDir</code> named <code>metaPrefix&lt;pheno&gt;.txt</code>, containing <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
@@ -206,7 +247,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
   </ul>
   <table>
     <tr><th>Name</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--studyFile</code></td><td>Study list file mapping study IDs to result directories</td><td><code>--studyFile=example/input/study_dirs.txt</code></td></tr>
+    <tr><td><code>--studyFile</code></td><td>Study list file mapping study IDs to result directories</td><td><code>--studyFile=example/input/study_dirs.txt</code> for local pixi runs; <code>--studyFile=example/input/study_dirs_docker.txt</code> for Docker runs</td></tr>
     <tr><td><code>--pattern</code></td><td>Regex selecting which Step2 result files to meta-analyze. Step2 filenames contain the phenotype in the middle, such as <code>step2_allchr_g1.txt</code>, so the regex should match the fixed prefix/suffix and leave the phenotype part variable for extraction. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step2_allchr_.*[.]txt$'</code>; <code>--pattern='step2_chr1_.*[.]txt$'</code>; do not write <code>--pattern=step2_allchr_g1.txt</code> if you want all phenotypes</td></tr>
     <tr><td><code>--metaDir</code></td><td>Output directory for meta-analysis tables</td><td><code>--metaDir=example/output/meta</code></td></tr>
     <tr><td><code>--metaPrefix</code></td><td>Filename prefix for meta-analysis outputs</td><td><code>--metaPrefix=step3_meta_</code></td></tr>
@@ -217,6 +258,19 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --metaDir=${metaDir} \
     --pattern='${visPattern}' \
     --plotDir=${plotDir} \
+    --pheno=${pheno:-NA} \
+    --snp=${snp:-NA} \
+    --PlotOutputFile=${outFile:-NA} \
+    --pCut=${pCut} \
+    --width=${plotWidth} \
+    --height=${plotHeight}</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  Visualization.R \
+    --metaDir=/work/${metaDir} \
+    --pattern='${visPattern}' \
+    --plotDir=/work/${plotDir} \
     --pheno=${pheno:-NA} \
     --snp=${snp:-NA} \
     --PlotOutputFile=${outFile:-NA} \
@@ -273,10 +327,15 @@ ID_004	-0.848477219368992	1	0.0108307	-0.00694051	-0.000638697	-0.0077418	0.0011
 
   <h3>Example Input: study list for meta-analysis</h3>
   <pre><code class="language-tsv"># file: example/input/study_dirs.txt
-study1  /Users/peterli/Desktop/PALM-mGWAS/example/output/study1
-study2  /Users/peterli/Desktop/PALM-mGWAS/example/output/study2
-study3  /Users/peterli/Desktop/PALM-mGWAS/example/output/study3</code></pre>
+study1  example/output/study1
+study2  example/output/study2
+study3  example/output/study3</code></pre>
   <p>This file lists the studies included in the example meta-analysis and the location of each study's result directory. Each line maps one study ID to one folder.</p>
+  <pre><code class="language-tsv"># file: example/input/study_dirs_docker.txt
+study1  /work/example/output/study1
+study2  /work/example/output/study2
+study3  /work/example/output/study3</code></pre>
+  <p>Use <code>study_dirs_docker.txt</code> when running Step3 inside Docker, because the container sees the mounted project under <code>/work</code> rather than your host filesystem path.</p>
 
   <h3>Example Input: genotype</h3>
   <p>The genotype input for each study is stored as a PLINK dataset with prefix <code>example/input/study1/geno</code>, corresponding to the files <code>geno.bed</code>, <code>geno.bim</code>, and <code>geno.fam</code>. These files are not printed here because PLINK genotype data are stored in special formats rather than plain text tables.</p>
@@ -292,6 +351,15 @@ study3  /Users/peterli/Desktop/PALM-mGWAS/example/output/study3</code></pre>
     --outputSnpFile=example/output/study1/info_snp.txt \
     --outputFeatureFile=example/output/study1/info_feature.txt \
     --outputSeqDepthFile=example/output/study1/info_seqdepth.txt</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  Info.R \
+    --genoPrefix=/work/example/input/study1/geno \
+    --abdFile=/work/example/input/study1/abd.txt \
+    --outputSnpFile=/work/example/output/study1/info_snp.txt \
+    --outputFeatureFile=/work/example/output/study1/info_feature.txt \
+    --outputSeqDepthFile=/work/example/output/study1/info_seqdepth.txt</code></pre>
   <p><strong>Output:</strong> three QC tables, including <code>example/output/study1/info_feature.txt</code> shown below.</p>
 
   <h3>Example Output: Info SNP summary</h3>
@@ -327,6 +395,13 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --abdFile=example/input/study1/abd.txt \
     --covFile=example/input/study1/cov.txt \
     --genoPrefix=example/input/study1/geno</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  step0_checkInput.R \
+    --abdFile=/work/example/input/study1/abd.txt \
+    --covFile=/work/example/input/study1/cov.txt \
+    --genoPrefix=/work/example/input/study1/geno</code></pre>
   <p><strong>Output:</strong> the input <code>abd.txt</code> and <code>cov.txt</code> may be rewritten so their sample order matches <code>geno.fam</code>.</p>
 
   <h3>Step1: fit the null model</h3>
@@ -335,6 +410,13 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --abdFile=example/input/study1/abd.txt \
     --covFile=example/input/study1/cov.txt \
     --NULLmodelFile=example/output/study1/step1_allpheno.rda</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  step1_null.R \
+    --abdFile=/work/example/input/study1/abd.txt \
+    --covFile=/work/example/input/study1/cov.txt \
+    --NULLmodelFile=/work/example/output/study1/step1_allpheno.rda</code></pre>
   <p><strong>Output:</strong> <code>example/output/study1/step1_allpheno.rda</code>, which is then passed into Step2 as <code>--NULLmodelFile</code>.</p>
 
   <h3>Step2: null model + genotype to per-phenotype association files</h3>
@@ -343,6 +425,16 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --genoPrefix=example/input/study1/geno \
     --NULLmodelFile=example/output/study1/step1_allpheno.rda \
     --PALMOutputFile=example/output/study1/step2_allchr \
+    --chrom=NULL \
+    --correct=NULL \
+    --useCluster=TRUE</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  step2_summary.R \
+    --genoPrefix=/work/example/input/study1/geno \
+    --NULLmodelFile=/work/example/output/study1/step1_allpheno.rda \
+    --PALMOutputFile=/work/example/output/study1/step2_allchr \
     --chrom=NULL \
     --correct=NULL \
     --useCluster=TRUE</code></pre>
@@ -358,11 +450,19 @@ chr1:14985097:C:T	1	14985097	-0.121627364114563	0.173042255456721	0.482132612055
   <p>Each Step2 file corresponds to one phenotype. Here, <code>g1</code> has one file containing association statistics for all tested SNPs.</p>
 
   <h3>Step3: multiple Step2 folders to meta-analysis tables</h3>
-  <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code> plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>.</p>
+  <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code> for local pixi runs or <code>example/input/study_dirs_docker.txt</code> for Docker runs, plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --studyFile=example/input/study_dirs.txt \
     --pattern='step2_allchr_.*[.]txt$' \
     --metaDir=example/output/meta \
+    --metaPrefix=step3_meta_</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  step3_meta.R \
+    --studyFile=/work/example/input/study_dirs_docker.txt \
+    --pattern='step2_allchr_.*[.]txt$' \
+    --metaDir=/work/example/output/meta \
     --metaPrefix=step3_meta_</code></pre>
   <p><strong>Output:</strong> one meta file per phenotype, such as <code>example/output/meta/step3_meta_g1.txt</code>, <code>step3_meta_g2.txt</code>, and <code>step3_meta_g3.txt</code>.</p>
 
@@ -382,6 +482,14 @@ chr1:14678191:A:C	1	14678191	0.083985850532746	0.0728994751282263	0.249289197161
     --metaDir=example/output/meta \
     --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
+    --pCut=1e-2</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  Visualization.R \
+    --metaDir=/work/example/output/meta \
+    --pattern='step3_meta_.*[.]txt$' \
+    --plotDir=/work/example/output/plot \
     --pCut=1e-2</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/combined_hits.png</code> and the filtered hit list <code>example/output/plot/combined_hits_printCut.txt</code>.</p>
   <pre><code class="language-tsv"># file: example/output/plot/combined_hits_printCut.txt
@@ -404,6 +512,14 @@ chr5:153541577:C:T	5	153541577	0.000878962028710375	g2</code></pre>
     --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
     --pheno=g1</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  Visualization.R \
+    --metaDir=/work/example/output/meta \
+    --pattern='step3_meta_.*[.]txt$' \
+    --plotDir=/work/example/output/plot \
+    --pheno=g1</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/manhattan_g1.png</code> and the auxiliary QQ plot <code>example/output/plot/manhattan_g1_qq.png</code>.</p>
   <div class="gallery">
     <figure>
@@ -425,6 +541,15 @@ chr5:153541577:C:T	5	153541577	0.000878962028710375	g2</code></pre>
     --plotDir=example/output/plot \
     --snp=chr1:1837340:C:T \
     --pCut=NA</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  Visualization.R \
+    --metaDir=/work/example/output/meta \
+    --pattern='step3_meta_.*[.]txt$' \
+    --plotDir=/work/example/output/plot \
+    --snp=chr1:1837340:C:T \
+    --pCut=NA</code></pre>
   <p><strong>Output:</strong> the current script auto-names this mode as <code>forest_chr1_1837340_C_T.png</code>. The example folder currently contains the older file <code>example/output/plot/forest_snp_chr1_1837340_C_T_allPheno.png</code>.</p>
   <div class="gallery">
     <figure>
@@ -438,6 +563,15 @@ chr5:153541577:C:T	5	153541577	0.000878962028710375	g2</code></pre>
     --metaDir=example/output/meta \
     --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
+    --pheno=g1 \
+    --snp=chr1:1837340:C:T</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  Visualization.R \
+    --metaDir=/work/example/output/meta \
+    --pattern='step3_meta_.*[.]txt$' \
+    --plotDir=/work/example/output/plot \
     --pheno=g1 \
     --snp=chr1:1837340:C:T</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/forest_g1_chr1_1837340_C_T.png</code>.</p>
