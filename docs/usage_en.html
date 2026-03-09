@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>PALM-mGWAS Usage Guide</title>
   <style>
-    body {font-family: "Helvetica Neue", Arial, sans-serif; margin: 24px 24px 24px 240px; color: #222; line-height: 1.6;}
+    body {font-family: "Helvetica Neue", Arial, sans-serif; margin: 24px; color: #222; line-height: 1.6;}
     h1, h2, h3 {color: #0f3b66; margin-top: 1.2em;}
     code {background: #f4f6f8; padding: 2px 4px; border-radius: 4px;}
     pre {background: #f4f6f8; padding: 12px; overflow: auto; border-radius: 6px; position: relative;}
@@ -18,6 +18,7 @@
     .gallery figcaption {font-size: 13px; color: #555; margin-top: 8px;}
     .card {border: 1px solid #d0d7de; border-radius: 8px; padding: 12px; background: #fbfdff;}
     .sidebar {position: fixed; top: 24px; left: 20px; width: 180px; border: 1px solid #d0d7de; border-radius: 8px; padding: 12px; background: #fbfdff;}
+    .content {max-width: 1280px; margin: 0 48px 0 240px; padding: 0 32px;}
     .sidebar h3 {margin-top: 0; color: #0f3b66; font-size: 15px;}
     .sidebar a {display: block; color: #0f3b66; text-decoration: none; padding: 4px 0; font-size: 14px;}
     .sidebar a:hover {text-decoration: underline;}
@@ -40,6 +41,7 @@
     <a href="#viz" class="sub">Visualization</a>
     <a href="#exampledata">Example Data</a>
   </div>
+  <div class="content">
   <h1>PALM-mGWAS Usage Guide</h1>
   <p>This page explains how to run the PALM-mGWAS R package: key functions, required inputs, outputs, and visualization workflows.</p>
 
@@ -51,26 +53,47 @@
   </ul>
 
   <h2 id="install">Installation (two options)</h2>
-  <h3>Option A: pixi (recommended for local runs)</h3>
-  <pre><code class="language-bash"># 1) install pixi (if not yet)
+  <h3>Option A: pixi source installation</h3>
+  <p>Use this method if you want to run the workflow directly from the source tree with the pixi-managed R environment.</p>
+  <pre><code class="language-bash"># install pixi (if not yet)
 curl -fsSL https://pixi.sh/install.sh | bash
-# 2) set PATH if needed (depends on installer hint)
-# 3) in repo root, create env and fetch deps
+
+# if needed, add pixi to PATH for the current shell
+export PATH="$HOME/.pixi/bin:$PATH"
+
+# clone the repository and enter the source tree
+git clone git@github.com:CheeseLee888/PALM-mGWAS.git
+cd PALM-mGWAS
+
+# create the base pixi environment
 pixi install
-# 4) run workflows with pixi run ... (see steps below)</code></pre>
+
+# install extra R dependencies into the pixi environment
+pixi run install-abess
+pixi run env PKG_LIBS="-L$PWD/.pixi/envs/default/lib -lopenblas -llapack -lblas" \
+  R CMD INSTALL thirdParty/PALM_0.1.0.tar.gz
+
+# install PALM-mGWAS itself into the same pixi R library
+pixi run R CMD INSTALL .</code></pre>
+  <p><strong>One-time setup:</strong> <code>pixi install</code> only creates the base environment. Before running the workflow scripts, you should also install <code>abess</code>, the bundled <code>PALM</code> tarball, and the local <code>PALMmGWAS</code> package into that pixi-managed R library.</p>
+  <p><strong>Command prefix for routine runs:</strong> after the one-time setup above, most commands in this guide can be run as <code>pixi run Rscript extdata/&lt;script&gt;.R ...</code> from the repository root.</p>
+  <p><strong>Do not use the system R for PALM installation:</strong> install <code>PALM</code> through <code>pixi run</code> so that it links against the BLAS/LAPACK libraries inside the pixi environment. On macOS, avoid wrapping the install command in <code>pixi run bash -lc '...'</code> because a login shell can resolve <code>R</code> back to the system binary and trigger errors such as missing <code>libopenblas.0.dylib</code> when <code>library(PALM)</code> is loaded.</p>
   <h3>Option B: Docker image</h3>
-  <pre><code class="language-bash"># build (from repo root)
-docker build -t palm-mgwas .
+  <pre><code class="language-bash"># pull the published image
+docker pull --platform=linux/amd64 cheeselee/palm-mgwas:latest
 
-# run interactively, mounting your data
-docker run --rm -it -v "$PWD":/work -w /work palm-mgwas bash
+# enter the repository example directory
+cd /path/to/PALM-mGWAS
 
-# inside the container, call packaged scripts from the package root
-pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R --help</code></pre>
-  <p>The Dockerfile installs pixi, PALM, PLINK1.9, and the wrapper scripts inside the package root. After entering the mounted working directory, run commands from that root using relative paths such as <code>extdata/step1_null.R</code>.</p>
+# run a packaged script inside the container
+docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work \
+  cheeselee/palm-mgwas:latest \
+  pixi run Rscript /app/extdata/step1_null.R --help</code></pre>
+  <p>This published Docker image already contains pixi, <code>abess</code>, PALM, <code>PALMmGWAS</code>, and PLINK1.9, so Docker users do not need to repeat the local source installation steps from Option A. Mount your working directory to <code>/work</code> and call the packaged R scripts through <code>pixi run Rscript ...</code> or the installed wrapper scripts.</p>
 
   <h2 id="workflow">Workflow</h2>
-  <p>Run the packaged CLI directly; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Info</code> to <code>Visualization</code>.</p>
+  <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Info</code> to <code>Visualization</code>.</p>
   <div class="steps">
     <div class="card"><strong>Info</strong><br><code>Info.R</code> creates SNP, feature, and sequencing-depth summaries.</div>
     <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> checks IID consistency across abundance, covariates, and PLINK <code>.fam</code>, and reorders tables to match genotype order.</div>
@@ -426,6 +449,7 @@ chr5:153541577:C:T	5	153541577	0.000878962028710375	g2</code></pre>
   </div>
 
   <p style="margin-top:32px;color:#555;">See <code>workflow/</code> and <code>example/</code> for batch scripts or sample data to pair with this guide.</p>
+  </div>
   <script>
     document.querySelectorAll("pre").forEach((pre) => {
       const code = pre.querySelector("code");

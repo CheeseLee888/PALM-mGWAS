@@ -43,7 +43,8 @@ RUN pixi run Rscript -e 'install.packages("abess", repos="https://cloud.r-projec
 # EOF
 
 # Install PALM with explicit BLAS/LAPACK link flags (fix dgesvx_)
-RUN pixi run bash -lc 'PKG_LIBS="-L${CONDA_PREFIX}/lib -lopenblas -llapack -lblas" R CMD INSTALL thirdParty/PALM_0.1.0.tar.gz'
+RUN pixi run env PKG_LIBS="-L/app/.pixi/envs/default/lib -lopenblas -llapack -lblas" \
+    R CMD INSTALL thirdParty/PALM_0.1.0.tar.gz
 
 # smoke test
 RUN pixi run Rscript -e 'library(PALM); cat("PALM loaded OK\n")'
