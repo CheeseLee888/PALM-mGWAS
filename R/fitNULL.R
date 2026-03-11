@@ -4,6 +4,9 @@
 #' saves the fitted object, and invisibly returns it.
 #'
 #' @param abdFile Path to abundance table with sample IDs in the first column.
+#' @param phenoColList Optional phenotype column names to keep from `abdFile`.
+#'   Accepts either a character vector or a single comma-separated string.
+#'   By default, all non-ID columns in `abdFile` are used.
 #' @param covFile Optional path to covariate table with matching sample IDs.
 #'   Use `NULL` (default) to fit without covariates.
 #' @param covarColList Optional covariate column names to keep from `covFile`.
@@ -20,6 +23,7 @@
 #' @return Invisibly returns the fitted PALM null model object.
 #' @export
 fitNULL <- function(abdFile,
+                    phenoColList = NULL,
                     covFile = NULL,
                     covarColList = NULL,
                     depthFile = NULL,
@@ -46,7 +50,34 @@ fitNULL <- function(abdFile,
     stop("'NULLmodelFile' must include the .rda suffix.")
   }
 
+  normalize_col_list <- function(x, arg_name) {
+    if (is.null(x)) {
+      return(NULL)
+    }
+    if (length(x) == 1L) {
+      x <- trimws(strsplit(x, ",", fixed = TRUE)[[1]])
+    } else {
+      x <- trimws(as.character(x))
+    }
+    x <- x[nzchar(x)]
+    if (!length(x)) {
+      stop("'", arg_name, "' did not contain any valid column names.")
+    }
+    x
+  }
+
   abd <- read_firstcol_as_rownames(abdFile)
+  phenoColList <- normalize_col_list(phenoColList, "phenoColList")
+  if (!is.null(phenoColList)) {
+    missing_cols <- setdiff(phenoColList, colnames(abd))
+    if (length(missing_cols) > 0) {
+      stop(
+        "Requested phenotype column(s) not found in 'abdFile': ",
+        paste(missing_cols, collapse = ", ")
+      )
+    }
+    abd <- abd[, phenoColList, drop = FALSE]
+  }
   abd <- as.matrix(abd)
   message(
     "Input abundance matrix: ", nrow(abd), " samples x ", ncol(abd), " features."
@@ -84,16 +115,8 @@ fitNULL <- function(abdFile,
       stop("'covFile' does not exist: ", covFile)
     }
     cov <- read_firstcol_as_rownames(covFile)
+    covarColList <- normalize_col_list(covarColList, "covarColList")
     if (!is.null(covarColList)) {
-      if (length(covarColList) == 1L) {
-        covarColList <- trimws(strsplit(covarColList, ",", fixed = TRUE)[[1]])
-      } else {
-        covarColList <- trimws(as.character(covarColList))
-      }
-      covarColList <- covarColList[nzchar(covarColList)]
-      if (!length(covarColList)) {
-        stop("'covarColList' did not contain any valid column names.")
-      }
       missing_cols <- setdiff(covarColList, colnames(cov))
       if (length(missing_cols) > 0) {
         stop(

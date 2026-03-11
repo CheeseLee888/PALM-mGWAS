@@ -6,6 +6,7 @@
 \usage{
 fitNULL(
   abdFile,
+  phenoColList = NULL,
   covFile = NULL,
   covarColList = NULL,
   depthFile = NULL,
@@ -16,6 +17,10 @@ fitNULL(
 }
 \arguments{
 \item{abdFile}{Path to abundance table with sample IDs in the first column.}
+
+\item{phenoColList}{Optional phenotype column names to keep from `abdFile`.
+Accepts either a character vector or a single comma-separated string.
+By default, all non-ID columns in `abdFile` are used.}
 
 \item{covFile}{Optional path to covariate table with matching sample IDs.
 Use `NULL` (default) to fit without covariates.}
