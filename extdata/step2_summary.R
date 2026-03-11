@@ -22,6 +22,10 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
+    make_option("--minMAF",
+        type = "double", default = 0,
+        help = ""
+    ),
     make_option("--correct",
         type = "character", default = "NULL",
         help = ""
@@ -42,6 +46,7 @@ getSummary(
   NULLmodelFile = opt$NULLmodelFile,
   PALMOutputFile = opt$PALMOutputFile,
   chrom = opt$chrom,
+  minMAF = opt$minMAF,
   correct = opt$correct,
   useCluster = opt$useCluster
 )

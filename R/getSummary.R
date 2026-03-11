@@ -11,6 +11,9 @@
 #'   phenotype file will be written as `<PALMOutputFile>_<pheno>.txt`.
 #' @param chrom Optional chromosome filter (numeric or string like `"chr1"`).
 #'   Use `NULL` to keep all chromosomes.
+#' @param minMAF Optional minimum minor allele frequency threshold used to
+#'   filter SNPs before running `PALM::palm.get.summary()`. Use `0` (default)
+#'   to disable MAF filtering.
 #' @param correct Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.
 #' @param useCluster Logical; if `TRUE`, uses FID from `.fam` as cluster
 #'   information when available.
@@ -21,6 +24,7 @@ getSummary <- function(genoPrefix,
                        NULLmodelFile,
                        PALMOutputFile,
                        chrom = NULL,
+                       minMAF = 0,
                        correct = "NULL",
                        useCluster = TRUE) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
@@ -42,6 +46,9 @@ getSummary <- function(genoPrefix,
   if (missing(PALMOutputFile) || !nzchar(PALMOutputFile)) {
     stop("'PALMOutputFile' must be provided.")
   }
+  if (!is.numeric(minMAF) || length(minMAF) != 1L || is.na(minMAF) || minMAF < 0 || minMAF > 0.5) {
+    stop("'minMAF' must be a single numeric value between 0 and 0.5.")
+  }
 
   env <- new.env()
   load(NULLmodelFile, envir = env) # load modglmm
@@ -59,6 +66,11 @@ getSummary <- function(genoPrefix,
     message("Chromosome filter disabled: using all SNPs.")
   } else {
     message("Chromosome filter enabled: requested chromosome ", chrom)
+  }
+  if (minMAF > 0) {
+    message("MAF filter enabled: minMAF=", minMAF)
+  } else {
+    message("MAF filter disabled: minMAF=0")
   }
   if (is.null(correct)) {
     message("Compositional correction disabled: correct=NULL")
@@ -121,6 +133,20 @@ getSummary <- function(genoPrefix,
     if (length(keep) == 0L) stop("No SNPs found for --chrom=", chrom)
     geno <- geno[, keep, drop = FALSE]
     message("Genotype matrix after chromosome filtering: ", nrow(geno), " samples x ", ncol(geno), " SNPs.")
+  }
+
+  if (minMAF > 0) {
+    allele_freq <- colMeans(geno, na.rm = TRUE) / 2
+    maf <- pmin(allele_freq, 1 - allele_freq)
+    keep <- which(!is.na(maf) & maf >= minMAF)
+    if (length(keep) == 0L) {
+      stop("No SNPs remain after applying --minMAF=", minMAF)
+    }
+    message(
+      "Genotype matrix after MAF filtering: ", nrow(geno), " samples x ", length(keep),
+      " SNPs (removed ", ncol(geno) - length(keep), ")."
+    )
+    geno <- geno[, keep, drop = FALSE]
   }
 
 

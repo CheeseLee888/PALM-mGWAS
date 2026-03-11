@@ -9,6 +9,7 @@ getSummary(
   NULLmodelFile,
   PALMOutputFile,
   chrom = NULL,
+  minMAF = 0,
   correct = "NULL",
   useCluster = TRUE
 )
@@ -25,6 +26,10 @@ phenotype file will be written as `<PALMOutputFile>_<pheno>.txt`.}
 
 \item{chrom}{Optional chromosome filter (numeric or string like `"chr1"`).
 Use `NULL` to keep all chromosomes.}
+
+\item{minMAF}{Optional minimum minor allele frequency threshold used to
+filter SNPs before running `PALM::palm.get.summary()`. Use `0` (default)
+to disable MAF filtering.}
 
 \item{correct}{Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.}
 

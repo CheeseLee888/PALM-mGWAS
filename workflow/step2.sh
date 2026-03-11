@@ -12,6 +12,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary
     --NULLmodelFile=${NULLmodelFile} \
     --PALMOutputFile=${palm1_step2_prefix} \
     --chrom=${chrom:-NULL} \
+    --minMAF=${minMAF:-0} \
     --correct=${correct:-NULL} \
     --useCluster=${useCluster:-TRUE}
 echo "Finish: Performe score test."
