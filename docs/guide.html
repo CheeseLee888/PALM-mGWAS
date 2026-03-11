@@ -151,12 +151,12 @@ docker run --rm --platform=linux/amd64 \
     </li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--genoPrefix</code></td><td>PLINK genotype prefix without file extension</td><td><code>--genoPrefix=example/input/study1/geno</code></td></tr>
-    <tr><td><code>--abdFile</code></td><td>Abundance table path</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
-    <tr><td><code>--outputSnpFile</code></td><td>Output file for SNP summary</td><td><code>--outputSnpFile=example/output/study1/info_snp.txt</code></td></tr>
-    <tr><td><code>--outputFeatureFile</code></td><td>Output file for feature prevalence/abundance summary</td><td><code>--outputFeatureFile=example/output/study1/info_feature.txt</code></td></tr>
-    <tr><td><code>--outputSeqDepthFile</code></td><td>Output file for sequencing depth summary</td><td><code>--outputSeqDepthFile=example/output/study1/info_seqdepth.txt</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
+    <tr><td><code>--genoPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>PLINK genotype prefix without file extension</td><td><code>--genoPrefix=example/input/study1/geno</code></td></tr>
+    <tr><td><code>--abdFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table path</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
+    <tr><td><code>--outputSnpFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output file for SNP summary</td><td><code>--outputSnpFile=example/output/study1/info_snp.txt</code></td></tr>
+    <tr><td><code>--outputFeatureFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output file for feature prevalence/abundance summary</td><td><code>--outputFeatureFile=example/output/study1/info_feature.txt</code></td></tr>
+    <tr><td><code>--outputSeqDepthFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output file for sequencing depth summary</td><td><code>--outputSeqDepthFile=example/output/study1/info_seqdepth.txt</code></td></tr>
   </table>
 
   <h2 id="step0">Step0: Check and Align Input IDs</h2>
@@ -178,10 +178,10 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Failure cases:</strong> duplicated IDs, missing values, missing <code>.fam</code>, or non-identical IID sets.</li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--abdFile</code></td><td>Abundance table whose sample order will be checked/reordered</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
-    <tr><td><code>--covFile</code></td><td>Covariate table whose sample order will be checked/reordered</td><td><code>--covFile=example/input/study1/cov.txt</code></td></tr>
-    <tr><td><code>--genoPrefix</code></td><td>PLINK prefix used to read <code>.fam</code> sample order</td><td><code>--genoPrefix=example/input/study1/geno</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
+    <tr><td><code>--abdFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose sample order will be checked/reordered</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
+    <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Covariate table whose sample order will be checked/reordered</td><td><code>--covFile=example/input/study1/cov.txt</code></td></tr>
+    <tr><td><code>--genoPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>PLINK prefix used to read <code>.fam</code> sample order</td><td><code>--genoPrefix=example/input/study1/geno</code></td></tr>
   </table>
 
   <h2 id="step1">Step1: Fit Null Model</h2>
@@ -216,15 +216,15 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Tips:</strong> ensure no duplicated sample IDs; use relative abundance; keep sessionInfo for reproducibility.</li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--abdFile</code></td><td>Abundance table used to fit the null model</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
-    <tr><td><code>--phenoColList</code></td><td>Optional comma-separated phenotype column names to keep from <code>abdFile</code></td><td><code>--phenoColList=g1,g2,g3</code>; <code>--phenoColList=NULL</code></td></tr>
-    <tr><td><code>--covFile</code></td><td>Optional covariate file; the CLI also accepts empty string or <code>NULL</code> to omit covariates</td><td><code>--covFile=example/input/study1/cov.txt</code>; <code>--covFile=NULL</code></td></tr>
-    <tr><td><code>--covarColList</code></td><td>Optional comma-separated covariate column names to keep from <code>covFile</code></td><td><code>--covarColList=age,sex,bmi</code>; <code>--covarColList=NULL</code></td></tr>
-    <tr><td><code>--depthFile</code></td><td>Optional sequencing-depth file keyed by sample ID; the second column is used as PALM <code>depth</code></td><td><code>--depthFile=example/input/study1/depth.txt</code>; <code>--depthFile=NULL</code></td></tr>
-    <tr><td><code>--depth.filter</code></td><td>Sample-level depth threshold passed to PALM</td><td><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></td></tr>
-    <tr><td><code>--prev.filter</code></td><td>Feature prevalence threshold passed to PALM</td><td><code>--prev.filter=0.1</code>; <code>--prev.filter=0</code></td></tr>
-    <tr><td><code>--NULLmodelFile</code></td><td>Output <code>.rda</code> file storing the fitted PALM null model</td><td><code>--NULLmodelFile=example/output/study1/step1_allpheno.rda</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
+    <tr><td><code>--abdFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table used to fit the null model</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
+    <tr><td><code>--phenoColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated phenotype column names to keep from <code>abdFile</code></td><td><code>--phenoColList=g1,g2,g3</code>; <code>--phenoColList=NULL</code></td></tr>
+    <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional covariate file; the CLI also accepts empty string or <code>NULL</code> to omit covariates</td><td><code>--covFile=example/input/study1/cov.txt</code>; <code>--covFile=NULL</code></td></tr>
+    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code></td><td><code>--covarColList=AGE,SEX</code>; <code>--covarColList=NULL</code></td></tr>
+    <tr><td><code>--depthFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional sequencing-depth file keyed by sample ID; the second column is used as PALM <code>depth</code></td><td><code>--depthFile=example/input/study1/depth.txt</code>; <code>--depthFile=NULL</code></td></tr>
+    <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Sample-level depth threshold passed to PALM</td><td><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></td></tr>
+    <tr><td><code>--prev.filter</code></td><td><code>double</code></td><td><code>0.1</code></td><td>Feature prevalence threshold passed to PALM</td><td><code>--prev.filter=0.1</code>; <code>--prev.filter=0</code></td></tr>
+    <tr><td><code>--NULLmodelFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output <code>.rda</code> file storing the fitted PALM null model</td><td><code>--NULLmodelFile=example/output/study1/step1_allpheno.rda</code></td></tr>
   </table>
 
   <h2 id="step2">Step2: Per-study Summary</h2>
@@ -257,14 +257,14 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>correct:</strong> forwarded to <code>PALM::palm.get.summary()</code>. Use <code>median</code> for median-based compositional correction, <code>tune</code> for a data-driven tuned correction, or <code>NULL</code> / empty string to disable compositional correction and keep relative-abundance-level summary statistics.</li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--genoPrefix</code></td><td>PLINK genotype prefix for association testing</td><td><code>--genoPrefix=example/input/study1/geno</code></td></tr>
-    <tr><td><code>--NULLmodelFile</code></td><td>Null model generated by Step1</td><td><code>--NULLmodelFile=example/output/study1/step1_allpheno.rda</code></td></tr>
-    <tr><td><code>--PALMOutputFile</code></td><td>Output prefix for per-phenotype result files</td><td><code>--PALMOutputFile=example/output/study1/step2_allchr</code></td></tr>
-    <tr><td><code>--chrom</code></td><td>Optional chromosome subset; leave empty to keep all chromosomes</td><td><code>--chrom=1</code>; omit it or set <code>--chrom=</code> for all chromosomes</td></tr>
-    <tr><td><code>--minMAF</code></td><td>Optional minimum minor allele frequency threshold for SNP filtering</td><td><code>--minMAF=0.01</code>; <code>--minMAF=0</code></td></tr>
-    <tr><td><code>--correct</code></td><td>Compositional effect correction method. <code>median</code> uses the median of estimates, <code>tune</code> uses a data-driven tuned value, and <code>NULL</code> / empty string disables compositional correction. A practical rule is <code>median</code> for sparse signals (<= 20% differential AA features) and <code>tune</code> for moderately dense signals (> 20% and <= 50%). Both correction methods assume differential AA features are <= 50%.</td><td><code>--correct=median</code>; <code>--correct=tune</code>; <code>--correct=NULL</code>; <code>--correct=</code></td></tr>
-    <tr><td><code>--useCluster</code></td><td>Whether to use FID-based clustering from the PLINK <code>.fam</code> file</td><td><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
+    <tr><td><code>--genoPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>PLINK genotype prefix for association testing</td><td><code>--genoPrefix=example/input/study1/geno</code></td></tr>
+    <tr><td><code>--NULLmodelFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Null model generated by Step1</td><td><code>--NULLmodelFile=example/output/study1/step1_allpheno.rda</code></td></tr>
+    <tr><td><code>--PALMOutputFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for per-phenotype result files</td><td><code>--PALMOutputFile=example/output/study1/step2_allchr</code></td></tr>
+    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>""</code></td><td>Optional chromosome subset; leave empty to keep all chromosomes</td><td><code>--chrom=1</code>; omit it or set <code>--chrom=</code> for all chromosomes</td></tr>
+    <tr><td><code>--minMAF</code></td><td><code>double</code></td><td><code>0</code></td><td>Optional minimum minor allele frequency threshold for SNP filtering</td><td><code>--minMAF=0.01</code>; <code>--minMAF=0</code></td></tr>
+    <tr><td><code>--correct</code></td><td><code>character</code></td><td><code>"NULL"</code> (normalized to <code>NULL</code>)</td><td>Compositional effect correction method. <code>median</code> uses the median of estimates, <code>tune</code> uses a data-driven tuned value, and <code>NULL</code> / empty string disables compositional correction. A practical rule is <code>median</code> for sparse signals (&lt;= 20% differential AA features) and <code>tune</code> for moderately dense signals (&gt; 20% and &lt;= 50%). Both correction methods assume differential AA features are &lt;= 50%.</td><td><code>--correct=median</code>; <code>--correct=tune</code>; <code>--correct=NULL</code>; <code>--correct=</code></td></tr>
+    <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Whether to use FID-based clustering from the PLINK <code>.fam</code> file</td><td><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></td></tr>
   </table>
 
   <h2 id="step3">Step3: Meta Analysis</h2>
@@ -290,11 +290,11 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     <li><strong>Current CLI behavior:</strong> the wrapper fixes <code>features = NULL</code> and <code>keep_het = TRUE</code>.</li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--studyFile</code></td><td>Study list file mapping study IDs to result directories</td><td><code>--studyFile=example/input/study_dirs.txt</code> for local pixi runs; <code>--studyFile=example/input/study_dirs_docker.txt</code> for Docker runs</td></tr>
-    <tr><td><code>--pattern</code></td><td>Regex selecting which Step2 result files to meta-analyze. Step2 filenames contain the phenotype in the middle, such as <code>step2_allchr_g1.txt</code>, so the regex should match the fixed prefix/suffix and leave the phenotype part variable for extraction. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step2_allchr_.*[.]txt$'</code>; <code>--pattern='step2_chr1_.*[.]txt$'</code>; do not write <code>--pattern=step2_allchr_g1.txt</code> if you want all phenotypes</td></tr>
-    <tr><td><code>--metaDir</code></td><td>Output directory for meta-analysis tables</td><td><code>--metaDir=example/output/meta</code></td></tr>
-    <tr><td><code>--metaPrefix</code></td><td>Filename prefix for meta-analysis outputs</td><td><code>--metaPrefix=step3_meta_</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
+    <tr><td><code>--studyFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Study list file mapping study IDs to result directories</td><td><code>--studyFile=example/input/study_dirs.txt</code> for local pixi runs; <code>--studyFile=example/input/study_dirs_docker.txt</code> for Docker runs</td></tr>
+    <tr><td><code>--pattern</code></td><td><code>character</code></td><td><code>""</code></td><td>Regex selecting which Step2 result files to meta-analyze. Step2 filenames contain the phenotype in the middle, such as <code>step2_allchr_g1.txt</code>, so the regex should match the fixed prefix/suffix and leave the phenotype part variable for extraction. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step2_allchr_.*[.]txt$'</code>; <code>--pattern='step2_chr1_.*[.]txt$'</code>; do not write <code>--pattern=step2_allchr_g1.txt</code> if you want all phenotypes</td></tr>
+    <tr><td><code>--metaDir</code></td><td><code>character</code></td><td><code>""</code></td><td>Output directory for meta-analysis tables</td><td><code>--metaDir=example/output/meta</code></td></tr>
+    <tr><td><code>--metaPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>Filename prefix for meta-analysis outputs</td><td><code>--metaPrefix=step3_meta_</code></td></tr>
   </table>
 
   <h2 id="viz">Visualization</h2>
@@ -334,18 +334,18 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     <li><strong>SNP-specific options:</strong> when <code>--snp</code> is supplied, you can additionally pass <code>--showMeta</code> and <code>--showHet</code>.</li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--metaDir</code></td><td>Directory containing Step3 meta files or single-study Step2 files</td><td><code>--metaDir=example/output/meta</code></td></tr>
-    <tr><td><code>--plotDir</code></td><td>Directory where plots will be written</td><td><code>--plotDir=example/output/plot</code></td></tr>
-    <tr><td><code>--pattern</code></td><td>Regex matching result files to plot. It should usually match all phenotype files in the target directory, so that the script can later subset by <code>--pheno</code> and/or <code>--snp</code>. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step3_meta_.*[.]txt$'</code>; <code>--pattern='step2_allchr_.*[.]txt$'</code> for single-study Step2 plots</td></tr>
-    <tr><td><code>--pheno</code></td><td>Phenotype name; used in case 2 and case 4</td><td><code>--pheno=g1</code>; omit it for case 1 or case 3</td></tr>
-    <tr><td><code>--snp</code></td><td>SNP identifier; used in case 3 and case 4</td><td><code>--snp=chr1:1837340:C:T</code>; omit it for case 1 or case 2</td></tr>
-    <tr><td><code>--PlotOutputFile</code></td><td>Optional explicit output filename; otherwise auto-generated</td><td><code>--PlotOutputFile=example/output/plot/custom.png</code>; <code>--PlotOutputFile=NA</code>; omit it to auto-name</td></tr>
-    <tr><td><code>--pCut</code></td><td>P-value cutoff used in case 1 printing and case 3 phenotype filtering; <code>NA</code>, <code>NULL</code>, or empty disables it</td><td><code>--pCut=1e-8</code>; <code>--pCut=NA</code></td></tr>
-    <tr><td><code>--showMeta</code></td><td>Overlay meta estimates in SNP-based forest plots; valid only when <code>--snp</code> is supplied</td><td><code>--showMeta=TRUE</code>; <code>--showMeta=FALSE</code></td></tr>
-    <tr><td><code>--showHet</code></td><td>Highlight heterogeneity rows in SNP-based forest plots; valid only when <code>--snp</code> is supplied</td><td><code>--showHet=TRUE</code>; <code>--showHet=FALSE</code></td></tr>
-    <tr><td><code>--width</code></td><td>Plot width in inches; <code>NA</code> lets the script auto-size</td><td><code>--width=10</code>; <code>--width=NA</code></td></tr>
-    <tr><td><code>--height</code></td><td>Plot height in inches; <code>NA</code> lets the script auto-size</td><td><code>--height=6</code>; <code>--height=NA</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
+    <tr><td><code>--metaDir</code></td><td><code>character</code></td><td><code>""</code></td><td>Directory containing Step3 meta files or single-study Step2 files</td><td><code>--metaDir=example/output/meta</code></td></tr>
+    <tr><td><code>--plotDir</code></td><td><code>character</code></td><td><code>""</code></td><td>Directory where plots will be written</td><td><code>--plotDir=example/output/plot</code></td></tr>
+    <tr><td><code>--pattern</code></td><td><code>character</code></td><td><code>""</code></td><td>Regex matching result files to plot. It should usually match all phenotype files in the target directory, so that the script can later subset by <code>--pheno</code> and/or <code>--snp</code>. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step3_meta_.*[.]txt$'</code>; <code>--pattern='step2_allchr_.*[.]txt$'</code> for single-study Step2 plots</td></tr>
+    <tr><td><code>--pheno</code></td><td><code>character</code></td><td><code>NA</code></td><td>Phenotype name; used in case 2 and case 4</td><td><code>--pheno=g1</code>; omit it for case 1 or case 3</td></tr>
+    <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier; used in case 3 and case 4</td><td><code>--snp=chr1:1837340:C:T</code>; omit it for case 1 or case 2</td></tr>
+    <tr><td><code>--PlotOutputFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Optional explicit output filename; otherwise auto-generated</td><td><code>--PlotOutputFile=example/output/plot/custom.png</code>; <code>--PlotOutputFile=NA</code>; omit it to auto-name</td></tr>
+    <tr><td><code>--pCut</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>"1e-5"</code></td><td>P-value cutoff used in case 1 printing and case 3 phenotype filtering; <code>NA</code>, <code>NULL</code>, or empty disables it</td><td><code>--pCut=1e-8</code>; <code>--pCut=NA</code>; <code>--pCut=NULL</code>; <code>--pCut=</code></td></tr>
+    <tr><td><code>--showMeta</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Overlay meta estimates in SNP-based forest plots; valid only when <code>--snp</code> is supplied</td><td><code>--showMeta=TRUE</code>; <code>--showMeta=FALSE</code></td></tr>
+    <tr><td><code>--showHet</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Highlight heterogeneity rows in SNP-based forest plots; valid only when <code>--snp</code> is supplied</td><td><code>--showHet=TRUE</code>; <code>--showHet=FALSE</code></td></tr>
+    <tr><td><code>--width</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Plot width in inches; <code>NA</code> lets the script auto-size</td><td><code>--width=10</code>; <code>--width=NA</code></td></tr>
+    <tr><td><code>--height</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Plot height in inches; <code>NA</code> lets the script auto-size</td><td><code>--height=6</code>; <code>--height=NA</code></td></tr>
   </table>
 
   <h2 id="exampledata">Example Data in This Repo</h2>

@@ -8,7 +8,7 @@ suppressPackageStartupMessages({
 option_list <- list(
   make_option("--studyFile", type="character", default="",
               help="TSV: each line 'studyID<TAB>dir'"),
-  make_option("--pattern", type="character", default="step2_allchr_.*\\.txt$",
+  make_option("--pattern", type="character", default="",
               help="Regex pattern for input step2 filenames [default %default]"),
   make_option("--metaDir", type="character", default="",
               help="Output directory for meta files"),

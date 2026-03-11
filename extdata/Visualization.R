@@ -16,7 +16,7 @@ option_list <- list(
               help = "Directory containing step3 meta files [default %default]"),
   make_option(c("--plotDir"), type = "character", default = "",
               help = "Directory to save plots [default %default]"),
-  make_option(c("--pattern"), type = "character", default = "step3_meta_.*\\.txt$",
+  make_option(c("--pattern"), type = "character", default = "",
               help = "Regex pattern for meta filenames [default %default]"),
   make_option(c("--pheno"), type = "character", default = NA,
               help = "Phenotype name (suffix in step3 meta filename)"),
