@@ -111,11 +111,17 @@ outFile <- if (!is.na(opt$PlotOutputFile)) opt$PlotOutputFile else auto_out()
 
 msg("MetaDir: %s", metaDir)
 msg("PlotDir: %s", plotDir)
+msg("Pattern: %s", opt$pattern)
 msg("Found %d files.", nrow(metaIndex))
+msg("Resolved pCut: %s", if (is.na(p_cut)) "NA" else format(p_cut, scientific = TRUE))
+msg("Resolved width x height: %s x %s", if (is.na(width_in)) "auto" else as.character(width_in), if (is.na(height_in)) "auto" else as.character(height_in))
+msg("Output file: %s", outFile)
 
 if (is.null(pheno) && is.null(snp)) {
   # Mode A
   # Big combined plot: show best phenotype per SNP, no significance filtering.
+  msg("Visualization mode: combined Manhattan across phenotypes.")
+  msg("Mode A behavior: pCut %s", if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)))
   mode_big_combined(
     metaIndex = metaIndex,
     outFile = outFile,
@@ -126,6 +132,8 @@ if (is.null(pheno) && is.null(snp)) {
 
 } else if (!is.null(pheno) && is.null(snp)) {
   # Mode B
+  msg("Visualization mode: Manhattan and qq for phenotype %s.", pheno)
+  msg("Mode B behavior: pCut is ignored in this mode.")
   # keep auxiliary outputs aligned with main outFile
   base_no_ext <- sub("\\.[^.]+$", "", outFile)
   qq_out <- paste0(base_no_ext, "_qq.png")
@@ -143,6 +151,10 @@ if (is.null(pheno) && is.null(snp)) {
 
 } else if (is.null(pheno) && !is.null(snp)) {
   # Mode C
+  msg("Visualization mode: forest across phenotypes for SNP %s.", snp)
+  msg("Mode C behavior: pCut %s; showMeta=%s; showHet=%s",
+      if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)),
+      opt$showMeta, opt$showHet)
   mode_snp_forest_across_phenos(
     metaIndex = metaIndex,
     snp = snp,
@@ -156,6 +168,8 @@ if (is.null(pheno) && is.null(snp)) {
 
 } else {
   # Mode D
+  msg("Visualization mode: forest for phenotype %s and SNP %s.", pheno, snp)
+  msg("Mode D behavior: showMeta=%s; showHet=%s; pCut is ignored in this mode.", opt$showMeta, opt$showHet)
   mode_pheno_snp_forest(
     metaIndex = metaIndex,
     pheno = pheno,

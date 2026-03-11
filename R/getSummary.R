@@ -49,11 +49,23 @@ getSummary <- function(genoPrefix,
     stop("Object 'modglmm' not found in ", NULLmodelFile)
   }
   modglmm <- env$modglmm
+  message("Loaded NULL model from ", NULLmodelFile)
 
   # normalize chrom input: treat "" or "NULL" as NULL
   if (!is.null(chrom) && is.character(chrom)) {
     if (!nzchar(chrom) || toupper(chrom) == "NULL") chrom <- NULL
   }
+  if (is.null(chrom)) {
+    message("Chromosome filter disabled: using all SNPs.")
+  } else {
+    message("Chromosome filter enabled: requested chromosome ", chrom)
+  }
+  if (is.null(correct)) {
+    message("Compositional correction disabled: correct=NULL")
+  } else {
+    message("Compositional correction enabled: correct=", correct)
+  }
+  message("Cluster option requested: useCluster=", useCluster)
 
   # read genotype data and make it a data.frame
   bed <- paste0(genoPrefix, ".bed")
@@ -89,6 +101,7 @@ getSummary <- function(genoPrefix,
   geno <- as(G, "numeric") # returns matrix with 0/1/2 and NA
   rownames(geno) <- iid
   colnames(geno) <- colnames(G)
+  message("Loaded genotype matrix: ", nrow(geno), " samples x ", ncol(geno), " SNPs before chromosome filtering.")
 
   # Subset for quick testing (every 10th SNP)
   # geno <- geno[, seq(1, ncol(geno), by = 10), drop = FALSE]
@@ -107,6 +120,7 @@ getSummary <- function(genoPrefix,
 
     if (length(keep) == 0L) stop("No SNPs found for --chrom=", chrom)
     geno <- geno[, keep, drop = FALSE]
+    message("Genotype matrix after chromosome filtering: ", nrow(geno), " samples x ", ncol(geno), " SNPs.")
   }
 
 

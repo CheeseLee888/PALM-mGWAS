@@ -41,16 +41,28 @@ fitNULL <- function(abdFile,
 
   abd <- read_firstcol_as_rownames(abdFile)
   abd <- as.matrix(abd)
+  message(
+    "Input abundance matrix: ", nrow(abd), " samples x ", ncol(abd), " features."
+  )
 
   depth <- NULL
   if (!is.null(depthFile)) {
+    message("depthFile provided: using the second column as sequencing depth from ", depthFile)
     depth <- read_named_vector(depthFile, numeric = TRUE)
     missing_ids <- setdiff(rownames(abd), names(depth))
     if (length(missing_ids) > 0) {
       stop("Missing depth values for sample IDs: ", paste(utils::head(missing_ids, 5), collapse = ", "))
     }
     depth <- depth[rownames(abd)]
+    message(
+      "Depth filtering enabled. depth.filter=", depth.filter,
+      "; depth summary min/median/max=",
+      min(depth), "/", stats::median(depth), "/", max(depth)
+    )
+  } else {
+    message("No depthFile provided: PALM will use row sums of abundance as depth.")
   }
+  message("Prevalence filter setting: prev.filter=", prev.filter)
 
   if (is.null(covFile)) {
     message("Fitting PALM null model without covariates.")
@@ -65,6 +77,9 @@ fitNULL <- function(abdFile,
       stop("'covFile' does not exist: ", covFile)
     }
     cov <- read_firstcol_as_rownames(covFile)
+    message(
+      "covFile provided: fitting PALM null model with ", ncol(cov), " covariate column(s) from ", covFile
+    )
     modglmm <- PALM::palm.null.model(
       rel.abd = abd,
       covariate.adjust = cov,

@@ -82,6 +82,7 @@ read_result_file <- function(path, sep = "\t", study_id = NULL) {
 #' @export
 discover_meta_files <- function(metaDir,
                                 pattern = "step3_meta_.*\\.txt$") {
+  message("discover_meta_files: scanning ", metaDir, " with pattern ", pattern)
   files <- list.files(metaDir,
     pattern = pattern,
     full.names = TRUE
@@ -117,7 +118,11 @@ discover_meta_files <- function(metaDir,
     mode = "pattern",
     stringsAsFactors = FALSE
   ) |>
-    dplyr::arrange(pheno)
+    dplyr::arrange(pheno) |>
+    (\(x) {
+      message("discover_meta_files: matched ", nrow(x), " file(s).")
+      x
+    })()
 }
 
 # Detect study columns (est/stderr) in a meta result data frame
