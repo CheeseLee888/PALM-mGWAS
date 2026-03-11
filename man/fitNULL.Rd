@@ -4,7 +4,14 @@
 \alias{fitNULL}
 \title{Fit a PALM null model}
 \usage{
-fitNULL(abdFile, covFile = NULL, NULLmodelPrefix)
+fitNULL(
+  abdFile,
+  covFile = NULL,
+  depthFile = NULL,
+  depth.filter = 0,
+  prev.filter = 0.1,
+  NULLmodelFile
+)
 }
 \arguments{
 \item{abdFile}{Path to abundance table with sample IDs in the first column.}
@@ -12,7 +19,16 @@ fitNULL(abdFile, covFile = NULL, NULLmodelPrefix)
 \item{covFile}{Optional path to covariate table with matching sample IDs.
 Use `NULL` (default) to fit without covariates.}
 
-\item{NULLmodelPrefix}{File prefix (without extension) for the saved `.rda` file.}
+\item{depthFile}{Optional path to a sequencing-depth table with sample IDs in
+the first column and depth values in the second column.}
+
+\item{depth.filter}{Passed to `PALM::palm.null.model()`; samples with depth
+less than or equal to this threshold are removed. Defaults to `0`.}
+
+\item{prev.filter}{Passed to `PALM::palm.null.model()`; features with
+prevalence less than or equal to this threshold are removed. Defaults to `0.1`.}
+
+\item{NULLmodelFile}{Full output path for the saved `.rda` file.}
 }
 \value{
 Invisibly returns the fitted PALM null model object.

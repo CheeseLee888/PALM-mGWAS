@@ -19,5 +19,8 @@ echo "Start: Fit null model."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step1_null.R \
     --abdFile=${abdFile} \
     --covFile=${covFile} \
+    --depthFile=${depthFile:-NULL} \
+    --depth.filter=${depth_filter:-0} \
+    --prev.filter=${prev_filter:-0.1} \
     --NULLmodelFile=${NULLmodelFile}
 echo "Finish: Fit null model."
