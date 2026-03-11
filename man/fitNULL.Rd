@@ -7,6 +7,7 @@
 fitNULL(
   abdFile,
   covFile = NULL,
+  covarColList = NULL,
   depthFile = NULL,
   depth.filter = 0,
   prev.filter = 0.1,
@@ -18,6 +19,10 @@ fitNULL(
 
 \item{covFile}{Optional path to covariate table with matching sample IDs.
 Use `NULL` (default) to fit without covariates.}
+
+\item{covarColList}{Optional covariate column names to keep from `covFile`.
+Accepts either a character vector or a single comma-separated string.
+By default, all non-ID columns in `covFile` are used.}
 
 \item{depthFile}{Optional path to a sequencing-depth table with sample IDs in
 the first column and depth values in the second column.}

@@ -6,6 +6,9 @@
 #' @param abdFile Path to abundance table with sample IDs in the first column.
 #' @param covFile Optional path to covariate table with matching sample IDs.
 #'   Use `NULL` (default) to fit without covariates.
+#' @param covarColList Optional covariate column names to keep from `covFile`.
+#'   Accepts either a character vector or a single comma-separated string.
+#'   By default, all non-ID columns in `covFile` are used.
 #' @param depthFile Optional path to a sequencing-depth table with sample IDs in
 #'   the first column and depth values in the second column.
 #' @param depth.filter Passed to `PALM::palm.null.model()`; samples with depth
@@ -18,6 +21,7 @@
 #' @export
 fitNULL <- function(abdFile,
                     covFile = NULL,
+                    covarColList = NULL,
                     depthFile = NULL,
                     depth.filter = 0,
                     prev.filter = 0.1,
@@ -31,6 +35,9 @@ fitNULL <- function(abdFile,
   }
   if (!file.exists(abdFile)) {
     stop("'abdFile' does not exist: ", abdFile)
+  }
+  if (is.null(covFile) && !is.null(covarColList)) {
+    stop("'covarColList' requires a non-NULL 'covFile'.")
   }
   if (missing(NULLmodelFile) || !nzchar(NULLmodelFile)) {
     stop("'NULLmodelFile' must be provided.")
@@ -77,6 +84,25 @@ fitNULL <- function(abdFile,
       stop("'covFile' does not exist: ", covFile)
     }
     cov <- read_firstcol_as_rownames(covFile)
+    if (!is.null(covarColList)) {
+      if (length(covarColList) == 1L) {
+        covarColList <- trimws(strsplit(covarColList, ",", fixed = TRUE)[[1]])
+      } else {
+        covarColList <- trimws(as.character(covarColList))
+      }
+      covarColList <- covarColList[nzchar(covarColList)]
+      if (!length(covarColList)) {
+        stop("'covarColList' did not contain any valid column names.")
+      }
+      missing_cols <- setdiff(covarColList, colnames(cov))
+      if (length(missing_cols) > 0) {
+        stop(
+          "Requested covariate column(s) not found in 'covFile': ",
+          paste(missing_cols, collapse = ", ")
+        )
+      }
+      cov <- cov[, covarColList, drop = FALSE]
+    }
     message(
       "covFile provided: fitting PALM null model with ", ncol(cov), " covariate column(s) from ", covFile
     )

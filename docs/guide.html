@@ -188,6 +188,7 @@ docker run --rm --platform=linux/amd64 \
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R \
     --abdFile=${abdFile} \
     --covFile=${covFile} \
+    --covarColList=${covarColList} \
     --depthFile=${depthFile} \
     --depth.filter=${depth_filter} \
     --prev.filter=${prev_filter} \
@@ -198,6 +199,7 @@ docker run --rm --platform=linux/amd64 \
   step1_null.R \
     --abdFile=/work/${abdFile} \
     --covFile=/work/${covFile} \
+    --covarColList=${covarColList} \
     --depthFile=/work/${depthFile} \
     --depth.filter=${depth_filter} \
     --prev.filter=${prev_filter} \
@@ -206,6 +208,7 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Inputs:</strong> abundance table; optional covariate table (same sample IDs/order as abundance).</li>
     <li><strong>Outputs:</strong> <code>NULLmodelFile</code> containing <code>modglmm</code>; directories are created if missing.</li>
     <li><strong>Behavior:</strong> pass <code>--covFile=NULL</code> to run covariate-free; the CLI converts empty string or <code>NULL</code> to R <code>NULL</code>.</li>
+    <li><strong>Covariate subset:</strong> pass <code>--covarColList=age,sex,bmi</code> to use only those columns from <code>covFile</code>; names must match the header exactly.</li>
     <li><strong>PALM arguments:</strong> <code>depthFile</code> maps to PALM <code>depth</code> using the second column as sequencing depth; <code>depth.filter</code> and <code>prev.filter</code> are forwarded directly to <code>PALM::palm.null.model()</code>.</li>
     <li><strong>Tips:</strong> ensure no duplicated sample IDs; use relative abundance; keep sessionInfo for reproducibility.</li>
   </ul>
@@ -213,6 +216,7 @@ docker run --rm --platform=linux/amd64 \
     <tr><th>Name</th><th>Meaning</th><th>Example</th></tr>
     <tr><td><code>--abdFile</code></td><td>Abundance table used to fit the null model</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
     <tr><td><code>--covFile</code></td><td>Optional covariate file; the CLI also accepts empty string or <code>NULL</code> to omit covariates</td><td><code>--covFile=example/input/study1/cov.txt</code>; <code>--covFile=NULL</code></td></tr>
+    <tr><td><code>--covarColList</code></td><td>Optional comma-separated covariate column names to keep from <code>covFile</code></td><td><code>--covarColList=age,sex,bmi</code>; <code>--covarColList=NULL</code></td></tr>
     <tr><td><code>--depthFile</code></td><td>Optional sequencing-depth file keyed by sample ID; the second column is used as PALM <code>depth</code></td><td><code>--depthFile=example/input/study1/depth.txt</code>; <code>--depthFile=NULL</code></td></tr>
     <tr><td><code>--depth.filter</code></td><td>Sample-level depth threshold passed to PALM</td><td><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></td></tr>
     <tr><td><code>--prev.filter</code></td><td>Feature prevalence threshold passed to PALM</td><td><code>--prev.filter=0.1</code>; <code>--prev.filter=0</code></td></tr>
@@ -441,6 +445,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R \
     --abdFile=example/input/study1/abd.txt \
     --covFile=example/input/study1/cov.txt \
+    --covarColList=age,sex,bmi \
     --depthFile=NULL \
     --depth.filter=0 \
     --prev.filter=0.1 \
@@ -451,6 +456,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
   step1_null.R \
     --abdFile=/work/example/input/study1/abd.txt \
     --covFile=/work/example/input/study1/cov.txt \
+    --covarColList=age,sex,bmi \
     --depthFile=NULL \
     --depth.filter=0 \
     --prev.filter=0.1 \
