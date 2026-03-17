@@ -29,7 +29,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --pattern=${visPattern:-step3_meta_.*\\.txt$} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --snp=${snp:-NA} \
-    --pCut=${pCut:-NA} \
+    --pCut=${pCut1:-NA} \
     --showMeta=${showMeta:-TRUE} \
     --showHet=${showHet:-TRUE} \
     --width=${plotWidth:-NA} \
@@ -39,7 +39,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --metaDir=${metaDir:-${outputFolder}/meta} \
     --pattern=${visPattern:-step3_meta_.*\\.txt$} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
-    --pCut=${pCut:-NA} \
+    --pCut=${pCut2:-NA} \
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
 echo "Finish: Visualize results."

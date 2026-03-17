@@ -495,20 +495,33 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
     g <- g + ggplot2::xlim(xlim_num[1], xlim_num[2])
   }
 
-  # auto width/height when not provided: scale height by number of rows, width by studies
+  # auto width/height when not provided: keep plots readable without exceeding
+  # ggsave's default 50-inch guard when the phenotype count is large.
   auto_width <- if (is.na(width)) {
     max(7, length(study_lvls_all) * 1.1 + 3)
   } else {
     width
   }
   auto_height <- if (is.na(height)) {
-    max(6, length(y_levels) * 0.60 + 2 + if (meta_ok) 0.6 else 0)
+    per_row <- dplyr::case_when(
+      length(y_levels) <= 40 ~ 0.60,
+      length(y_levels) <= 80 ~ 0.45,
+      TRUE ~ 0.32
+    )
+    min(48, max(6, length(y_levels) * per_row + 2 + if (meta_ok) 0.6 else 0))
   } else {
     height
   }
 
   msg("Saving: %s", outFile)
-  ggplot2::ggsave(outFile, g, width = auto_width, height = auto_height, dpi = dpi)
+  ggplot2::ggsave(
+    outFile,
+    g,
+    width = auto_width,
+    height = auto_height,
+    dpi = dpi,
+    limitsize = FALSE
+  )
   invisible(g)
 }
 
