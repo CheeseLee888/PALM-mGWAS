@@ -18,7 +18,7 @@ metaSummary(
 \arguments{
 \item{study_dirs}{Named character vector/list. Names are study IDs, values are directories.}
 
-\item{pattern}{Regex pattern for input filenames, e.g. \code{step2_allchr_.*\\.txt$}.
+\item{pattern}{Regex pattern for input filenames, e.g. `step2_allchr_.*\\.txt$`.
 The phenotype/feature name is extracted from the first wildcard capture.}
 
 \item{features}{Optional feature names (without prefix/suffix). If NULL, infer from first study dir.}

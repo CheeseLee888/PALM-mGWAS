@@ -23,11 +23,9 @@ RUN curl -fsSL https://pixi.sh/install.sh | sh && \
     pixi install && \
     rm -rf /root/.cache
 
-# ---- PLINK 1.9 ----
-RUN wget -qO /tmp/plink.zip https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20230116.zip && \
-    unzip -q /tmp/plink.zip -d /usr/local/bin && \
-    chmod +x /usr/local/bin/plink && \
-    rm -f /tmp/plink.zip
+# ---- command-line tool smoke tests from pixi env ----
+RUN pixi run which plink && pixi run plink --version
+RUN pixi run which plink2 && pixi run plink2 --version
 
 # ---- deps ----
 RUN pixi run Rscript -e 'install.packages("abess", repos="https://cloud.r-project.org")'

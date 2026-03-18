@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 source "$WORK/config.sh"
 
 
@@ -8,7 +8,10 @@ source "$WORK/config.sh"
 # step2: score test
 echo "Start: Performe score test."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary.R \
-    --genoPrefix=${genoPrefix} \
+    --genoFile=${genoFile} \
+    --vcfField=${vcfField:-DS} \
+    --alleleOrder=${alleleOrder:-NULL} \
+    --keepTemp=${keepTemp:-FALSE} \
     --NULLmodelFile=${NULLmodelFile} \
     --PALMOutputFile=${palm1_step2_prefix} \
     --chrom=${chrom:-NULL} \

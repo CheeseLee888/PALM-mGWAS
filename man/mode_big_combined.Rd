@@ -10,10 +10,10 @@ mode_big_combined(
   metaIndex,
   outFile,
   sep = "\\t",
-  width = 12,
-  height = 5,
+  width = NA_real_,
+  height = NA_real_,
   dpi = 300,
-  printCut = 1e-08
+  pCut = 1e-05
 )
 }
 \arguments{
@@ -26,8 +26,9 @@ result files (as produced by step3).}
 
 \item{width, height, dpi}{Graphics device parameters passed to `ggsave`.}
 
-\item{printCut}{Optional cutoff; SNP/phenotype pairs with best p below this
-value are printed to the console and written to `<outFile>_printCut.txt`.}
+\item{pCut}{Optional cutoff. When using the combined mode, SNP/phenotype
+pairs with best p below this value are printed to the console and written
+to `<outFile>_pCut.txt`.}
 }
 \value{
 Invisibly returns the data frame passed to `qqman::manhattan()`.

@@ -1,14 +1,30 @@
-#' Run PALM summary statistics for PLINK genotype inputs
+#' Run PALM summary statistics for genotype inputs
 #'
-#' Reads PLINK bed/bim/fam files, applies a pre-fitted PALM null model, and
-#' writes per-phenotype summary statistics (one file per phenotype).
+#' Reads genotype data from PLINK, VCF, or BGEN input, applies a pre-fitted
+#' PALM null model, and writes per-phenotype summary statistics (one file per
+#' phenotype). Non-PLINK inputs are converted to a temporary PLINK dataset
+#' before testing.
 #'
-#' @param genoPrefix Path prefix to PLINK files (without extension); expects
-#'   `<genoPrefix>.bed/.bim/.fam` to exist.
+#' @param genoFile Path to genotype input. If the path ends with
+#'   `.vcf`, `.vcf.gz`, or `.vcf.bgz`, VCF input is assumed. If it ends with
+#'   `.bgen`, BGEN input is assumed. Otherwise it is treated as a PLINK prefix
+#'   without extension.
 #' @param NULLmodelFile Path to `.rda` containing the fitted null model
 #'   object named `modglmm`.
 #' @param PALMOutputFile Output prefix for per-phenotype result files; each
 #'   phenotype file will be written as `<PALMOutputFile>_<pheno>.txt`.
+#' @param vcfField VCF FORMAT field to import when converting VCF input.
+#'   Supported values are `"DS"` and `"GT"`.
+#' @param alleleOrder Allele order for BGEN conversion. Supported values are
+#'   `"ref-first"`, `"ref-last"`, and `"ref-unknown"`. Defaults to
+#'   `"ref-last"` for BGEN so imported allele coding matches the existing
+#'   PLINK-based step2 convention.
+#' @param plinkPath Path to the `plink` executable used for PLINK/VCF
+#'   conversion fallback. Defaults to `"plink"`.
+#' @param plink2Path Path to the `plink2` executable used for BGEN conversion
+#'   and preferred VCF conversion. Defaults to `"plink2"`.
+#' @param keepTemp Logical; if `TRUE`, keep temporary converted PLINK files for
+#'   VCF/BGEN inputs. Defaults to `FALSE`.
 #' @param chrom Optional chromosome filter (numeric or string like `"chr1"`).
 #'   Use `NULL` to keep all chromosomes.
 #' @param minMAF Optional minimum minor allele frequency threshold used to
@@ -20,9 +36,14 @@
 #'
 #' @return Invisibly returns a character vector of written file paths.
 #' @export
-getSummary <- function(genoPrefix,
+getSummary <- function(genoFile,
                        NULLmodelFile,
                        PALMOutputFile,
+                       vcfField = "DS",
+                       alleleOrder = NULL,
+                       plinkPath = "plink",
+                       plink2Path = "plink2",
+                       keepTemp = FALSE,
                        chrom = NULL,
                        minMAF = 0,
                        correct = "NULL",
@@ -34,8 +55,8 @@ getSummary <- function(genoPrefix,
     stop("Package 'snpStats' is required but not installed.")
   }
 
-  if (missing(genoPrefix) || !nzchar(genoPrefix)) {
-    stop("'genoPrefix' must be provided (PLINK prefix without extension).")
+  if (missing(genoFile) || !nzchar(genoFile)) {
+    stop("'genoFile' must be provided.")
   }
   if (missing(NULLmodelFile) || !nzchar(NULLmodelFile)) {
     stop("'NULLmodelFile' must be provided.")
@@ -49,6 +70,171 @@ getSummary <- function(genoPrefix,
   if (!is.numeric(minMAF) || length(minMAF) != 1L || is.na(minMAF) || minMAF < 0 || minMAF > 0.5) {
     stop("'minMAF' must be a single numeric value between 0 and 0.5.")
   }
+  if (!is.logical(keepTemp) || length(keepTemp) != 1L || is.na(keepTemp)) {
+    stop("'keepTemp' must be TRUE or FALSE.")
+  }
+  output_dir <- dirname(PALMOutputFile)
+  if (!output_dir %in% c("", ".")) {
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+
+  infer_geno_format <- function(path) {
+    lower <- tolower(path)
+    if (grepl("\\.(vcf|vcf\\.gz|vcf\\.bgz)$", lower)) {
+      return("vcf")
+    }
+    if (grepl("\\.bgen$", lower)) {
+      return("bgen")
+    }
+    if (file.exists(paste0(path, ".bed")) &&
+        file.exists(paste0(path, ".bim")) &&
+        file.exists(paste0(path, ".fam"))) {
+      return("plink")
+    }
+    "plink"
+  }
+
+  find_executable <- function(cmd) {
+    path <- Sys.which(cmd)
+    if (!nzchar(path)) {
+      return("")
+    }
+    path
+  }
+
+  run_command_checked <- function(command, args) {
+    message("Running command: ", command, " ", paste(args, collapse = " "))
+    status <- system2(command, args = args)
+    if (!identical(status, 0L)) {
+      stop("Command failed with exit status ", status, ": ", command)
+    }
+  }
+
+  prepare_plink_input <- function(genoFile,
+                                  genoFormat,
+                                  vcfField,
+                                  alleleOrder,
+                                  plinkPath,
+                                  plink2Path,
+                                  keepTemp,
+                                  PALMOutputFile) {
+    if (identical(genoFormat, "plink")) {
+      bed <- paste0(genoFile, ".bed")
+      bim <- paste0(genoFile, ".bim")
+      fam <- paste0(genoFile, ".fam")
+      for (f in c(bed, bim, fam)) {
+        if (!file.exists(f)) {
+          stop("Missing PLINK file: ", f)
+        }
+      }
+      return(list(prefix = genoFile, format = "plink", cleanup = character(0)))
+    }
+
+    if (!file.exists(genoFile)) {
+      stop("Genotype input file not found: ", genoFile)
+    }
+
+    temp_prefix <- file.path(
+      dirname(PALMOutputFile),
+      paste0(
+        basename(PALMOutputFile),
+        "_tmp_",
+        genoFormat,
+        "_plink"
+      )
+    )
+    cleanup <- paste0(temp_prefix, c(".bed", ".bim", ".fam", ".log", ".nosex"))
+
+    if (identical(genoFormat, "vcf")) {
+      vcfField <- toupper(trimws(as.character(vcfField)[1]))
+      if (!vcfField %in% c("DS", "GT")) {
+        stop("'vcfField' must be either 'DS' or 'GT'.")
+      }
+
+      plink2_exec <- find_executable(plink2Path)
+      if (nzchar(plink2_exec)) {
+        args <- c("--vcf", genoFile)
+        if (identical(vcfField, "DS")) {
+          args <- c(args, "dosage=DS")
+        }
+        args <- c(args, "--double-id", "--keep-allele-order", "--make-bed", "--out", temp_prefix)
+        run_command_checked(plink2_exec, args)
+      } else {
+        plink_exec <- find_executable(plinkPath)
+        if (!nzchar(plink_exec)) {
+          stop("Neither '", plink2Path, "' nor '", plinkPath, "' was found in PATH; cannot convert VCF input.")
+        }
+        args <- c("--vcf", genoFile)
+        if (identical(vcfField, "DS")) {
+          args <- c(args, "dosage=DS")
+        }
+        args <- c(args, "--double-id", "--keep-allele-order", "--make-bed", "--out", temp_prefix)
+        run_command_checked(plink_exec, args)
+      }
+    } else if (identical(genoFormat, "bgen")) {
+      plink2_exec <- find_executable(plink2Path)
+      if (!nzchar(plink2_exec)) {
+        stop("BGEN input requires plink2, but executable '", plink2Path, "' was not found in PATH.")
+      }
+      if (is.null(alleleOrder) || !nzchar(as.character(alleleOrder)[1]) || toupper(as.character(alleleOrder)[1]) == "NULL") {
+        alleleOrder <- "ref-last"
+      }
+      alleleOrder <- trimws(as.character(alleleOrder)[1])
+      if (!alleleOrder %in% c("ref-first", "ref-last", "ref-unknown")) {
+        stop("'alleleOrder' must be 'ref-first', 'ref-last', or 'ref-unknown' for BGEN input.")
+      }
+
+      sample_candidates <- c(
+        sub("\\.bgen$", ".sample", genoFile, ignore.case = TRUE),
+        sub("\\.bgen$", ".samples", genoFile, ignore.case = TRUE),
+        paste0(genoFile, ".sample"),
+        paste0(genoFile, ".samples")
+      )
+      sample_candidates <- unique(sample_candidates[file.exists(sample_candidates)])
+      sample_file <- character(0)
+      if (length(sample_candidates) > 0L) {
+        sample_file <- sample_candidates[1]
+        message("Detected BGEN sample file: ", sample_file)
+      } else {
+        message("No BGEN sample file detected; plink2 will rely on sample IDs embedded in the .bgen file.")
+      }
+
+      bgi_candidates <- c(
+        sub("\\.bgen$", ".bgi", genoFile, ignore.case = TRUE),
+        paste0(genoFile, ".bgi")
+      )
+      bgi_candidates <- unique(bgi_candidates[file.exists(bgi_candidates)])
+      if (length(bgi_candidates) > 0L) {
+        message("Detected BGEN index file: ", bgi_candidates[1])
+      } else {
+        message("No standalone BGEN .bgi file detected next to input; relying on plink2 defaults.")
+      }
+
+      args <- c("--bgen", genoFile, alleleOrder)
+      if (length(sample_file) == 1L && nzchar(sample_file)) {
+        args <- c(args, "--sample", sample_file)
+      }
+      args <- c(args, "--make-bed", "--out", temp_prefix)
+      run_command_checked(plink2_exec, args)
+    } else {
+      stop("Unsupported inferred genotype format: ", genoFormat)
+    }
+
+    for (f in paste0(temp_prefix, c(".bed", ".bim", ".fam"))) {
+      if (!file.exists(f)) {
+        stop("Conversion to temporary PLINK files failed; missing output: ", f)
+      }
+    }
+
+    if (keepTemp) {
+      message("Keeping temporary converted PLINK files with prefix: ", temp_prefix)
+    }
+
+    list(prefix = temp_prefix, format = genoFormat, cleanup = cleanup)
+  }
+
+  genoFormat <- infer_geno_format(genoFile)
+  message("Genotype input format inferred from genoFile: ", genoFormat)
 
   env <- new.env()
   load(NULLmodelFile, envir = env) # load modglmm
@@ -78,6 +264,26 @@ getSummary <- function(genoPrefix,
     message("Compositional correction enabled: correct=", correct)
   }
   message("Cluster option requested: useCluster=", useCluster)
+
+  if (!identical(genoFormat, "plink") && isTRUE(useCluster)) {
+    message("Clustering from PLINK .fam FID is only available for native PLINK input. Setting useCluster=FALSE.")
+    useCluster <- FALSE
+  }
+
+  geno_input <- prepare_plink_input(
+    genoFile = genoFile,
+    genoFormat = genoFormat,
+    vcfField = vcfField,
+    alleleOrder = alleleOrder,
+    plinkPath = plinkPath,
+    plink2Path = plink2Path,
+    keepTemp = keepTemp,
+    PALMOutputFile = PALMOutputFile
+  )
+  if (!keepTemp && length(geno_input$cleanup) > 0L) {
+    on.exit(unlink(geno_input$cleanup, force = TRUE), add = TRUE)
+  }
+  genoPrefix <- geno_input$prefix
 
   # read genotype data and make it a data.frame
   bed <- paste0(genoPrefix, ".bed")

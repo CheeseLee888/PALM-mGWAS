@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 source "$WORK/config.sh"
 
 
@@ -11,7 +11,7 @@ echo "Start: Check input files."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step0_checkInput.R \
     --abdFile=${abdFile} \
     --covFile=${covFile} \
-    --genoPrefix=${genoPrefix}
+    --genoFile=${genoFile}
 echo "Finish: Check input files."    
 
 # step1: fit null model for all phenotypes

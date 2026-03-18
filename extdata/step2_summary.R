@@ -6,8 +6,20 @@ suppressPackageStartupMessages({
 })
 
 option_list <- list(
-    make_option("--genoPrefix",
+    make_option("--genoFile",
         type = "character", default = "",
+        help = ""
+    ),
+    make_option("--vcfField",
+        type = "character", default = "DS",
+        help = ""
+    ),
+    make_option("--alleleOrder",
+        type = "character", default = "",
+        help = ""
+    ),
+    make_option("--keepTemp",
+        type = "logical", default = FALSE,
         help = ""
     ),
     make_option("--NULLmodelFile",
@@ -40,9 +52,15 @@ opt <- parse_args(OptionParser(option_list = option_list))
 if (is.null(opt$correct) || !nzchar(opt$correct) || toupper(opt$correct) == "NULL") {
   opt$correct <- NULL
 }
+if (is.null(opt$alleleOrder) || !nzchar(opt$alleleOrder) || toupper(opt$alleleOrder) == "NULL") {
+  opt$alleleOrder <- NULL
+}
 
 getSummary(
-  genoPrefix = opt$genoPrefix,
+  genoFile = opt$genoFile,
+  vcfField = opt$vcfField,
+  alleleOrder = opt$alleleOrder,
+  keepTemp = opt$keepTemp,
   NULLmodelFile = opt$NULLmodelFile,
   PALMOutputFile = opt$PALMOutputFile,
   chrom = opt$chrom,

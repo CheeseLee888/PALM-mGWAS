@@ -2,12 +2,17 @@
 % Please edit documentation in R/getSummary.R
 \name{getSummary}
 \alias{getSummary}
-\title{Run PALM summary statistics for PLINK genotype inputs}
+\title{Run PALM summary statistics for genotype inputs}
 \usage{
 getSummary(
-  genoPrefix,
+  genoFile,
   NULLmodelFile,
   PALMOutputFile,
+  vcfField = "DS",
+  alleleOrder = NULL,
+  plinkPath = "plink",
+  plink2Path = "plink2",
+  keepTemp = FALSE,
   chrom = NULL,
   minMAF = 0,
   correct = "NULL",
@@ -15,14 +20,33 @@ getSummary(
 )
 }
 \arguments{
-\item{genoPrefix}{Path prefix to PLINK files (without extension); expects
-`<genoPrefix>.bed/.bim/.fam` to exist.}
+\item{genoFile}{Path to genotype input. If the path ends with
+`.vcf`, `.vcf.gz`, or `.vcf.bgz`, VCF input is assumed. If it ends with
+`.bgen`, BGEN input is assumed. Otherwise it is treated as a PLINK prefix
+without extension.}
 
 \item{NULLmodelFile}{Path to `.rda` containing the fitted null model
 object named `modglmm`.}
 
 \item{PALMOutputFile}{Output prefix for per-phenotype result files; each
 phenotype file will be written as `<PALMOutputFile>_<pheno>.txt`.}
+
+\item{vcfField}{VCF FORMAT field to import when converting VCF input.
+Supported values are `"DS"` and `"GT"`.}
+
+\item{alleleOrder}{Allele order for BGEN conversion. Supported values are
+`"ref-first"`, `"ref-last"`, and `"ref-unknown"`. Defaults to
+`"ref-last"` for BGEN so imported allele coding matches the existing
+PLINK-based step2 convention.}
+
+\item{plinkPath}{Path to the `plink` executable used for PLINK/VCF
+conversion fallback. Defaults to `"plink"`.}
+
+\item{plink2Path}{Path to the `plink2` executable used for BGEN conversion
+and preferred VCF conversion. Defaults to `"plink2"`.}
+
+\item{keepTemp}{Logical; if `TRUE`, keep temporary converted PLINK files for
+VCF/BGEN inputs. Defaults to `FALSE`.}
 
 \item{chrom}{Optional chromosome filter (numeric or string like `"chr1"`).
 Use `NULL` to keep all chromosomes.}
@@ -40,6 +64,8 @@ information when available.}
 Invisibly returns a character vector of written file paths.
 }
 \description{
-Reads PLINK bed/bim/fam files, applies a pre-fitted PALM null model, and
-writes per-phenotype summary statistics (one file per phenotype).
+Reads genotype data from PLINK, VCF, or BGEN input, applies a pre-fitted
+PALM null model, and writes per-phenotype summary statistics (one file per
+phenotype). Non-PLINK inputs are converted to a temporary PLINK dataset
+before testing.
 }

@@ -13,8 +13,8 @@ mode_pheno_snp_forest(
   studyLabels = NULL,
   sep = "\\t",
   xlim_str = NA_character_,
-  width = 9,
-  height = 4,
+  width = NA_real_,
+  height = NA_real_,
   dpi = 300,
   show_meta = TRUE,
   show_het = TRUE

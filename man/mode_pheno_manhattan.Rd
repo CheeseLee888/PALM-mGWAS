@@ -8,15 +8,13 @@ mode_pheno_manhattan(
   metaIndex,
   phenoName,
   outFile,
-  pCut,
   sep = "\\t",
-  onlySig = FALSE,
-  width = 12,
-  height = 4.5,
+  width = NA_real_,
+  height = NA_real_,
   dpi = 300,
   qqOutFile = NULL,
-  qq_width = 6,
-  qq_height = 6,
+  qq_width = NA_real_,
+  qq_height = NA_real_,
   topOutFile = NULL,
   top_n = 10
 )
@@ -29,12 +27,7 @@ result files (as produced by step3).}
 
 \item{outFile}{Path to the output JPEG.}
 
-\item{pCut}{P-value cutoff used for Manhattan suggestive line and optional
-filtering.}
-
 \item{sep}{Field separator for meta files.}
-
-\item{onlySig}{If TRUE, keep only points passing `pCut`.}
 
 \item{width, height, dpi}{Graphics device parameters passed to `ggsave`.}
 

@@ -9,13 +9,12 @@ mode_snp_forest_across_phenos(
   snp,
   outFile,
   pCut = 1e-05,
-  sigOnlyPheno = FALSE,
   ciMult = 1.96,
   studyLabels = NULL,
   sep = "\\t",
   xlim_str = NA_character_,
-  width = 10,
-  height = 7,
+  width = NA_real_,
+  height = NA_real_,
   dpi = 300,
   show_meta = TRUE,
   show_het = TRUE
@@ -29,11 +28,8 @@ result files (as produced by step3).}
 
 \item{outFile}{Path to the output JPEG.}
 
-\item{pCut}{P-value cutoff used to decide significance across phenotypes
-when `sigOnlyPheno` is TRUE.}
-
-\item{sigOnlyPheno}{If TRUE, keep only phenotypes where this SNP passes
-`pCut`.}
+\item{pCut}{P-value cutoff used to filter phenotypes for this SNP. Use `NA`
+to disable filtering and keep all phenotypes containing the SNP.}
 
 \item{ciMult}{Multiplier for confidence interval width.}
 
