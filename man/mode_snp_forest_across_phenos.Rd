@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualization.R
 \name{mode_snp_forest_across_phenos}
 \alias{mode_snp_forest_across_phenos}
-\title{Forest plot for a SNP across all phenotypes}
+\title{Forest plots for a SNP across all phenotypes, one file per phenotype}
 \usage{
 mode_snp_forest_across_phenos(
   metaIndex,
@@ -26,7 +26,8 @@ result files (as produced by step3).}
 
 \item{snp}{SNP ID to plot.}
 
-\item{outFile}{Path to the output JPEG.}
+\item{outFile}{Output file path or basename. A phenotype suffix is inserted
+before the extension for each generated file.}
 
 \item{pCut}{P-value cutoff used to filter phenotypes for this SNP. Use `NA`
 to disable filtering and keep all phenotypes containing the SNP.}
@@ -44,5 +45,5 @@ to disable filtering and keep all phenotypes containing the SNP.}
 \item{show_meta}{If TRUE, overlay meta-effect in black.}
 }
 \description{
-Forest plot for a SNP across all phenotypes
+Forest plots for a SNP across all phenotypes, one file per phenotype
 }

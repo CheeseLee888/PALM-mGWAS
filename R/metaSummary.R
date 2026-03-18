@@ -313,7 +313,7 @@ metaSummary <- function(study_dirs,
 
       # optional: keep SNP ordering stable (by CHR/POS if available)
       if (all(!is.na(out$CHR)) && all(!is.na(out$POS))) {
-        out <- dplyr::arrange(out, CHR, POS)
+        out <- dplyr::arrange(out, .data$CHR, .data$POS)
       }
 
       return(out)
@@ -335,7 +335,7 @@ metaSummary <- function(study_dirs,
       )
 
       if (all(!is.na(out$CHR)) && all(!is.na(out$POS))) {
-        out <- dplyr::arrange(out, CHR, POS)
+        out <- dplyr::arrange(out, .data$CHR, .data$POS)
       }
       return(out)
     }

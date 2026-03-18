@@ -44,10 +44,12 @@ standardize_meta_df <- function(df, study_id = "study1") {
     df$meta_stderr <- df$stderr
   }
 
-  has_study_cols <- any(grepl("^study[0-9]+_est$", names(df)))
+  est_cols <- setdiff(grep("_est$", names(df), value = TRUE), "meta_est")
+  stderr_cols <- setdiff(grep("_stderr$", names(df), value = TRUE), "meta_stderr")
+  has_study_cols <- length(est_cols) > 0 && length(stderr_cols) > 0
   if (!has_study_cols) {
-    # ensure the synthetic study id matches detect_studies() expectation
-    sid <- if (grepl("^study[0-9]+$", study_id)) study_id else "study1"
+    sid <- sanitize_filename(study_id)
+    if (!nzchar(sid)) sid <- "study1"
     fallback <- function(primary, backup) {
       if (!is.null(primary)) return(primary)
       backup
@@ -97,19 +99,90 @@ discover_meta_files <- function(metaDir,
     )
   }
 
-  # Derive phenotype name from the first `.*` in the pattern (e.g., step3_meta_.*\\.txt$ or step2_allchr_.*\\.txt$)
   base_names <- basename(files)
-  capture_pattern <- sub("\\.\\*", "(.*)", pattern)
-  capture_pattern <- sub("\\*", "(.*)", capture_pattern, fixed = FALSE)
-  matches <- regexec(capture_pattern, base_names)
-  extracted <- regmatches(base_names, matches)
-  pheno <- vapply(extracted, function(x) {
-    if (length(x) >= 2) x[2] else NA_character_
-  }, character(1))
+  extract_by_fixed_affixes <- function(names_vec, pattern_str) {
+    wildcard_pos <- regexpr("\\.\\*", pattern_str)
+    if (wildcard_pos[1] < 0) {
+      wildcard_pos <- regexpr("\\*", pattern_str)
+    }
+    if (wildcard_pos[1] < 0) {
+      return(rep(NA_character_, length(names_vec)))
+    }
 
-  # Fallback: strip extension when capture fails
-  if (any(is.na(pheno))) {
-    pheno[is.na(pheno)] <- tools::file_path_sans_ext(base_names[is.na(pheno)])
+    prefix_pat <- substr(pattern_str, 1, wildcard_pos[1] - 1)
+    suffix_pat <- substr(
+      pattern_str,
+      wildcard_pos[1] + attr(wildcard_pos, "match.length"),
+      nchar(pattern_str)
+    )
+
+    unescape_literal <- function(x) {
+      x <- sub("\\$$", "", x)
+      x <- gsub("^\\^", "", x)
+      x <- gsub("\\\\\\.", ".", x)
+      x <- gsub("\\\\\\+", "+", x)
+      x <- gsub("\\\\\\(", "(", x)
+      x <- gsub("\\\\\\)", ")", x)
+      x <- gsub("\\\\\\[", "[", x)
+      x <- gsub("\\\\\\]", "]", x)
+      x <- gsub("\\\\\\{", "{", x)
+      x <- gsub("\\\\\\}", "}", x)
+      x <- gsub("\\\\\\|", "|", x)
+      x <- gsub("\\\\\\?", "?", x)
+      x <- gsub("\\\\\\^", "^", x)
+      x <- gsub("\\\\\\$", "$", x)
+      x <- gsub("\\\\\\\\", "\\\\", x)
+      x
+    }
+
+    prefix <- unescape_literal(prefix_pat)
+    suffix <- unescape_literal(suffix_pat)
+
+    bad_prefix <- nzchar(prefix) & !startsWith(names_vec, prefix)
+    bad_suffix <- nzchar(suffix) & !endsWith(names_vec, suffix)
+    out <- substring(names_vec, first = nchar(prefix) + 1)
+    if (nzchar(suffix)) {
+      suffix_n <- nchar(suffix)
+      out <- ifelse(
+        nchar(out) >= suffix_n,
+        substr(out, 1, nchar(out) - suffix_n),
+        ""
+      )
+    }
+    out[bad_prefix | bad_suffix] <- NA_character_
+    out
+  }
+
+  pheno <- extract_by_fixed_affixes(base_names, pattern)
+  if (any(is.na(pheno) | !nzchar(pheno))) {
+    # Fallback to regex capture when fixed prefix/suffix stripping is not enough.
+    capture_pattern <- sub("\\.\\*", "(.*)", pattern)
+    capture_pattern <- sub("\\*", "(.*)", capture_pattern, fixed = FALSE)
+    matches <- regexec(capture_pattern, base_names)
+    extracted <- regmatches(base_names, matches)
+    pheno_regex <- vapply(extracted, function(x) {
+      if (length(x) >= 2) x[2] else NA_character_
+    }, character(1))
+
+    replace_idx <- is.na(pheno) | !nzchar(pheno)
+    pheno[replace_idx] <- pheno_regex[replace_idx]
+  }
+
+  if (any(is.na(pheno) | !nzchar(pheno))) {
+    pheno[is.na(pheno) | !nzchar(pheno)] <- tools::file_path_sans_ext(base_names[is.na(pheno) | !nzchar(pheno)])
+  }
+
+  dup_pheno <- unique(pheno[duplicated(pheno)])
+  if (length(dup_pheno) > 0) {
+    dup_rows <- data.frame(pheno = pheno, file = files, stringsAsFactors = FALSE) |>
+      dplyr::filter(.data$pheno %in% dup_pheno) |>
+      dplyr::arrange(.data$pheno, .data$file)
+    stop(
+      "discover_meta_files: duplicated phenotype names extracted from filenames: ",
+      paste(dup_pheno, collapse = ", "),
+      "\nExamples:\n",
+      paste(sprintf("  %s -> %s", dup_rows$pheno, basename(dup_rows$file)), collapse = "\n")
+    )
   }
 
   data.frame(
@@ -118,7 +191,7 @@ discover_meta_files <- function(metaDir,
     mode = "pattern",
     stringsAsFactors = FALSE
   ) |>
-    dplyr::arrange(pheno) |>
+    dplyr::arrange(.data$pheno) |>
     (\(x) {
       message("discover_meta_files: matched ", nrow(x), " file(s).")
       x
@@ -127,8 +200,11 @@ discover_meta_files <- function(metaDir,
 
 # Detect study columns (est/stderr) in a meta result data frame
 detect_studies <- function(df) {
-  est_cols <- grep("^study[0-9]+_est$", names(df), value = TRUE)
-  if (length(est_cols) == 0) stop("Cannot find any columns like study1_est, study2_est, ...")
+  est_cols <- grep("_est$", names(df), value = TRUE)
+  est_cols <- setdiff(est_cols, "meta_est")
+  if (length(est_cols) == 0) {
+    stop("Cannot find any per-study columns ending in '_est'.")
+  }
   ids <- sub("_est$", "", est_cols)
   stderr_cols <- paste0(ids, "_stderr")
   miss <- setdiff(stderr_cols, names(df))
@@ -182,6 +258,43 @@ with_suffix <- function(path, suffix) {
   base <- if (nzchar(ext)) sub(paste0("\\.", ext, "$"), "", path) else path
   ext_part <- if (nzchar(ext)) paste0(".", ext) else ""
   paste0(base, suffix, ext_part)
+}
+
+# Open a graphics device based on the output file extension.
+#
+# @param outFile Output path.
+# @param width,height,dpi Device size in inches and resolution.
+open_plot_device <- function(outFile, width, height, dpi = 300) {
+  ext <- tolower(tools::file_ext(outFile))
+
+  if (ext %in% c("png", "")) {
+    grDevices::png(outFile, width = width, height = height, units = "in", res = dpi)
+    return(invisible("png"))
+  }
+
+  if (ext %in% c("jpg", "jpeg")) {
+    grDevices::jpeg(outFile, width = width, height = height, units = "in", res = dpi)
+    return(invisible("jpeg"))
+  }
+
+  if (ext == "pdf") {
+    grDevices::pdf(outFile, width = width, height = height, onefile = FALSE)
+    return(invisible("pdf"))
+  }
+
+  stop("Unsupported output extension for forest plot: ", outFile)
+}
+
+# Format numeric values for forest-plot annotations.
+fmt_num <- function(x, digits = 3) {
+  ifelse(is.na(x), "NA", formatC(x, digits = digits, format = "f"))
+}
+
+# Format p-values for concise display.
+fmt_pval <- function(x) {
+  if (is.na(x)) return("NA")
+  if (x < 1e-4) return(format(x, digits = 2, scientific = TRUE))
+  formatC(x, digits = 4, format = "f")
 }
 
 # Write top-N rows ordered by p-value
@@ -548,6 +661,156 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
   invisible(g)
 }
 
+# Draw a single phenotype/SNP forest plot with study information columns.
+#
+# Uses `metafor::forest.default()` so the figure can carry study labels,
+# estimates, standard errors, inverse-variance weights, and textual CI output.
+forest_plot_single_pheno <- function(r, pheno, snp, outFile,
+                                     ciMult = 1.96,
+                                     studyLabels = NULL,
+                                     xlim_num = NULL,
+                                     width = NA_real_, height = NA_real_, dpi = 300,
+                                     show_meta = TRUE,
+                                     show_het = TRUE) {
+  if (!requireNamespace("metafor", quietly = TRUE)) {
+    stop("Package 'metafor' is required for forest plots with study details.")
+  }
+
+  studies <- detect_studies(r)
+  ids <- studies$ids
+  yi <- as.numeric(r[1, paste0(ids, "_est"), drop = TRUE])
+  sei <- as.numeric(r[1, paste0(ids, "_stderr"), drop = TRUE])
+  keep <- !is.na(yi) & !is.na(sei) & is.finite(yi) & is.finite(sei) & sei > 0
+
+  if (!any(keep)) {
+    stop("No valid study estimate/stderr pairs found for SNP ", snp, " in phenotype ", pheno, ".")
+  }
+
+  ids <- ids[keep]
+  yi <- yi[keep]
+  sei <- sei[keep]
+  ci_lb <- yi - ciMult * sei
+  ci_ub <- yi + ciMult * sei
+  weights <- (1 / (sei^2))
+  weights_pct <- weights / sum(weights) * 100
+
+  if (!is.null(studyLabels) && length(studyLabels) == length(studies$ids)) {
+    study_names <- studyLabels[keep]
+  } else {
+    study_names <- ids
+  }
+
+  meta_ok <- show_meta &&
+    length(ids) > 1 &&
+    all(c("meta_est", "meta_stderr") %in% names(r)) &&
+    !is.na(r$meta_est[1]) &&
+    !is.na(r$meta_stderr[1]) &&
+    is.finite(r$meta_est[1]) &&
+    is.finite(r$meta_stderr[1]) &&
+    r$meta_stderr[1] > 0
+
+  meta_est <- if (meta_ok) as.numeric(r$meta_est[1]) else NA_real_
+  meta_se <- if (meta_ok) as.numeric(r$meta_stderr[1]) else NA_real_
+  meta_lb <- if (meta_ok) meta_est - ciMult * meta_se else NA_real_
+  meta_ub <- if (meta_ok) meta_est + ciMult * meta_se else NA_real_
+  meta_p <- if ("meta_pval" %in% names(r)) as.numeric(r$meta_pval[1]) else NA_real_
+  het_p <- if ("meta_pval.het" %in% names(r)) as.numeric(r$meta_pval.het[1]) else NA_real_
+
+  axis_rng <- range(c(ci_lb, ci_ub, if (meta_ok) c(meta_lb, meta_ub)), na.rm = TRUE)
+  if (!all(is.finite(axis_rng))) axis_rng <- c(-1, 1)
+  if (diff(axis_rng) == 0) axis_rng <- axis_rng + c(-0.5, 0.5)
+
+  if (is.null(xlim_num)) {
+    pad <- max(0.15 * diff(axis_rng), 0.2)
+    alim <- c(axis_rng[1] - pad, axis_rng[2] + pad)
+  } else {
+    alim <- xlim_num
+  }
+
+  span <- diff(alim)
+  plot_xmin <- alim[1] - 2.45 * span
+  plot_xmax <- alim[2] + 2.35 * span
+  est_x <- alim[1] - 1.55 * span
+  se_x <- alim[1] - 0.98 * span
+  wt_x <- alim[1] - 0.42 * span
+  ci_x <- alim[2] + 0.52 * span
+
+  k <- length(yi)
+  rows <- seq(from = k + 1, to = 2, by = -1)
+  header_y <- k + 2.4
+  meta_row <- 1
+
+  auto_width <- if (is.na(width)) 12.8 else width
+  auto_height <- if (is.na(height)) max(4.8, 2.7 + 0.48 * k + if (meta_ok) 0.4 else 0) else height
+
+  tbl_est <- fmt_num(yi)
+  tbl_se <- fmt_num(sei)
+  tbl_wt <- paste0(fmt_num(weights_pct, digits = 1), "%")
+  tbl_ci <- paste0(fmt_num(yi), " [", fmt_num(ci_lb), ", ", fmt_num(ci_ub), "]")
+
+  summary_note <- paste0(
+    "SNP: ", snp,
+    " | CHR: ", as.character(r$CHR[1]),
+    " | POS: ", as.character(r$POS[1]),
+    if (!is.na(meta_p)) paste0(" | meta P: ", fmt_pval(meta_p)) else "",
+    if (!is.na(het_p)) paste0(" | het P: ", fmt_pval(het_p)) else ""
+  )
+
+  msg("Saving: %s", outFile)
+  open_plot_device(outFile, width = auto_width, height = auto_height, dpi = dpi)
+  on.exit(grDevices::dev.off(), add = TRUE)
+
+  old_par <- graphics::par(no.readonly = TRUE)
+  on.exit(graphics::par(old_par), add = TRUE)
+
+  graphics::par(mar = c(4.8, 4.2, 4.4, 10.5), xpd = NA)
+
+  metafor::forest.default(
+    x = yi,
+    sei = sei,
+    slab = study_names,
+    rows = rows,
+    xlim = c(plot_xmin, plot_xmax),
+    alim = alim,
+    refline = 0,
+    xlab = "Effect",
+    annotate = FALSE,
+    header = FALSE,
+    pch = 15,
+    psize = 0.9 + 1.6 * sqrt(weights_pct / max(weights_pct)),
+    efac = c(0, 1),
+    cex = 0.9
+  )
+
+  if (meta_ok) {
+    meta_col <- if (show_het && !is.na(het_p)) "#8B0000" else "#000000"
+    metafor::addpoly.default(
+      x = meta_est,
+      sei = meta_se,
+      row = meta_row,
+      mlab = "Meta",
+      annotate = FALSE,
+      col = meta_col,
+      border = meta_col
+    )
+    graphics::text(ci_x, meta_row, paste0(fmt_num(meta_est), " [", fmt_num(meta_lb), ", ", fmt_num(meta_ub), "]"), pos = 4, cex = 0.88, xpd = NA)
+  }
+
+  graphics::text(plot_xmin, header_y, "Study", pos = 4, font = 2, cex = 0.92, xpd = NA)
+  graphics::text(est_x, header_y, "Effect", font = 2, cex = 0.92, xpd = NA)
+  graphics::text(se_x, header_y, "SE", font = 2, cex = 0.92, xpd = NA)
+  graphics::text(wt_x, header_y, "Weight", font = 2, cex = 0.92, xpd = NA)
+  graphics::text(ci_x, header_y, "Effect [95% CI]", pos = 4, font = 2, cex = 0.92, xpd = NA)
+
+  graphics::text(est_x, rows, tbl_est, cex = 0.88, xpd = NA)
+  graphics::text(se_x, rows, tbl_se, cex = 0.88, xpd = NA)
+  graphics::text(wt_x, rows, tbl_wt, cex = 0.88, xpd = NA)
+  graphics::text(ci_x, rows, tbl_ci, pos = 4, cex = 0.88, xpd = NA)
+
+  graphics::title(main = paste0("Forest: ", pheno, " @ ", snp))
+  graphics::mtext(summary_note, side = 3, line = 0.6, cex = 0.78)
+}
+
 # Infix helper: return first non-empty string
 `%||%` <- function(a, b) if (!is.null(a) && nzchar(a)) a else b
 
@@ -680,7 +943,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
                                  qqOutFile = NULL, qq_width = NA_real_, qq_height = NA_real_,
                                  topOutFile = NULL, top_n = 10,
                                  manhattanCap = NA_real_) {
-  row <- metaIndex |> dplyr::filter(.data$pheno == phenoName)
+  row <- metaIndex |> dplyr::filter(.data$pheno == .env$phenoName)
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", phenoName)
 
   df <- read_result_file(row$file[1], sep = sep, study_id = phenoName)
@@ -716,7 +979,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
 
 
 # Mode C: SNP fixed; forest across phenos
-#' Forest plot for a SNP across all phenotypes
+#' Forest plots for a SNP across all phenotypes, one file per phenotype
 #'
 #' @inheritParams mode_big_combined
 #' @param pCut P-value cutoff used to filter phenotypes for this SNP. Use `NA`
@@ -773,56 +1036,34 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
   }
   df_all <- df_all |>
     dplyr::mutate(score = .data$meta_pval) |>
-    dplyr::arrange(score)
-
-  studies <- detect_studies(df_all)
-
-  df_long <- to_long_study(df_all, studies, y_col = "pheno", ciMult = ciMult, studyLabels = studyLabels)
-
-  # meta overall
-  df_meta <- NULL
-  est_col <- "meta_est"
-  se_col <- "meta_stderr"
-  has_meta_cols <- all(c(est_col, se_col) %in% names(df_all))
-  show_meta_flag <- show_meta && has_meta_cols
-  if (show_meta && !has_meta_cols) {
-    msg("meta_est/meta_stderr not found; skipping meta overlay for SNP forest.")
-  }
-  if (show_meta_flag) {
-    df_meta <- df_all |>
-      dplyr::transmute(
-        y = pheno,
-        est = .data[[est_col]],
-        se = .data[[se_col]],
-        lower = est - ciMult * .data[[se_col]],
-        upper = est + ciMult * .data[[se_col]]
-      )
-  }
-
-  # highlight phenos with heterogeneity (use pval.het)
-  het_y <- character(0)
-  het_col <- if ("meta_pval.het" %in% names(df_all)) "meta_pval.het" else NULL
-  if (!is.null(het_col)) {
-    het_y <- df_all$pheno[!is.na(df_all[[het_col]])]
-  }
-
-  y_levels <- df_all$pheno
+    dplyr::arrange(.data$score)
 
   xlim_num <- parse_xlim(xlim_str)
+  out_files <- character(nrow(df_all))
 
-  forest_plot(
-    df_long = df_long,
-    y_levels = y_levels,
-    outFile = outFile,
-    title = paste0("SNP forest across phenotypes: ", snp),
-    xlab = "Effect (study-specific; meta in black)",
-    xlim_num = xlim_num,
-    het_y = het_y,
-    width = width, height = height, dpi = dpi,
-    show_meta = show_meta_flag,
-    df_meta = df_meta,
-    show_het = show_het
-  )
+  for (i in seq_len(nrow(df_all))) {
+    ph <- df_all$pheno[i]
+    ph_out <- with_suffix(outFile, paste0("_", sanitize_filename(ph)))
+    forest_plot_single_pheno(
+      r = df_all[i, , drop = FALSE],
+      pheno = ph,
+      snp = snp,
+      outFile = ph_out,
+      ciMult = ciMult,
+      studyLabels = studyLabels,
+      xlim_num = xlim_num,
+      width = width, height = height, dpi = dpi,
+      show_meta = show_meta,
+      show_het = show_het
+    )
+    out_files[i] <- ph_out
+  }
+
+  invisible(data.frame(
+    pheno = df_all$pheno,
+    outFile = out_files,
+    stringsAsFactors = FALSE
+  ))
 }
 
 # Mode D: pheno + snp fixed; forest across studies
@@ -840,54 +1081,24 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
                                   width = NA_real_, height = NA_real_, dpi = 300,
                                   show_meta = TRUE,
                                   show_het = TRUE) {
-  row <- metaIndex |> dplyr::filter(.data$pheno == pheno)
+  row <- metaIndex |> dplyr::filter(.data$pheno == .env$pheno)
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", pheno)
 
   df <- read_result_file(row$file[1], sep = sep, study_id = pheno)
   r <- df[df$SNP == snp, , drop = FALSE]
   if (nrow(r) == 0) stop("SNP not found in this pheno meta file: ", snp)
 
-  studies <- detect_studies(r)
-
-  r$y <- pheno
-  df_long <- to_long_study(r, studies, y_col = "y", ciMult = ciMult, studyLabels = studyLabels)
-
-  df_meta <- NULL
-  est_col <- "meta_est"
-  se_col <- "meta_stderr"
-  has_meta_cols <- all(c(est_col, se_col) %in% names(r))
-  show_meta_flag <- show_meta && has_meta_cols
-  if (show_meta && !has_meta_cols) {
-    msg("meta_est/meta_stderr not found; skipping meta overlay for pheno/SNP forest.")
-  }
-  if (show_meta_flag) {
-    df_meta <- r |>
-      dplyr::transmute(
-        y = y,
-        est = .data[[est_col]],
-        se = .data[[se_col]],
-        lower = est - ciMult * .data[[se_col]],
-        upper = est + ciMult * .data[[se_col]]
-      )
-  }
-
-  het_y <- character(0)
-  het_col <- if ("meta_pval.het" %in% names(r)) "meta_pval.het" else NULL
-  if (!is.null(het_col) && !is.na(r[[het_col]][1])) het_y <- pheno
-
   xlim_num <- parse_xlim(xlim_str)
-
-  forest_plot(
-    df_long = df_long,
-    y_levels = c(pheno),
+  forest_plot_single_pheno(
+    r = r,
+    pheno = pheno,
+    snp = snp,
     outFile = outFile,
-    title = paste0("Forest: ", pheno, " @ ", snp),
-    xlab = "Effect (study-specific; meta in black)",
+    ciMult = ciMult,
+    studyLabels = studyLabels,
     xlim_num = xlim_num,
-    het_y = het_y,
     width = width, height = height, dpi = dpi,
-    show_meta = show_meta_flag,
-    df_meta = df_meta,
+    show_meta = show_meta,
     show_het = show_het
   )
 }

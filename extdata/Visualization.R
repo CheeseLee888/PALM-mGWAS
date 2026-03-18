@@ -25,11 +25,11 @@ option_list <- list(
   make_option(c("--PlotOutputFile"), type = "character", default = NA,
               help = "Output file name (png/pdf). If not set, auto-named."),
   make_option(c("--pCut"), type = "character", default = "5e-8",
-              help = "When neither --pheno nor --snp is given, print SNP/pheno pairs whose best p across phenos is below this cutoff; when only --snp is given, filter phenotypes by this cutoff. Use NA to disable filtering/printing [default %default]"),
+              help = "When neither --pheno nor --snp is given, print SNP/pheno pairs whose best p across phenos is below this cutoff; when only --snp is given, filter phenotypes by this cutoff before writing one forest plot per phenotype. Use NA to disable filtering/printing [default %default]"),
   make_option(c("--showMeta"), type = "logical", default = TRUE,
               help = "Only valid when --snp is given; overlay meta est/stderr in black if available [default TRUE]"),
   make_option(c("--showHet"), type = "logical", default = TRUE,
-              help = "Only valid when --snp is given; highlight heterogeneity rows in yellow [default TRUE]"),
+              help = "Only valid when --snp is given; emphasize heterogeneity information in SNP-based forest plots when available [default TRUE]"),
   make_option(c("--width"), type = "character", default = NA_character_,
               help = "Plot width inches; NA lets the script auto-size"),
   make_option(c("--height"), type = "character", default = NA_character_,
@@ -131,7 +131,7 @@ msg("Found %d files.", nrow(metaIndex))
 msg("Resolved pCut: %s", if (is.na(p_cut)) "NA" else format(p_cut, scientific = TRUE))
 msg("Resolved manhattanCap: %s", if (is.na(manhattan_cap)) "NA" else as.character(manhattan_cap))
 msg("Resolved width x height: %s x %s", if (is.na(width_in)) "auto" else as.character(width_in), if (is.na(height_in)) "auto" else as.character(height_in))
-msg("Output file: %s", outFile)
+msg("Output file/base: %s", outFile)
 
 if (is.null(pheno) && is.null(snp)) {
   # Mode A
@@ -169,8 +169,8 @@ if (is.null(pheno) && is.null(snp)) {
 
 } else if (is.null(pheno) && !is.null(snp)) {
   # Mode C
-  msg("Visualization mode: forest across phenotypes for SNP %s.", snp)
-  msg("Mode C behavior: pCut %s; showMeta=%s; showHet=%s",
+  msg("Visualization mode: per-phenotype forest plots for SNP %s.", snp)
+  msg("Mode C behavior: pCut %s; showMeta=%s; showHet=%s; one file is generated for each retained phenotype.",
       if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)),
       opt$showMeta, opt$showHet)
   if (!is.na(manhattan_cap)) {
