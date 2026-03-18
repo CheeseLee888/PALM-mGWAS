@@ -24,7 +24,7 @@ option_list <- list(
               help = "SNP ID, e.g. chr1:123:A:G (must match SNP column exactly)"),
   make_option(c("--PlotOutputFile"), type = "character", default = NA,
               help = "Output file name (png/pdf). If not set, auto-named."),
-  make_option(c("--pCut"), type = "character", default = "1e-5",
+  make_option(c("--pCut"), type = "character", default = "5e-8",
               help = "When neither --pheno nor --snp is given, print SNP/pheno pairs whose best p across phenos is below this cutoff; when only --snp is given, filter phenotypes by this cutoff. Use NA to disable filtering/printing [default %default]"),
   make_option(c("--showMeta"), type = "logical", default = TRUE,
               help = "Only valid when --snp is given; overlay meta est/stderr in black if available [default TRUE]"),

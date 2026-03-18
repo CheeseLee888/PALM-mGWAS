@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 source "$WORK/config.sh"
 
 
@@ -31,7 +31,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --pattern=${visPattern:-step3_meta_.*\\.txt$} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --snp=${snp:-NA} \
-    --pCut=${pCut1:-NA} \
+    --pCut=${pCut1:-5e-8} \
     --showMeta=${showMeta:-TRUE} \
     --showHet=${showHet:-TRUE} \
     --manhattanCap=${manhattanCap:-NA} \
@@ -42,7 +42,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --metaDir=${metaDir:-${outputFolder}/meta} \
     --pattern=${visPattern:-step3_meta_.*\\.txt$} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
-    --pCut=${pCut2:-NA} \
+    --pCut=${pCut2:-5e-8} \
     --manhattanCap=${manhattanCap:-NA} \
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}

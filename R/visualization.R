@@ -137,7 +137,7 @@ detect_studies <- function(df) {
 }
 
 # Test if a row is significant at pCut
-is_sig_row <- function(row, pCut = 1e-5) {
+is_sig_row <- function(row, pCut = 5e-8) {
   if (is.na(pCut)) return(FALSE)
   if ("meta_pval" %in% names(row) && !is.na(row$meta_pval)) return(row$meta_pval <= pCut)
   FALSE
@@ -247,7 +247,7 @@ add_bp_cum <- function(df) {
 
 # Draw a Manhattan plot and save to JPEG
 plot_manhattan <- function(df, outFile, title = NULL,
-                           pCut = 1e-5,
+                           pCut = 5e-8,
                            width = NA_real_, height = NA_real_, dpi = 300,
                            manhattanCap = NA_real_) {
   if (!requireNamespace("qqman", quietly = TRUE)) {
@@ -321,7 +321,7 @@ plot_manhattan <- function(df, outFile, title = NULL,
     main = title %||% "",
     ylab = expression(-log[10](italic(P))),
     ylim = c(0, max(man$PLOT_P, na.rm = TRUE) + max(0.15, cap_bump * 0.5)),
-    suggestiveline = if (is.na(pCut)) FALSE else -log10(pCut),
+    suggestiveline = FALSE,
     genomewideline = -log10(5e-8)
   )
 
@@ -575,7 +575,7 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
 mode_big_combined <- function(metaIndex, outFile,
                               sep = "\t",
                               width = NA_real_, height = NA_real_, dpi = 300,
-                              pCut = 1e-5,
+                              pCut = 5e-8,
                               manhattanCap = NA_real_) {
   all_hits <- list()
 
@@ -729,7 +729,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
 #'
 #' @export
 mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
-                                          pCut = 1e-5,
+                                          pCut = 5e-8,
                                           ciMult = 1.96,
                                           studyLabels = NULL,
                                           sep = "\t",
