@@ -33,7 +33,9 @@ option_list <- list(
   make_option(c("--width"), type = "character", default = NA_character_,
               help = "Plot width inches; NA lets the script auto-size"),
   make_option(c("--height"), type = "character", default = NA_character_,
-              help = "Plot height inches; NA lets the script auto-size")
+              help = "Plot height inches; NA lets the script auto-size"),
+  make_option(c("--manhattanCap"), type = "character", default = NA_character_,
+              help = "Optional Manhattan y-axis cap on the -log10(P) scale; a dashed line is drawn at the cap and points above it are shown slightly above that line")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -63,9 +65,22 @@ parse_pcut <- function(x) {
   val
 }
 
+parse_positive_numeric <- function(x, flag_name) {
+  if (is.null(x) || length(x) == 0) return(NA_real_)
+  if (is.na(x)) return(NA_real_)
+  up <- toupper(trimws(as.character(x)))
+  if (up %in% c("", "NA", "NULL")) return(NA_real_)
+  val <- suppressWarnings(as.numeric(x))
+  if (is.na(val) || val <= 0) {
+    stop(flag_name, " must be a positive number or NA.")
+  }
+  val
+}
+
 width_in  <- parse_dim(opt$width)
 height_in <- parse_dim(opt$height)
 p_cut <- parse_pcut(opt$pCut)
+manhattan_cap <- parse_positive_numeric(opt$manhattanCap, "--manhattanCap")
 
 metaDir <- opt$metaDir
 plotDir <- opt$plotDir
@@ -114,6 +129,7 @@ msg("PlotDir: %s", plotDir)
 msg("Pattern: %s", opt$pattern)
 msg("Found %d files.", nrow(metaIndex))
 msg("Resolved pCut: %s", if (is.na(p_cut)) "NA" else format(p_cut, scientific = TRUE))
+msg("Resolved manhattanCap: %s", if (is.na(manhattan_cap)) "NA" else as.character(manhattan_cap))
 msg("Resolved width x height: %s x %s", if (is.na(width_in)) "auto" else as.character(width_in), if (is.na(height_in)) "auto" else as.character(height_in))
 msg("Output file: %s", outFile)
 
@@ -127,7 +143,8 @@ if (is.null(pheno) && is.null(snp)) {
     outFile = outFile,
     sep = "\t",
     width = width_in, height = height_in, dpi = 300,
-    pCut = p_cut
+    pCut = p_cut,
+    manhattanCap = manhattan_cap
   )
 
 } else if (!is.null(pheno) && is.null(snp)) {
@@ -146,7 +163,8 @@ if (is.null(pheno) && is.null(snp)) {
     width = width_in, height = height_in, dpi = 300,
     qqOutFile = qq_out,
     topOutFile = top_out,
-    top_n = 10
+    top_n = 10,
+    manhattanCap = manhattan_cap
   )
 
 } else if (is.null(pheno) && !is.null(snp)) {
@@ -155,6 +173,9 @@ if (is.null(pheno) && is.null(snp)) {
   msg("Mode C behavior: pCut %s; showMeta=%s; showHet=%s",
       if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)),
       opt$showMeta, opt$showHet)
+  if (!is.na(manhattan_cap)) {
+    msg("Mode C behavior: manhattanCap is ignored in this mode.")
+  }
   mode_snp_forest_across_phenos(
     metaIndex = metaIndex,
     snp = snp,
@@ -170,6 +191,9 @@ if (is.null(pheno) && is.null(snp)) {
   # Mode D
   msg("Visualization mode: forest for phenotype %s and SNP %s.", pheno, snp)
   msg("Mode D behavior: showMeta=%s; showHet=%s; pCut is ignored in this mode.", opt$showMeta, opt$showHet)
+  if (!is.na(manhattan_cap)) {
+    msg("Mode D behavior: manhattanCap is ignored in this mode.")
+  }
   mode_pheno_snp_forest(
     metaIndex = metaIndex,
     pheno = pheno,

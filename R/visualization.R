@@ -248,7 +248,8 @@ add_bp_cum <- function(df) {
 # Draw a Manhattan plot and save to JPEG
 plot_manhattan <- function(df, outFile, title = NULL,
                            pCut = 1e-5,
-                           width = NA_real_, height = NA_real_, dpi = 300) {
+                           width = NA_real_, height = NA_real_, dpi = 300,
+                           manhattanCap = NA_real_) {
   if (!requireNamespace("qqman", quietly = TRUE)) {
     stop("Package 'qqman' is required.")
   }
@@ -278,6 +279,22 @@ plot_manhattan <- function(df, outFile, title = NULL,
       SNP = as.character(.data$SNP)
     )
 
+  man <- man |>
+    dplyr::mutate(logp = -log10(.data$P))
+
+  if (!is.na(manhattanCap)) {
+    if (!is.numeric(manhattanCap) || length(manhattanCap) != 1 || manhattanCap <= 0) {
+      stop("manhattanCap must be a single positive number or NA.")
+    }
+    cap_bump <- max(0.2, manhattanCap * 0.02)
+    man <- man |>
+      dplyr::mutate(PLOT_P = dplyr::if_else(.data$logp > manhattanCap, manhattanCap + cap_bump, .data$logp))
+  } else {
+    cap_bump <- 0
+    man <- man |>
+      dplyr::mutate(PLOT_P = .data$logp)
+  }
+
   auto_width <- if (is.na(width)) {
     max(11, length(unique(man$CHR)) * 0.45)
   } else {
@@ -296,15 +313,21 @@ plot_manhattan <- function(df, outFile, title = NULL,
     man,
     chr = "CHR",
     bp = "BP",
-    p = "P",
+    p = "PLOT_P",
     snp = "SNP",
-    logp = TRUE,
+    logp = FALSE,
     col = c("grey20", "grey70"),
     cex = 0.55,
     main = title %||% "",
-    suggestiveline = if (is.na(pCut)) FALSE else pCut,
-    genomewideline = 5e-8
+    ylab = expression(-log[10](italic(P))),
+    ylim = c(0, max(man$PLOT_P, na.rm = TRUE) + max(0.15, cap_bump * 0.5)),
+    suggestiveline = if (is.na(pCut)) FALSE else -log10(pCut),
+    genomewideline = -log10(5e-8)
   )
+
+  if (!is.na(manhattanCap)) {
+    graphics::abline(h = manhattanCap, lty = 2, lwd = 1, col = "grey50")
+  }
 
   grDevices::dev.off()
 
@@ -543,13 +566,17 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
 #' @param pCut Optional cutoff. When using the combined mode, SNP/phenotype
 #'   pairs with best p below this value are printed to the console and written
 #'   to `<outFile>_pCut.txt`.
+#' @param manhattanCap Optional y-axis cap for Manhattan plots, on the
+#'   `-log10(P)` scale. A dashed line is drawn at the cap, and points above
+#'   the cap are drawn slightly above that line.
 #'
 #' @return Invisibly returns the data frame passed to `qqman::manhattan()`.
 #' @export
 mode_big_combined <- function(metaIndex, outFile,
                               sep = "\t",
                               width = NA_real_, height = NA_real_, dpi = 300,
-                              pCut = 1e-5) {
+                              pCut = 1e-5,
+                              manhattanCap = NA_real_) {
   all_hits <- list()
 
   for (i in seq_len(nrow(metaIndex))) {
@@ -631,7 +658,8 @@ mode_big_combined <- function(metaIndex, outFile,
     title = "Best phenotype per SNP (minimum p across phenotypes)",
     width = width,
     height = height,
-    dpi = dpi
+    dpi = dpi,
+    manhattanCap = manhattanCap
   )
 }
 
@@ -650,7 +678,8 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
                                  sep = "\t",
                                  width = NA_real_, height = NA_real_, dpi = 300,
                                  qqOutFile = NULL, qq_width = NA_real_, qq_height = NA_real_,
-                                 topOutFile = NULL, top_n = 10) {
+                                 topOutFile = NULL, top_n = 10,
+                                 manhattanCap = NA_real_) {
   row <- metaIndex |> dplyr::filter(.data$pheno == phenoName)
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", phenoName)
 
@@ -660,7 +689,8 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
     outFile = outFile,
     title = paste0("Manhattan: ", phenoName),
     pCut = NA_real_,
-    width = width, height = height, dpi = dpi
+    width = width, height = height, dpi = dpi,
+    manhattanCap = manhattanCap
   )
 
   if (!is.null(qqOutFile)) {
