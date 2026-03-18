@@ -28,8 +28,11 @@
 #' @param chrom Optional chromosome filter (numeric or string like `"chr1"`).
 #'   Use `NULL` to keep all chromosomes.
 #' @param minMAF Optional minimum minor allele frequency threshold used to
-#'   filter SNPs before running `PALM::palm.get.summary()`. Use `0` (default)
-#'   to disable MAF filtering.
+#'   filter SNPs before running `PALM::palm.get.summary()`. Defaults to `0.1`.
+#'   Use `0` to disable MAF filtering.
+#' @param minMAC Optional minimum minor allele count threshold used to filter
+#'   SNPs before running `PALM::palm.get.summary()`. Defaults to `5`. Use `0`
+#'   to disable MAC filtering.
 #' @param correct Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.
 #' @param useCluster Logical; if `TRUE`, uses FID from `.fam` as cluster
 #'   information when available.
@@ -45,7 +48,8 @@ getSummary <- function(genoFile,
                        plink2Path = "plink2",
                        keepTemp = FALSE,
                        chrom = NULL,
-                       minMAF = 0,
+                       minMAF = 0.1,
+                       minMAC = 5,
                        correct = "NULL",
                        useCluster = TRUE) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
@@ -69,6 +73,9 @@ getSummary <- function(genoFile,
   }
   if (!is.numeric(minMAF) || length(minMAF) != 1L || is.na(minMAF) || minMAF < 0 || minMAF > 0.5) {
     stop("'minMAF' must be a single numeric value between 0 and 0.5.")
+  }
+  if (!is.numeric(minMAC) || length(minMAC) != 1L || is.na(minMAC) || minMAC < 0 || minMAC != as.integer(minMAC)) {
+    stop("'minMAC' must be a single non-negative integer value.")
   }
   if (!is.logical(keepTemp) || length(keepTemp) != 1L || is.na(keepTemp)) {
     stop("'keepTemp' must be TRUE or FALSE.")
@@ -258,6 +265,11 @@ getSummary <- function(genoFile,
   } else {
     message("MAF filter disabled: minMAF=0")
   }
+  if (minMAC > 0) {
+    message("MAC filter enabled: minMAC=", minMAC)
+  } else {
+    message("MAC filter disabled: minMAC=0")
+  }
   if (is.null(correct)) {
     message("Compositional correction disabled: correct=NULL")
   } else {
@@ -341,15 +353,24 @@ getSummary <- function(genoFile,
     message("Genotype matrix after chromosome filtering: ", nrow(geno), " samples x ", ncol(geno), " SNPs.")
   }
 
-  if (minMAF > 0) {
+  if (minMAF > 0 || minMAC > 0) {
     allele_freq <- colMeans(geno, na.rm = TRUE) / 2
     maf <- pmin(allele_freq, 1 - allele_freq)
-    keep <- which(!is.na(maf) & maf >= minMAF)
+    called_alleles <- 2 * colSums(!is.na(geno))
+    mac <- pmin(colSums(geno, na.rm = TRUE), called_alleles - colSums(geno, na.rm = TRUE))
+    keep <- rep(TRUE, ncol(geno))
+    if (minMAF > 0) {
+      keep <- keep & !is.na(maf) & maf >= minMAF
+    }
+    if (minMAC > 0) {
+      keep <- keep & !is.na(mac) & mac >= minMAC
+    }
+    keep <- which(keep)
     if (length(keep) == 0L) {
-      stop("No SNPs remain after applying --minMAF=", minMAF)
+      stop("No SNPs remain after applying SNP filters (--minMAF=", minMAF, ", --minMAC=", minMAC, ").")
     }
     message(
-      "Genotype matrix after MAF filtering: ", nrow(geno), " samples x ", length(keep),
+      "Genotype matrix after MAF/MAC filtering: ", nrow(geno), " samples x ", length(keep),
       " SNPs (removed ", ncol(geno) - length(keep), ")."
     )
     geno <- geno[, keep, drop = FALSE]

@@ -35,7 +35,11 @@ option_list <- list(
         help = ""
     ),
     make_option("--minMAF",
-        type = "double", default = 0,
+        type = "double", default = 0.1,
+        help = ""
+    ),
+    make_option("--minMAC",
+        type = "integer", default = 5,
         help = ""
     ),
     make_option("--correct",
@@ -65,6 +69,7 @@ getSummary(
   PALMOutputFile = opt$PALMOutputFile,
   chrom = opt$chrom,
   minMAF = opt$minMAF,
+  minMAC = opt$minMAC,
   correct = opt$correct,
   useCluster = opt$useCluster
 )

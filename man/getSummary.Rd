@@ -14,7 +14,8 @@ getSummary(
   plink2Path = "plink2",
   keepTemp = FALSE,
   chrom = NULL,
-  minMAF = 0,
+  minMAF = 0.1,
+  minMAC = 5,
   correct = "NULL",
   useCluster = TRUE
 )
@@ -52,8 +53,12 @@ VCF/BGEN inputs. Defaults to `FALSE`.}
 Use `NULL` to keep all chromosomes.}
 
 \item{minMAF}{Optional minimum minor allele frequency threshold used to
-filter SNPs before running `PALM::palm.get.summary()`. Use `0` (default)
-to disable MAF filtering.}
+filter SNPs before running `PALM::palm.get.summary()`. Defaults to `0.1`.
+Use `0` to disable MAF filtering.}
+
+\item{minMAC}{Optional minimum minor allele count threshold used to filter
+SNPs before running `PALM::palm.get.summary()`. Defaults to `5`. Use `0`
+to disable MAC filtering.}
 
 \item{correct}{Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.}
 
