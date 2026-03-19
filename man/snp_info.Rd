@@ -2,16 +2,43 @@
 % Please edit documentation in R/generateInfo.R
 \name{snp_info}
 \alias{snp_info}
-\title{Compute SNP counts and allele frequency from PLINK files}
+\title{Compute SNP counts and allele frequency from genotype input}
 \usage{
-snp_info(geno_prefix)
+snp_info(
+  genoFile,
+  vcf_field = "DS",
+  allele_order = NULL,
+  plink_path = "plink",
+  plink2_path = "plink2",
+  keep_temp = FALSE
+)
 }
 \arguments{
-\item{geno_prefix}{PLINK prefix (without .bed/.bim/.fam).}
+\item{genoFile}{Genotype input path. If the value ends with \code{.vcf},
+\code{.vcf.gz}, or \code{.vcf.bgz}, VCF input is assumed. If it ends with
+\code{.bgen}, BGEN input is assumed. Otherwise it is treated as a PLINK prefix
+without \code{.bed/.bim/.fam}.}
+
+\item{vcf_field}{VCF FORMAT field to import when converting VCF input.
+Supported values are \code{"DS"} and \code{"GT"}. Defaults to \code{"DS"}.}
+
+\item{allele_order}{Allele order for BGEN conversion. Supported values are
+\code{"ref-first"}, \code{"ref-last"}, and \code{"ref-unknown"}. Defaults to
+\code{"ref-last"} for BGEN input.}
+
+\item{plink_path}{Path to the \code{plink} executable used as a VCF conversion
+fallback. Defaults to \code{"plink"}.}
+
+\item{plink2_path}{Path to the \code{plink2} executable used for BGEN
+conversion and preferred VCF conversion. Defaults to \code{"plink2"}.}
+
+\item{keep_temp}{Logical; if \code{TRUE}, keep temporary converted PLINK files
+for VCF/BGEN input. Defaults to \code{FALSE}.}
 }
 \value{
 Data frame with CHR, SNP, POS, A1, A2, N, AF.
 }
 \description{
-Compute SNP counts and allele frequency from PLINK files
+Accepts a PLINK prefix directly, or converts VCF/BGEN input to a temporary
+PLINK dataset before reading SNP counts and allele frequencies.
 }

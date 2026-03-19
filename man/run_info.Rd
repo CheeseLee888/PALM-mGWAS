@@ -4,10 +4,20 @@
 \alias{run_info}
 \title{Run all step0 info generation and write outputs}
 \usage{
-run_info(geno_file, abd_file, output_snp, output_feature, output_seqdepth)
+run_info(
+  genoFile,
+  abd_file,
+  output_snp,
+  output_feature,
+  output_seqdepth,
+  vcf_field = "DS",
+  allele_order = NULL,
+  keep_temp = FALSE
+)
 }
 \arguments{
-\item{geno_file}{PLINK prefix for genotype files.}
+\item{genoFile}{Genotype input path. Accepts a PLINK prefix directly, or a
+VCF/BGEN file that will be converted to a temporary PLINK dataset.}
 
 \item{abd_file}{Path to abundance table.}
 
@@ -16,6 +26,15 @@ run_info(geno_file, abd_file, output_snp, output_feature, output_seqdepth)
 \item{output_feature}{Output path for feature info.}
 
 \item{output_seqdepth}{Output path for sequencing depth info.}
+
+\item{vcf_field}{VCF FORMAT field to import when \code{genoFile} is VCF input.
+Defaults to \code{"DS"}.}
+
+\item{allele_order}{Allele order for BGEN conversion. Defaults to
+\code{"ref-last"} when \code{genoFile} is BGEN input.}
+
+\item{keep_temp}{Logical; if \code{TRUE}, keep temporary PLINK files created
+for VCF/BGEN inputs. Defaults to \code{FALSE}.}
 }
 \value{
 Invisibly returns a list of output paths.

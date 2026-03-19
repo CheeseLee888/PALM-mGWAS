@@ -8,8 +8,11 @@ mkdir -p "${outputFolder}"
 
 echo "Start: Generate SNP/feature/seqdepth information."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Info.R \
-    --genoPrefix=${genoFile} \
+    --genoFile=${genoFile} \
     --abdFile=${abdFile} \
+    --vcfField=${vcfField:-DS} \
+    --alleleOrder=${alleleOrder:-NULL} \
+    --keepTemp=${keepTemp:-FALSE} \
     --outputSnpFile=${outputSnpFile} \
     --outputFeatureFile=${outputFeatureFile} \
     --outputSeqDepthFile=${outputSeqDepthFile}

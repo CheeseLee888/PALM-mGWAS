@@ -127,8 +127,11 @@ docker run --rm --platform=linux/amd64 \
 
   <h2 id="info">Info</h2>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/Info.R \
-    --genoPrefix=${genoPrefix} \
+    --genoFile=${genoFile} \
     --abdFile=${abdFile} \
+    --vcfField=${vcfField} \
+    --alleleOrder=${alleleOrder} \
+    --keepTemp=${keepTemp} \
     --outputSnpFile=${outputSnpFile} \
     --outputFeatureFile=${outputFeatureFile} \
     --outputSeqDepthFile=${outputSeqDepthFile}</code></pre>
@@ -136,14 +139,19 @@ docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   Info.R \
-    --genoPrefix=/work/${genoPrefix} \
+    --genoFile=/work/${genoFile} \
     --abdFile=/work/${abdFile} \
+    --vcfField=${vcfField} \
+    --alleleOrder=${alleleOrder} \
+    --keepTemp=${keepTemp} \
     --outputSnpFile=/work/${outputSnpFile} \
     --outputFeatureFile=/work/${outputFeatureFile} \
     --outputSeqDepthFile=/work/${outputSeqDepthFile}</code></pre>
   <ul>
     <li><strong>Purpose:</strong> quick QC summaries before modeling.</li>
-    <li><strong>Inputs:</strong> PLINK prefix (<code>.bed/.bim/.fam</code>) and abundance txt (sample IDs in column 1).</li>
+    <li><strong>Inputs:</strong> genotype input as PLINK prefix, VCF, or BGEN, plus abundance txt (sample IDs in column 1).</li>
+    <li><strong>How to set <code>genoFile</code>:</strong> use a PLINK prefix such as <code>example/input/study1/geno</code>, a VCF path such as <code>example/input/study1_vcf/geno.vcf.gz</code>, or a BGEN path such as <code>example/input/study1_bgen/geno.bgen</code>.</li>
+    <li><strong>Temporary conversion:</strong> VCF and BGEN inputs are converted to a temporary PLINK dataset before SNP summaries are computed. Use <code>--keepTemp=TRUE</code> if you want to inspect those intermediate files.</li>
     <li><strong>Outputs:</strong>
       <code>info_snp.txt</code> (CHR, SNP, POS, A1, A2, N, AF);
       <code>info_feature.txt</code> (FeatureID, Prevalence, AvgProportion);
@@ -152,8 +160,11 @@ docker run --rm --platform=linux/amd64 \
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--genoPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>PLINK genotype prefix without file extension</td><td><code>--genoPrefix=example/input/study1/geno</code></td></tr>
+    <tr><td><code>--genoFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input for SNP summaries: PLINK prefix, VCF, or BGEN</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_bgen/geno.bgen</code></td></tr>
     <tr><td><code>--abdFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table path</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
+    <tr><td><code>--vcfField</code></td><td><code>character</code></td><td><code>"DS"</code></td><td>VCF FORMAT field to import when <code>genoFile</code> is VCF input; allowed values are <code>DS</code> and <code>GT</code></td><td><code>--vcfField=DS</code>; <code>--vcfField=GT</code></td></tr>
+    <tr><td><code>--alleleOrder</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>BGEN allele-order setting passed to <code>plink2 --bgen</code>; use <code>ref-first</code>, <code>ref-last</code>, or <code>ref-unknown</code></td><td><code>--alleleOrder=ref-last</code>; <code>--alleleOrder=NULL</code></td></tr>
+    <tr><td><code>--keepTemp</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Keep temporary converted PLINK files for VCF/BGEN input</td><td><code>--keepTemp=TRUE</code>; <code>--keepTemp=FALSE</code></td></tr>
     <tr><td><code>--outputSnpFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output file for SNP summary</td><td><code>--outputSnpFile=example/output/study1/info_snp.txt</code></td></tr>
     <tr><td><code>--outputFeatureFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output file for feature prevalence/abundance summary</td><td><code>--outputFeatureFile=example/output/study1/info_feature.txt</code></td></tr>
     <tr><td><code>--outputSeqDepthFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output file for sequencing depth summary</td><td><code>--outputSeqDepthFile=example/output/study1/info_seqdepth.txt</code></td></tr>
@@ -429,10 +440,13 @@ study3  /work/example/output/study3</code></pre>
   <p>The same example data can be read as a concrete workflow: what goes in, which script is called, which parameters matter, and what files come out.</p>
 
   <h3>Info: abundance + genotype to QC tables</h3>
-  <p><strong>Input:</strong> <code>example/input/study1/abd.txt</code> and PLINK files <code>example/input/study1/geno.bed/.bim/.fam</code>.</p>
+  <p><strong>Input:</strong> <code>example/input/study1/abd.txt</code> and genotype input given through <code>--genoFile</code> as PLINK, VCF, or BGEN.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/Info.R \
-    --genoPrefix=example/input/study1/geno \
+    --genoFile=example/input/study1/geno \
     --abdFile=example/input/study1/abd.txt \
+    --vcfField=DS \
+    --alleleOrder=NULL \
+    --keepTemp=FALSE \
     --outputSnpFile=example/output/study1/info_snp.txt \
     --outputFeatureFile=example/output/study1/info_feature.txt \
     --outputSeqDepthFile=example/output/study1/info_seqdepth.txt</code></pre>
@@ -440,8 +454,11 @@ study3  /work/example/output/study3</code></pre>
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   Info.R \
-    --genoPrefix=/work/example/input/study1/geno \
+    --genoFile=/work/example/input/study1/geno \
     --abdFile=/work/example/input/study1/abd.txt \
+    --vcfField=DS \
+    --alleleOrder=NULL \
+    --keepTemp=FALSE \
     --outputSnpFile=/work/example/output/study1/info_snp.txt \
     --outputFeatureFile=/work/example/output/study1/info_feature.txt \
     --outputSeqDepthFile=/work/example/output/study1/info_seqdepth.txt</code></pre>
