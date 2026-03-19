@@ -48,8 +48,7 @@ standardize_meta_df <- function(df, study_id = "study1") {
   stderr_cols <- setdiff(grep("_stderr$", names(df), value = TRUE), "meta_stderr")
   has_study_cols <- length(est_cols) > 0 && length(stderr_cols) > 0
   if (!has_study_cols) {
-    sid <- sanitize_filename(study_id)
-    if (!nzchar(sid)) sid <- "study1"
+    sid <- "single_study"
     fallback <- function(primary, backup) {
       if (!is.null(primary)) return(primary)
       backup
@@ -699,6 +698,7 @@ forest_plot_single_pheno <- function(r, pheno, snp, outFile,
   } else {
     study_names <- ids
   }
+  study_names[study_names == "single_study"] <- "single study"
 
   meta_ok <- show_meta &&
     length(ids) > 1 &&
