@@ -13,7 +13,6 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --snp=${snp:-NA} \
     --showMeta=${showMeta:-TRUE} \
     --showHet=${showHet:-TRUE} \
-    --manhattanCap=${manhattanCap:-NA} \
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
 
@@ -22,7 +21,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --pattern=${visPattern:-step3_meta_.*\\.txt$} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --pheno=${pheno:-NA} \
-    --manhattanCap=${manhattanCap:-NA} \
+    --manhattanCap=${manhattanCap:-10} \
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
 
@@ -34,7 +33,6 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --pCut=${pCut1:-5e-8} \
     --showMeta=${showMeta:-TRUE} \
     --showHet=${showHet:-TRUE} \
-    --manhattanCap=${manhattanCap:-NA} \
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
 
@@ -43,7 +41,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --pattern=${visPattern:-step3_meta_.*\\.txt$} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --pCut=${pCut2:-5e-8} \
-    --manhattanCap=${manhattanCap:-NA} \
+    --manhattanCap=${manhattanCap:-10} \
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
 echo "Finish: Visualize results."

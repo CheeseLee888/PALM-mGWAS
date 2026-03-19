@@ -3,6 +3,8 @@ suppressPackageStartupMessages({
     library(optparse)
 })
 
+default_r_plot_file <- "Rplots.pdf"
+
 raw_args <- commandArgs(trailingOnly = TRUE)
 
 arg_supplied <- function(flag, args = raw_args) {
@@ -34,11 +36,25 @@ option_list <- list(
               help = "Plot width inches; NA lets the script auto-size"),
   make_option(c("--height"), type = "character", default = NA_character_,
               help = "Plot height inches; NA lets the script auto-size"),
-  make_option(c("--manhattanCap"), type = "character", default = NA_character_,
-              help = "Optional Manhattan y-axis cap on the -log10(P) scale; a dashed line is drawn at the cap and points above it are shown slightly above that line")
+  make_option(c("--manhattanCap"), type = "character", default = "10",
+              help = "Optional Manhattan y-axis cap on the -log10(P) scale; defaults to 10. Use NA to disable the cap")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
+
+requested_default_rplots <- !is.na(opt$PlotOutputFile) &&
+  normalizePath(opt$PlotOutputFile, winslash = "/", mustWork = FALSE) ==
+    normalizePath(default_r_plot_file, winslash = "/", mustWork = FALSE)
+
+cleanup_default_rplots <- function() {
+  if (requested_default_rplots) return(invisible(FALSE))
+  if (!file.exists(default_r_plot_file)) return(invisible(FALSE))
+  unlink(default_r_plot_file)
+  invisible(TRUE)
+}
+
+cleanup_default_rplots()
+on.exit(cleanup_default_rplots(), add = TRUE)
 
 # coerce width/height strings (including "NA"/"null"/empty) to numeric or NA_real_
 parse_dim <- function(x) {
