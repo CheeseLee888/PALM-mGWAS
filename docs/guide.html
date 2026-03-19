@@ -174,18 +174,24 @@ docker run --rm --platform=linux/amd64 \
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --abdFile=${abdFile} \
     --covFile=${covFile} \
-    --genoFile=${genoFile}</code></pre>
+    --genoFile=${genoFile} \
+    --vcfField=${vcfField} \
+    --alleleOrder=${alleleOrder} \
+    --keepTemp=${keepTemp}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step0_checkInput.R \
     --abdFile=/work/${abdFile} \
     --covFile=/work/${covFile} \
-    --genoFile=/work/${genoFile}</code></pre>
+    --genoFile=/work/${genoFile} \
+    --vcfField=${vcfField} \
+    --alleleOrder=${alleleOrder} \
+    --keepTemp=${keepTemp}</code></pre>
   <ul>
     <li><strong>Purpose:</strong> verify that abundance, covariates, and genotype input contain the same IID set before modeling.</li>
-    <li><strong>Behavior for PLINK input:</strong> if IID sets match but row order differs, the script rewrites <code>abdFile</code> and <code>covFile</code> in PLINK <code>.fam</code> order.</li>
-    <li><strong>Behavior for VCF/BGEN input:</strong> the script checks abundance/covariate ID consistency and, when needed, reorders only <code>covFile</code> to match <code>abdFile</code>. Genotype sample order is handled later during Step2 conversion.</li>
+    <li><strong>Behavior:</strong> for PLINK, VCF, and BGEN alike, the script uses genotype sample order as the reference order and rewrites <code>abdFile</code> and <code>covFile</code> when needed.</li>
+    <li><strong>VCF/BGEN handling:</strong> non-PLINK genotype input is converted to a temporary PLINK dataset first, and sample IDs are read from the converted <code>.fam</code>.</li>
     <li><strong>Requirement:</strong> all three inputs are mandatory in the current CLI.</li>
     <li><strong>Accepted genotype input:</strong> PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, <code>.vcf.bgz</code>, or <code>.bgen</code>.</li>
     <li><strong>Failure cases:</strong> duplicated IDs, missing values, missing <code>.fam</code> for PLINK input, or non-identical IID sets.</li>
@@ -195,6 +201,9 @@ docker run --rm --platform=linux/amd64 \
     <tr><td><code>--abdFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose sample order will be checked/reordered</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
     <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Covariate table whose sample order will be checked/reordered</td><td><code>--covFile=example/input/study1/cov.txt</code></td></tr>
     <tr><td><code>--genoFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the sample-order reference: PLINK prefix, VCF, or BGEN</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_bgen/geno.bgen</code></td></tr>
+    <tr><td><code>--vcfField</code></td><td><code>character</code></td><td><code>"DS"</code></td><td>VCF FORMAT field to import when <code>genoFile</code> is VCF input; allowed values are <code>DS</code> and <code>GT</code></td><td><code>--vcfField=DS</code>; <code>--vcfField=GT</code></td></tr>
+    <tr><td><code>--alleleOrder</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>BGEN allele-order setting passed to <code>plink2 --bgen</code>; use <code>ref-first</code>, <code>ref-last</code>, or <code>ref-unknown</code></td><td><code>--alleleOrder=ref-last</code>; <code>--alleleOrder=NULL</code></td></tr>
+    <tr><td><code>--keepTemp</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Keep temporary converted PLINK files for VCF/BGEN input</td><td><code>--keepTemp=TRUE</code>; <code>--keepTemp=FALSE</code></td></tr>
   </table>
 
   <h2 id="step1">Step1: Fit Null Model</h2>
