@@ -12,7 +12,9 @@ run_info(
   output_seqdepth,
   vcf_field = "DS",
   allele_order = NULL,
-  keep_temp = FALSE
+  keep_temp = FALSE,
+  plink_path = "plink",
+  plink2_path = "plink2"
 )
 }
 \arguments{
@@ -35,6 +37,12 @@ Defaults to \code{"DS"}.}
 
 \item{keep_temp}{Logical; if \code{TRUE}, keep temporary PLINK files created
 for VCF/BGEN inputs. Defaults to \code{FALSE}.}
+
+\item{plink_path}{Path to the \code{plink} executable used as a VCF conversion
+fallback. Defaults to \code{"plink"}.}
+
+\item{plink2_path}{Path to the \code{plink2} executable used for BGEN
+conversion and preferred VCF conversion. Defaults to \code{"plink2"}.}
 }
 \value{
 Invisibly returns a list of output paths.

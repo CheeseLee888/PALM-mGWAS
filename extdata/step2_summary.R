@@ -47,7 +47,7 @@ option_list <- list(
         help = ""
     ),
     make_option("--useCluster",
-        type = "logical", default = TRUE,
+        type = "logical", default = FALSE,
         help = "")
 )
 

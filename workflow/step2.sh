@@ -18,5 +18,5 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary
     --minMAF=${minMAF:-0.1} \
     --minMAC=${minMAC:-5} \
     --correct=${correct:-NULL} \
-    --useCluster=${useCluster:-TRUE}
+    --useCluster=${useCluster:-FALSE}
 echo "Finish: Performe score test."

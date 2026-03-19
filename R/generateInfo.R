@@ -141,172 +141,14 @@ snp_info <- function(genoFile,
   if (!is.logical(keep_temp) || length(keep_temp) != 1L || is.na(keep_temp)) {
     stop("`keep_temp` must be TRUE or FALSE.")
   }
-
-  sanitize_local_name <- function(x) {
-    x <- as.character(x)[1]
-    x <- gsub("[^A-Za-z0-9._-]+", "_", x)
-    x <- gsub("_+", "_", x)
-    x <- sub("^_+", "", x)
-    x <- sub("_+$", "", x)
-    if (!nzchar(x)) {
-      x <- "geno"
-    }
-    x
-  }
-
-  infer_geno_format <- function(path) {
-    lower <- tolower(path)
-    if (grepl("\\.(vcf|vcf\\.gz|vcf\\.bgz)$", lower)) {
-      return("vcf")
-    }
-    if (grepl("\\.bgen$", lower)) {
-      return("bgen")
-    }
-    if (file.exists(paste0(path, ".bed")) &&
-        file.exists(paste0(path, ".bim")) &&
-        file.exists(paste0(path, ".fam"))) {
-      return("plink")
-    }
-    "plink"
-  }
-
-  find_executable <- function(cmd) {
-    path <- Sys.which(cmd)
-    if (!nzchar(path)) {
-      return("")
-    }
-    path
-  }
-
-  run_command_checked <- function(command, args) {
-    message("Running command: ", command, " ", paste(args, collapse = " "))
-    status <- system2(command, args = args)
-    if (!identical(status, 0L)) {
-      stop("Command failed with exit status ", status, ": ", command)
-    }
-  }
-
-  prepare_plink_input <- function(geno_path,
-                                  geno_format,
-                                  vcf_field,
-                                  allele_order,
-                                  plink_path,
-                                  plink2_path,
-                                  keep_temp) {
-    if (identical(geno_format, "plink")) {
-      bed <- paste0(geno_path, ".bed")
-      bim <- paste0(geno_path, ".bim")
-      fam <- paste0(geno_path, ".fam")
-      for (f in c(bed, bim, fam)) {
-        if (!file.exists(f)) {
-          stop("Missing PLINK file: ", f)
-        }
-      }
-      return(list(prefix = geno_path, cleanup = character(0)))
-    }
-
-    if (!file.exists(geno_path)) {
-      stop("Genotype input file not found: ", geno_path)
-    }
-
-    temp_prefix <- file.path(
-      tempdir(),
-      paste0(
-        sanitize_local_name(basename(geno_path)),
-        "_info_tmp_",
-        geno_format,
-        "_plink"
-      )
-    )
-    cleanup <- paste0(temp_prefix, c(".bed", ".bim", ".fam", ".log", ".nosex"))
-
-    if (identical(geno_format, "vcf")) {
-      vcf_field <- toupper(trimws(as.character(vcf_field)[1]))
-      if (!vcf_field %in% c("DS", "GT")) {
-        stop("`vcf_field` must be either 'DS' or 'GT'.")
-      }
-
-      plink2_exec <- find_executable(plink2_path)
-      if (nzchar(plink2_exec)) {
-        args <- c("--vcf", geno_path)
-        if (identical(vcf_field, "DS")) {
-          args <- c(args, "dosage=DS")
-        }
-        args <- c(args, "--double-id", "--keep-allele-order", "--make-bed", "--out", temp_prefix)
-        run_command_checked(plink2_exec, args)
-      } else {
-        plink_exec <- find_executable(plink_path)
-        if (!nzchar(plink_exec)) {
-          stop("Neither '", plink2_path, "' nor '", plink_path, "' was found in PATH; cannot convert VCF input.")
-        }
-        args <- c("--vcf", geno_path)
-        if (identical(vcf_field, "DS")) {
-          args <- c(args, "dosage=DS")
-        }
-        args <- c(args, "--double-id", "--keep-allele-order", "--make-bed", "--out", temp_prefix)
-        run_command_checked(plink_exec, args)
-      }
-    } else if (identical(geno_format, "bgen")) {
-      plink2_exec <- find_executable(plink2_path)
-      if (!nzchar(plink2_exec)) {
-        stop("BGEN input requires plink2, but executable '", plink2_path, "' was not found in PATH.")
-      }
-      if (is.null(allele_order) || !nzchar(as.character(allele_order)[1]) || toupper(as.character(allele_order)[1]) == "NULL") {
-        allele_order <- "ref-last"
-      }
-      allele_order <- trimws(as.character(allele_order)[1])
-      if (!allele_order %in% c("ref-first", "ref-last", "ref-unknown")) {
-        stop("`allele_order` must be 'ref-first', 'ref-last', or 'ref-unknown' for BGEN input.")
-      }
-
-      sample_candidates <- c(
-        sub("\\.bgen$", ".sample", geno_path, ignore.case = TRUE),
-        sub("\\.bgen$", ".samples", geno_path, ignore.case = TRUE),
-        paste0(geno_path, ".sample"),
-        paste0(geno_path, ".samples")
-      )
-      sample_candidates <- unique(sample_candidates[file.exists(sample_candidates)])
-      sample_file <- character(0)
-      if (length(sample_candidates) > 0L) {
-        sample_file <- sample_candidates[1]
-        message("Detected BGEN sample file: ", sample_file)
-      } else {
-        message("No BGEN sample file detected; plink2 will rely on sample IDs embedded in the .bgen file.")
-      }
-
-      args <- c("--bgen", geno_path, allele_order)
-      if (length(sample_file) == 1L && nzchar(sample_file)) {
-        args <- c(args, "--sample", sample_file)
-      }
-      args <- c(args, "--make-bed", "--out", temp_prefix)
-      run_command_checked(plink2_exec, args)
-    } else {
-      stop("Unsupported inferred genotype format: ", geno_format)
-    }
-
-    for (f in paste0(temp_prefix, c(".bed", ".bim", ".fam"))) {
-      if (!file.exists(f)) {
-        stop("Conversion to temporary PLINK files failed; missing output: ", f)
-      }
-    }
-
-    if (keep_temp) {
-      message("Keeping temporary converted PLINK files with prefix: ", temp_prefix)
-    }
-
-    list(prefix = temp_prefix, cleanup = cleanup)
-  }
-
-  geno_format <- infer_geno_format(genoFile)
-  message("Genotype input format inferred from input path: ", geno_format)
   geno_input <- prepare_plink_input(
-    geno_path = genoFile,
-    geno_format = geno_format,
-    vcf_field = vcf_field,
-    allele_order = allele_order,
-    plink_path = plink_path,
-    plink2_path = plink2_path,
-    keep_temp = keep_temp
+    genoFile = genoFile,
+    vcfField = vcf_field,
+    alleleOrder = allele_order,
+    plinkPath = plink_path,
+    plink2Path = plink2_path,
+    keepTemp = keep_temp,
+    tempLabel = "info_tmp"
   )
   if (!keep_temp && length(geno_input$cleanup) > 0L) {
     on.exit(unlink(geno_input$cleanup, force = TRUE), add = TRUE)
@@ -357,6 +199,10 @@ snp_info <- function(genoFile,
 #'   `"ref-last"` when `genoFile` is BGEN input.
 #' @param keep_temp Logical; if `TRUE`, keep temporary PLINK files created for
 #'   VCF/BGEN inputs. Defaults to `FALSE`.
+#' @param plink_path Path to the `plink` executable used as a VCF conversion
+#'   fallback. Defaults to `"plink"`.
+#' @param plink2_path Path to the `plink2` executable used for BGEN conversion
+#'   and preferred VCF conversion. Defaults to `"plink2"`.
 #' @return Invisibly returns a list of output paths.
 #' @export
 run_info <- function(genoFile,
@@ -366,7 +212,9 @@ run_info <- function(genoFile,
                      output_seqdepth,
                      vcf_field = "DS",
                      allele_order = NULL,
-                     keep_temp = FALSE) {
+                     keep_temp = FALSE,
+                     plink_path = "plink",
+                     plink2_path = "plink2") {
   missing_args <- vapply(
     list(genoFile, abd_file, output_snp, output_feature, output_seqdepth),
     function(x) is.null(x) || !nzchar(x),
@@ -382,6 +230,8 @@ run_info <- function(genoFile,
     genoFile = genoFile,
     vcf_field = vcf_field,
     allele_order = allele_order,
+    plink_path = plink_path,
+    plink2_path = plink2_path,
     keep_temp = keep_temp
   )
 
