@@ -1,0 +1,155 @@
+\documentclass[10pt,twocolumn]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+\newcommand{\software}{PALM-mGWAS}
+\newcommand{\pkgname}{PALMmGWAS}
+\newcommand{\todoentry}[1]{\textcolor{red}{#1}}
+
+\title{\software: end-to-end microbiome genome-wide association analysis and meta-analysis}
+\author{
+Peter Li$^{1,\ast}$ \and Zhengzheng Tang$^{1}$
+\\[0.5em]
+\small $^{1}$Department/Institution placeholder
+\\
+\small $\ast$To whom correspondence should be addressed.
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+\textbf{Summary:}
+Microbiome genome-wide association studies require software that can generate cohort-level summary statistics, combine results across studies, and return interpretable outputs without extensive custom scripting. We present \software, an R package and command-line workflow for microbiome GWAS based on the PALM framework. \software\ performs input checking, phenotype and sequencing-depth summarization, PALM-based null model fitting, per-study genome-wide summary statistic generation, fixed-effect meta-analysis across studies, and downstream visualization. The workflow accepts PLINK, VCF, and BGEN genotype inputs, writes standardized file-per-feature results, and is designed for both local and high-performance computing environments.
+
+\noindent
+\textbf{Availability and implementation:}
+\software\ is implemented in R and shell workflow wrappers. Source code, example data, and documentation are available in the project repository.
+
+\noindent
+\textbf{Contact:} \href{mailto:cheese.lee.888@gmail.com}{cheese.lee.888@gmail.com}
+\end{abstract}
+
+\section{Introduction}
+Microbiome genome-wide association studies analyze host genetic effects on microbial abundance traits. In multi-cohort settings, association testing is only one part of the problem. Practical analyses also require input validation, cohort-level standardization of summary statistics, cross-study aggregation and result visualization. Existing application notes have typically emphasized either microbiome-focused single-study analysis or efficient meta-analysis of genetic score statistics. \software\ was developed to connect these steps in one workflow.
+
+\software\ implements a PALM-based mGWAS pipeline with five stages: auxiliary summary generation, null model fitting, per-study score-based association testing, fixed-effect meta-analysis and visualization. The package is designed to produce standardized outputs that can be reused across cohorts and downstream reports.
+
+\section{Methods}
+\software\ expects one abundance table, one genotype dataset, and an optional covariate table for each cohort. The first workflow stage performs input checking and generates auxiliary summaries, including SNP-level information, feature prevalence and average proportion, and sequencing depth summaries. The second stage fits a PALM null model for all microbial features using abundance, covariates, and optional depth information. The third stage applies PALM score testing to host genotype data and writes one genome-wide summary-statistic file per microbial feature. The fourth stage combines cohort-specific results through fixed-effect inverse-variance meta-analysis. The final stage generates Manhattan plots, forest plots, and combined significant-hit summaries.
+
+The workflow accepts genotype input in PLINK, VCF, or BGEN format. Non-PLINK inputs are converted internally into temporary PLINK representations for downstream summary-statistic generation. Microbiome abundance tables are treated as phenotype matrices with samples in rows and microbial features in columns. Optional covariate tables are aligned by sample identifier before null model fitting.
+
+At the per-study stage, \software\ writes a separate result file for each microbial feature, containing SNP identifier, chromosome, genomic position, effect estimate, standard error, and association $P$-value. This file-per-feature convention is retained throughout the pipeline and simplifies meta-analysis, targeted review of individual phenotypes, and generation of feature-level plots.
+
+For each cohort, \software\ fits a PALM null model from the abundance matrix, optional sequencing-depth information, and optional covariates. Sequencing-depth and prevalence filters can be applied at the null-model stage. Genome-wide association testing is then performed with PALM summary-statistic generation using host genetic variants as covariates of interest. Optional genotype filters such as minimum minor allele frequency and minimum minor allele count can be applied prior to score testing. For PLINK input, cluster information can also be incorporated when available.
+
+Across cohorts, \software\ combines per-study effect estimates and standard errors using fixed-effect inverse-variance weighting. The meta-analysis stage outputs combined effect estimates, standard errors, $P$-values, optional heterogeneity statistics, and study-specific effect summaries in the same table. This standardization makes the meta-analysis result files directly consumable by the downstream visualization layer.
+
+\section{Results}
+\subsection{Implementation}
+\software\ can be run locally with a \texttt{pixi}-managed environment or through containerized execution on HPC systems. The workflow is distributed as modular shell wrappers for direct execution or scheduler submission. Each stage produces explicit on-disk outputs, allowing per-step inspection and profiling.
+
+\subsection{Benchmarking}
+Following the style of prior application notes, performance should be summarized by wall-clock runtime and peak memory under fixed hardware. For \software, the relevant stages are:
+
+\begin{enumerate}[nosep]
+  \item \texttt{info}: generation of SNP, feature, and sequencing-depth summaries;
+  \item \texttt{step1}: PALM null model fitting;
+  \item \texttt{step2}: per-study genome-wide summary-statistic generation;
+  \item \texttt{step3}: fixed-effect meta-analysis across studies;
+  \item \texttt{visualization}: generation of Manhattan and forest plots.
+\end{enumerate}
+
+Benchmarks should be repeated at least three times and summarized by the median. When compared with other software, input dimensions should be matched and interpretation limited to computational efficiency, because the underlying statistical models differ.
+
+\subsection{Performance}
+Step2 benchmarking was carried out on three cohorts using 8 CPUs per task and 64 GB requested memory. The INSPIRE dataset included 503 samples, 139 microbial features and 6\,174\,920 variants; URECA included 99 samples, 188 features and 7\,896\,716 variants; WISC included 88 samples, 139 features and 5\,758\,326 variants. Each cohort was processed as a 22-task Slurm array. Median per-task elapsed time was 1 h 24 min 23 s for INSPIRE, 41 min 12 s for URECA and 25 min 17 s for WISC. The longest completed tasks required 3 h 15 min 40 s, 1 h 43 min 46 s and 1 h 00 min 56 s, respectively. Median peak memory usage was 33.33 GB for INSPIRE, 9.82 GB for URECA and 6.50 GB for WISC, with observed maxima of 38.54 GB, 11.29 GB and 7.35 GB.
+
+\begin{table*}[t]
+\centering
+\caption{Observed \texttt{step2} performance of \software\ across three cohorts. Runtime and memory are summarized across 22 completed array tasks per cohort.}
+\label{tab:perf}
+\begin{tabular}{>{\raggedright\arraybackslash}p{1.8cm} >{\raggedright\arraybackslash}p{1.3cm} >{\raggedright\arraybackslash}p{1.4cm} >{\raggedright\arraybackslash}p{1.8cm} >{\raggedright\arraybackslash}p{1.8cm} >{\raggedright\arraybackslash}p{1.9cm} >{\raggedright\arraybackslash}p{1.8cm} >{\raggedright\arraybackslash}p{1.6cm}}
+\toprule
+Dataset & Samples & Features & Variants & Median elapsed & Max elapsed & Median MaxRSS & Max MaxRSS \\
+\midrule
+INSPIRE & 503 & 139 & 6\,174\,920 & 01:24:23 & 03:15:40 & 33.33 GB & 38.54 GB \\
+URECA & 99 & 188 & 7\,896\,716 & 00:41:12 & 01:43:46 & 9.82 GB & 11.29 GB \\
+WISC & 88 & 139 & 5\,758\,326 & 00:25:17 & 01:00:56 & 6.50 GB & 7.35 GB \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Comparison with existing software}
+\textit{mbQTL} emphasizes microbiome--host association analysis within a single package. MASS and RAREMETAL emphasize efficient meta-analysis of score statistics. \software\ occupies a different position: it combines PALM-based cohort analysis with explicit cross-study meta-analysis and plotting. This distinction should be reflected in software comparisons. The most relevant questions are:
+
+\begin{itemize}[nosep]
+  \item runtime and memory per cohort for PALM-based summary generation;
+  \item scaling of meta-analysis with the number of studies and features;
+  \item overhead introduced by integrated standardization and visualization.
+\end{itemize}
+
+\section{Discussion}
+\software\ provides a compact implementation for microbiome GWAS that links cohort-level PALM analysis to cross-study meta-analysis and visualization. The main strength of the package is workflow integration: the same framework handles preprocessing, null model fitting, genome-wide summary-statistic generation, study aggregation and reporting. This makes the software practical for consortium-scale analyses where standardized outputs are required across cohorts.
+
+Because the package combines stages that are often handled separately, total runtime should be interpreted as the sum of preprocessing, cohort analysis and downstream synthesis rather than as the cost of association testing alone. The observed \texttt{step2} results show that runtime and memory scale sharply with cohort size and variant count: the largest cohort examined here, INSPIRE, required roughly three times the median elapsed time and more than five times the median memory of WISC. Under this framing, \software\ can be evaluated directly against alternative tools in terms of implementation efficiency and workflow scope.
+
+\section{Availability}
+\software\ is distributed as the \pkgname\ R package together with shell workflow wrappers, example input data, and documentation. The implementation supports local execution through \texttt{pixi} and containerized deployment in high-performance computing environments.
+
+\section*{Acknowledgements}
+The authors thank collaborators and users who provided feedback on workflow design, software packaging, and documentation.
+
+\section*{Funding}
+\todoentry{Insert funding information here.}
+
+\section*{Conflict of Interest}
+None declared.
+
+\begin{thebibliography}{9}
+
+\bibitem{mbqtl}
+Movassagh, M. R. \textit{et al.} (2023)
+mbQTL: an R/Bioconductor package for microbial quantitative trait loci (QTL) estimation.
+\textit{Bioinformatics}.
+
+\bibitem{mass}
+Tang, Z.-Z. and Lin, D.-Y. (2013)
+MASS: meta-analysis of score statistics for sequencing studies.
+\textit{Bioinformatics}, 29, 1803--1805.
+
+\bibitem{raremetal}
+Feng, S. \textit{et al.} (2014)
+RAREMETAL: fast and powerful meta-analysis for rare variants.
+\textit{Bioinformatics}, 30, 2828--2829.
+
+\bibitem{palmrepo}
+Li, P. and Tang, Z. (2026)
+\software: microbiome genome-wide association analysis using the PALM framework.
+Project repository and package documentation.
+
+\end{thebibliography}
+
+\end{document}

@@ -27,3 +27,4 @@ mytest/
 example_old/
 config.sh
 *.sbatch
+log*
