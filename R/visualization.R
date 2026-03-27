@@ -434,12 +434,10 @@ plot_manhattan <- function(df, outFile, title = NULL,
     ylab = expression(-log[10](italic(P))),
     ylim = c(0, max(man$PLOT_P, na.rm = TRUE) + max(0.15, cap_bump * 0.5)),
     suggestiveline = FALSE,
-    genomewideline = -log10(5e-8)
+    genomewideline = FALSE
   )
 
-  if (!is.na(manhattanCap)) {
-    graphics::abline(h = manhattanCap, lty = 2, lwd = 1, col = "grey50")
-  }
+  graphics::abline(h = -log10(5e-8), lty = 2, lwd = 1, col = "red")
 
   grDevices::dev.off()
 
@@ -830,8 +828,8 @@ forest_plot_single_pheno <- function(r, pheno, snp, outFile,
 #'   pairs with best p below this value are printed to the console and written
 #'   to `<outFile>_pCut.txt`.
 #' @param manhattanCap Optional y-axis cap for Manhattan plots, on the
-#'   `-log10(P)` scale. A dashed line is drawn at the cap, and points above
-#'   the cap are drawn slightly above that line.
+#'   `-log10(P)` scale. Points above the cap are drawn slightly above the
+#'   capped level instead of stretching the full y-axis.
 #'
 #' @return Invisibly returns the data frame passed to `qqman::manhattan()`.
 #' @export
