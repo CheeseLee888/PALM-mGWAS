@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.11.29)  22 MAR 2026 11:01
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.11.29)  23 MAR 2026 22:50
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -588,8 +588,16 @@ LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 1
 09.
 (/usr/local/texlive/2024/texmf-dist/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) [2{/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}] [3] (./
-app_note.aux)
+)
+Underfull \vbox (badness 7012) has occurred while \output is active []
+
+ [2{/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [3]
+[4
+
+] (./app_note.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
@@ -598,13 +606,13 @@ Package rerunfilecheck Info: File `app_note.out' has not changed.
 (rerunfilecheck)             Checksum: 7E188DA72C9C6DCD0123C001B5864DAC;1042.
  ) 
 Here is how much of TeX's memory you used:
- 11112 strings out of 474116
- 171241 string characters out of 5743681
- 1945187 words of memory out of 5000000
- 33273 multiletter control sequences out of 15000+600000
+ 11115 strings out of 474116
+ 171267 string characters out of 5743681
+ 1950187 words of memory out of 5000000
+ 33274 multiletter control sequences out of 15000+600000
  613187 words of font info for 70 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,11n,79p,802b,444s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,11n,79p,871b,564s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/lo
 cal/texlive/2024/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texliv
 e/2024/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></usr/local/texlive/2024/tex
@@ -618,10 +626,10 @@ f-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2024/texmf-dist/fon
 ts/type1/public/lm/lmsy8.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/pu
 blic/lm/lmsy9.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmt
 t10.pfb>
-Output written on app_note.pdf (3 pages, 262273 bytes).
+Output written on app_note.pdf (4 pages, 264019 bytes).
 PDF statistics:
- 158 PDF objects out of 1000 (max. 8388607)
- 122 compressed objects within 2 object streams
- 28 named destinations out of 1000 (max. 500000)
+ 163 PDF objects out of 1000 (max. 8388607)
+ 126 compressed objects within 2 object streams
+ 30 named destinations out of 1000 (max. 500000)
  73 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -111,10 +111,30 @@ WISC & 88 & 139 & 5\,758\,326 & 00:25:17 & 01:00:56 & 6.50 GB & 7.35 GB \\
   \item overhead introduced by integrated standardization and visualization.
 \end{itemize}
 
+To provide a practical point of reference, we also benchmarked \textit{mbQTL} on the same three cohorts using its linear and logistic modes. Linear runs completed on all three cohorts. Median per-task elapsed time was 00:30:33 for INSPIRE, 00:40:26 for URECA and 00:19:22 for WISC, with median peak memory usage of 5.00, 3.52 and 2.36 GB, respectively. In contrast, all logistic-mode array tasks terminated with failed job states across the three cohorts, although resource usage remained lower than in the corresponding linear runs. These results indicate that \software\ incurs greater cost during cohort-level summary-statistic generation, but it completed successfully on all three cohorts while also producing outputs designed for downstream meta-analysis and visualization.
+
+\begin{table*}[t]
+\centering
+\caption{Observed cohort-level comparison between \software\ \texttt{step2} and \textit{mbQTL}. All runs used 8 CPUs per task. \textit{mbQTL} logistic jobs finished with failed task states in all three cohorts.}
+\label{tab:compare}
+\begin{tabular}{>{\raggedright\arraybackslash}p{1.6cm} >{\raggedright\arraybackslash}p{2.0cm} >{\raggedright\arraybackslash}p{1.8cm} >{\raggedright\arraybackslash}p{1.7cm} >{\raggedright\arraybackslash}p{1.8cm} >{\raggedright\arraybackslash}p{1.8cm}}
+\toprule
+Dataset & Method & Median elapsed & Max elapsed & Median MaxRSS & Max MaxRSS \\
+\midrule
+INSPIRE & linear & 00:30:33 & 01:40:11 & 5.00 GB & 10.95 GB \\
+INSPIRE & logistic & 00:26:01 & 01:32:30 & 3.07 GB & 5.34 GB \\
+URECA & linear & 00:40:26 & 02:44:29 & 3.52 GB & 6.96 GB \\
+URECA & logistic & 00:37:57 & 02:36:39 & 2.52 GB & 6.17 GB \\
+WISC & linear & 00:19:22 & 01:22:25 & 2.36 GB & 4.37 GB \\
+WISC & logistic & 00:19:54 & 01:18:13 & 0.79 GB & 4.19 GB \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
 \section{Discussion}
 \software\ provides a compact implementation for microbiome GWAS that links cohort-level PALM analysis to cross-study meta-analysis and visualization. The main strength of the package is workflow integration: the same framework handles preprocessing, null model fitting, genome-wide summary-statistic generation, study aggregation and reporting. This makes the software practical for consortium-scale analyses where standardized outputs are required across cohorts.
 
-Because the package combines stages that are often handled separately, total runtime should be interpreted as the sum of preprocessing, cohort analysis and downstream synthesis rather than as the cost of association testing alone. The observed \texttt{step2} results show that runtime and memory scale sharply with cohort size and variant count: the largest cohort examined here, INSPIRE, required roughly three times the median elapsed time and more than five times the median memory of WISC. Under this framing, \software\ can be evaluated directly against alternative tools in terms of implementation efficiency and workflow scope.
+Because the package combines stages that are often handled separately, total runtime should be interpreted as the sum of preprocessing, cohort analysis and downstream synthesis rather than as the cost of association testing alone. The observed \texttt{step2} results show that runtime and memory scale sharply with cohort size and variant count: the largest cohort examined here, INSPIRE, required roughly three times the median elapsed time and more than five times the median memory of WISC. Relative to \textit{mbQTL}, \software\ required more memory in the cohort-level testing stage, but completed successfully across all three cohorts and produced directly meta-analyzable outputs. Under this framing, \software\ can be evaluated directly against alternative tools in terms of implementation efficiency and workflow scope.
 
 \section{Availability}
 \software\ is distributed as the \pkgname\ R package together with shell workflow wrappers, example input data, and documentation. The implementation supports local execution through \texttt{pixi} and containerized deployment in high-performance computing environments.
