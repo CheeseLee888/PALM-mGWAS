@@ -349,7 +349,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --pattern='${visPattern}' \
     --plotDir=${plotDir} \
     --pheno=${pheno} \
-    --manhattanCap=${manhattanCap:-10}
+    --plotMinP=${plotMinP:-NA}
 
 # case 3: one SNP across taxa
 pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
@@ -388,7 +388,7 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Single-study visualization:</strong> you can run visualization directly after Step2 by pointing <code>metaDir</code> to one study's Step2 output folder and setting <code>pattern</code> to match those files; in that case the plots summarize a single study rather than a meta-analysis.</li>
     <li><strong>Outputs:</strong> plots saved to <code>--plotDir</code>; if <code>--PlotOutputFile</code> is not provided, the script auto-generates a file name based on mode, taxon, and SNP.</li>
     <li><strong>Input scope:</strong> <code>--metaDir</code> can point to Step3 outputs or any directory of Step2/Step3-like files matching <code>--pattern</code>. In normal use, <code>pattern</code> should match all taxon files in that directory, so the later logic can decide what to show based on whether <code>--pheno</code> and <code>--snp</code> are specified.</li>
-    <li><strong>Validation rules:</strong> <code>pCut</code> is only accepted in case 1 and case 3; <code>showMeta</code> and <code>showHet</code> require <code>--snp</code>; <code>manhattanCap</code> only affects Manhattan plots.</li>
+    <li><strong>Validation rules:</strong> <code>pCut</code> is only accepted in case 1 and case 3; <code>showMeta</code> and <code>showHet</code> require <code>--snp</code>; <code>plotMinP</code> only affects Manhattan plots.</li>
     <li><strong>SNP-specific options:</strong> when <code>--snp</code> is supplied, you can additionally pass <code>--showMeta</code> and <code>--showHet</code>.</li>
   </ul>
   <table>
@@ -402,7 +402,7 @@ docker run --rm --platform=linux/amd64 \
     <tr><td><code>--pCut</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>"5e-8"</code></td><td>P-value cutoff used in case 1 printing and case 3 taxon filtering; <code>NA</code>, <code>NULL</code>, or empty disables it</td><td><code>--pCut=1e-8</code>; <code>--pCut=NA</code>; <code>--pCut=NULL</code>; <code>--pCut=</code></td></tr>
     <tr><td><code>--showMeta</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Overlay meta estimates in SNP-based forest plots; valid only when <code>--snp</code> is supplied</td><td><code>--showMeta=TRUE</code>; <code>--showMeta=FALSE</code></td></tr>
     <tr><td><code>--showHet</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Emphasize heterogeneity information in SNP-based forest plots when available; valid only when <code>--snp</code> is supplied</td><td><code>--showHet=TRUE</code>; <code>--showHet=FALSE</code></td></tr>
-    <tr><td><code>--manhattanCap</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>10</code></td><td>Optional Manhattan y-axis cap on the <code>-log10(P)</code> scale; the CLI default is <code>10</code>. Points above the cap are plotted slightly above the capped level instead of stretching the full y-axis. Use <code>NA</code> to disable the cap.</td><td><code>--manhattanCap=12</code>; <code>--manhattanCap=10</code>; <code>--manhattanCap=NA</code></td></tr>
+    <tr><td><code>--plotMinP</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Optional Manhattan plotting threshold for p-value compression. Points with <code>P &lt; plotMinP</code> are plotted slightly above <code>-log10(plotMinP)</code> instead of stretching the full y-axis. Use <code>NA</code> to disable compression.</td><td><code>--plotMinP=1e-10</code>; <code>--plotMinP=1e-12</code>; <code>--plotMinP=NA</code></td></tr>
     <tr><td><code>--width</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Plot width in inches; <code>NA</code> lets the script auto-size</td><td><code>--width=10</code>; <code>--width=NA</code></td></tr>
     <tr><td><code>--height</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Plot height in inches; <code>NA</code> lets the script auto-size</td><td><code>--height=6</code>; <code>--height=NA</code></td></tr>
   </table>

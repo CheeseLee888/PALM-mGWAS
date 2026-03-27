@@ -36,8 +36,8 @@ option_list <- list(
               help = "Plot width inches; NA lets the script auto-size"),
   make_option(c("--height"), type = "character", default = NA_character_,
               help = "Plot height inches; NA lets the script auto-size"),
-  make_option(c("--manhattanCap"), type = "character", default = "10",
-              help = "Optional Manhattan y-axis cap on the -log10(P) scale; defaults to 10. Use NA to disable the cap")
+  make_option(c("--plotMinP"), type = "character", default = "NA",
+              help = "Optional Manhattan plotting threshold for p-value compression; points with P < plotMinP are compressed near the threshold instead of stretching the full y-axis. Use NA to disable compression")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -81,14 +81,14 @@ parse_pcut <- function(x) {
   val
 }
 
-parse_positive_numeric <- function(x, flag_name) {
+parse_probability <- function(x, flag_name) {
   if (is.null(x) || length(x) == 0) return(NA_real_)
   if (is.na(x)) return(NA_real_)
   up <- toupper(trimws(as.character(x)))
   if (up %in% c("", "NA", "NULL")) return(NA_real_)
   val <- suppressWarnings(as.numeric(x))
-  if (is.na(val) || val <= 0) {
-    stop(flag_name, " must be a positive number or NA.")
+  if (is.na(val) || val <= 0 || val >= 1) {
+    stop(flag_name, " must be a number in (0, 1) or NA.")
   }
   val
 }
@@ -96,7 +96,7 @@ parse_positive_numeric <- function(x, flag_name) {
 width_in  <- parse_dim(opt$width)
 height_in <- parse_dim(opt$height)
 p_cut <- parse_pcut(opt$pCut)
-manhattan_cap <- parse_positive_numeric(opt$manhattanCap, "--manhattanCap")
+plot_min_p <- parse_probability(opt$plotMinP, "--plotMinP")
 
 metaDir <- opt$metaDir
 plotDir <- opt$plotDir
@@ -145,7 +145,7 @@ msg("PlotDir: %s", plotDir)
 msg("Pattern: %s", opt$pattern)
 msg("Found %d files.", nrow(metaIndex))
 msg("Resolved pCut: %s", if (is.na(p_cut)) "NA" else format(p_cut, scientific = TRUE))
-msg("Resolved manhattanCap: %s", if (is.na(manhattan_cap)) "NA" else as.character(manhattan_cap))
+msg("Resolved plotMinP: %s", if (is.na(plot_min_p)) "NA" else format(plot_min_p, scientific = TRUE))
 msg("Resolved width x height: %s x %s", if (is.na(width_in)) "auto" else as.character(width_in), if (is.na(height_in)) "auto" else as.character(height_in))
 msg("Output file/base: %s", outFile)
 
@@ -160,7 +160,7 @@ if (is.null(pheno) && is.null(snp)) {
     sep = "\t",
     width = width_in, height = height_in, dpi = 300,
     pCut = p_cut,
-    manhattanCap = manhattan_cap
+    plotMinP = plot_min_p
   )
 
 } else if (!is.null(pheno) && is.null(snp)) {
@@ -180,7 +180,7 @@ if (is.null(pheno) && is.null(snp)) {
     qqOutFile = qq_out,
     topOutFile = top_out,
     top_n = 10,
-    manhattanCap = manhattan_cap
+    plotMinP = plot_min_p
   )
 
 } else if (is.null(pheno) && !is.null(snp)) {
@@ -189,8 +189,8 @@ if (is.null(pheno) && is.null(snp)) {
   msg("Mode C behavior: pCut %s; showMeta=%s; showHet=%s; one file is generated for each retained phenotype.",
       if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)),
       opt$showMeta, opt$showHet)
-  if (!is.na(manhattan_cap)) {
-    msg("Mode C behavior: manhattanCap is ignored in this mode.")
+  if (!is.na(plot_min_p)) {
+    msg("Mode C behavior: plotMinP is ignored in this mode.")
   }
   mode_snp_forest_across_phenos(
     metaIndex = metaIndex,
@@ -207,8 +207,8 @@ if (is.null(pheno) && is.null(snp)) {
   # Mode D
   msg("Visualization mode: forest for phenotype %s and SNP %s.", pheno, snp)
   msg("Mode D behavior: showMeta=%s; showHet=%s; pCut is ignored in this mode.", opt$showMeta, opt$showHet)
-  if (!is.na(manhattan_cap)) {
-    msg("Mode D behavior: manhattanCap is ignored in this mode.")
+  if (!is.na(plot_min_p)) {
+    msg("Mode D behavior: plotMinP is ignored in this mode.")
   }
   mode_pheno_snp_forest(
     metaIndex = metaIndex,

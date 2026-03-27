@@ -361,7 +361,7 @@ add_bp_cum <- function(df) {
 plot_manhattan <- function(df, outFile, title = NULL,
                            pCut = 5e-8,
                            width = NA_real_, height = NA_real_, dpi = 300,
-                           manhattanCap = NA_real_) {
+                           plotMinP = NA_real_) {
   if (!requireNamespace("qqman", quietly = TRUE)) {
     stop("Package 'qqman' is required.")
   }
@@ -394,13 +394,14 @@ plot_manhattan <- function(df, outFile, title = NULL,
   man <- man |>
     dplyr::mutate(logp = -log10(.data$P))
 
-  if (!is.na(manhattanCap)) {
-    if (!is.numeric(manhattanCap) || length(manhattanCap) != 1 || manhattanCap <= 0) {
-      stop("manhattanCap must be a single positive number or NA.")
+  if (!is.na(plotMinP)) {
+    if (!is.numeric(plotMinP) || length(plotMinP) != 1 || plotMinP <= 0 || plotMinP >= 1) {
+      stop("plotMinP must be a single number in (0, 1) or NA.")
     }
-    cap_bump <- max(0.2, manhattanCap * 0.02)
+    plot_min_p_logp <- -log10(plotMinP)
+    cap_bump <- max(0.2, plot_min_p_logp * 0.02)
     man <- man |>
-      dplyr::mutate(PLOT_P = dplyr::if_else(.data$logp > manhattanCap, manhattanCap + cap_bump, .data$logp))
+      dplyr::mutate(PLOT_P = dplyr::if_else(.data$P < plotMinP, plot_min_p_logp + cap_bump, .data$logp))
   } else {
     cap_bump <- 0
     man <- man |>
@@ -827,9 +828,9 @@ forest_plot_single_pheno <- function(r, pheno, snp, outFile,
 #' @param pCut Optional cutoff. When using the combined mode, SNP/phenotype
 #'   pairs with best p below this value are printed to the console and written
 #'   to `<outFile>_pCut.txt`.
-#' @param manhattanCap Optional y-axis cap for Manhattan plots, on the
-#'   `-log10(P)` scale. Points above the cap are drawn slightly above the
-#'   capped level instead of stretching the full y-axis.
+#' @param plotMinP Optional Manhattan plotting threshold for p-value
+#'   compression. Points with `P < plotMinP` are drawn slightly above
+#'   `-log10(plotMinP)` instead of stretching the full y-axis.
 #'
 #' @return Invisibly returns the data frame passed to `qqman::manhattan()`.
 #' @export
@@ -837,7 +838,7 @@ mode_big_combined <- function(metaIndex, outFile,
                               sep = "\t",
                               width = NA_real_, height = NA_real_, dpi = 300,
                               pCut = 5e-8,
-                              manhattanCap = NA_real_) {
+                              plotMinP = NA_real_) {
   all_hits <- list()
 
   for (i in seq_len(nrow(metaIndex))) {
@@ -920,7 +921,7 @@ mode_big_combined <- function(metaIndex, outFile,
     width = width,
     height = height,
     dpi = dpi,
-    manhattanCap = manhattanCap
+    plotMinP = plotMinP
   )
 }
 
@@ -940,7 +941,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
                                  width = NA_real_, height = NA_real_, dpi = 300,
                                  qqOutFile = NULL, qq_width = NA_real_, qq_height = NA_real_,
                                  topOutFile = NULL, top_n = 10,
-                                 manhattanCap = NA_real_) {
+                                 plotMinP = NA_real_) {
   row <- metaIndex |> dplyr::filter(.data$pheno == .env$phenoName)
   if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", phenoName)
 
@@ -951,7 +952,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
     title = paste0("Manhattan: ", phenoName),
     pCut = NA_real_,
     width = width, height = height, dpi = dpi,
-    manhattanCap = manhattanCap
+    plotMinP = plotMinP
   )
 
   if (!is.null(qqOutFile)) {

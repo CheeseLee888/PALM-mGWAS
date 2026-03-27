@@ -21,7 +21,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --pattern=${visPattern:-step3_meta_.*\\.txt$} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --pheno=${pheno:-NA} \
-    --manhattanCap=${manhattanCap:-10} \
+    --plotMinP=${plotMinP:-NA} \
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
 
@@ -41,7 +41,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/Visualization
     --pattern=${visPattern:-step3_meta_.*\\.txt$} \
     --plotDir=${plotDir:-${outputFolder}/plot} \
     --pCut=${pCut2:-5e-8} \
-    --manhattanCap=${manhattanCap:-10} \
+    --plotMinP=${plotMinP:-NA} \
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
 echo "Finish: Visualize results."
