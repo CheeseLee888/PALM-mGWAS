@@ -120,7 +120,7 @@ docker run --rm --platform=linux/amd64 \
     <div class="card"><strong>Info</strong><br><code>Info.R</code> creates SNP, feature, and sequencing-depth summaries.</div>
     <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> checks IID consistency across abundance, covariates, and genotype input, and reorders tables to match the reference sample order.</div>
     <div class="card"><strong>Step1 Null</strong><br><code>step1_null.R</code> fits the PALM null model from abundance (and optional covariates).</div>
-    <div class="card"><strong>Step2 Summary</strong><br><code>step2_summary.R</code> reads genotype input, runs PALM score tests, and writes per-phenotype estimates.</div>
+    <div class="card"><strong>Step2 Summary</strong><br><code>step2_summary.R</code> reads genotype input, runs PALM score tests, and writes per-taxon estimates.</div>
     <div class="card"><strong>Step3 Meta</strong><br><code>step3_meta.R</code> meta-analyzes multiple studies and adds <code>meta_*</code> columns.</div>
     <div class="card"><strong>Visualization</strong><br><code>Visualization.R</code> generates Manhattan and forest plots.</div>
   </div>
@@ -153,7 +153,7 @@ docker run --rm --platform=linux/amd64 \
     --outputSeqDepthFile=/work/${outputSeqDepthFile}</code></pre>
   <ul>
     <li><strong>Purpose:</strong> quick QC summaries before modeling.</li>
-    <li><strong>Inputs:</strong> genotype input as PLINK prefix, VCF, or BGEN, plus abundance txt (sample IDs in column 1).</li>
+    <li><strong>Inputs:</strong> genotype input as PLINK prefix, VCF, or BGEN, plus an abundance/count table txt (sample IDs in column 1).</li>
     <li><strong>Temporary conversion:</strong> VCF and BGEN inputs are converted to a temporary PLINK dataset before SNP summaries are computed. Use <code>--keepTemp=TRUE</code> if you want to inspect those intermediate files.</li>
     <li><strong>Outputs:</strong>
       <code>info_snp.txt</code> (CHR, SNP, POS, A1, A2, N, AF);
@@ -236,7 +236,7 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Docker path note:</strong> when you mount the project at <code>/work</code> and use <code>-w /work</code>, relative paths such as <code>example/input/study1/abd.txt</code> work directly inside the container. This also avoids invalid strings like <code>/work/NULL</code> for optional arguments.</li>
     <li><strong>Covariate subset:</strong> pass <code>--covarColList=AGE,SEX,PC01</code> to use only those columns from <code>covFile</code>; names must match the header exactly.</li>
     <li><strong>PALM arguments:</strong> <code>depthFile</code> maps to PALM <code>depth</code> using the second column as sequencing depth; <code>depth.filter</code> and <code>prev.filter</code> are forwarded directly to <code>PALM::palm.null.model()</code>.</li>
-    <li><strong>Tips:</strong> ensure no duplicated sample IDs; use relative abundance; keep sessionInfo for reproducibility.</li>
+    <li><strong>Tips:</strong> ensure no duplicated sample IDs; use abundance(count); keep sessionInfo for reproducibility.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
@@ -279,7 +279,7 @@ docker run --rm --platform=linux/amd64 \
     --useCluster=${useCluster}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>. Step2 accepts a PLINK prefix, <code>.vcf/.vcf.gz/.vcf.bgz</code>, or <code>.bgen</code>.</li>
-    <li><strong>Outputs:</strong> one per-phenotype <code>.txt</code> file with columns <code>SNP, CHR, POS, est, stderr, pval</code>.</li>
+    <li><strong>Outputs:</strong> one per-taxon <code>.txt</code> file with columns <code>SNP, CHR, POS, est, stderr, pval</code>.</li>
     <li><strong>SNP format:</strong> dots are replaced by colons, e.g., <code>chr1:12345:REF:ALT</code>.</li>
     <li><strong>Temporary conversion:</strong> VCF and BGEN inputs are converted to a temporary PLINK dataset before calling PALM. Use <code>--keepTemp=TRUE</code> if you want to inspect those intermediate files.</li>
     <li><strong>VCF import:</strong> <code>--vcfField</code> accepts <code>DS</code> or <code>GT</code>; the default is <code>DS</code>.</li>
@@ -288,7 +288,7 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>MAF filter:</strong> default is <code>--minMAF=0.05</code>; use another threshold as needed, and <code>0</code> disables this filter.</li>
     <li><strong>MAC filter:</strong> default is <code>--minMAC=5</code>; use <code>0</code> to disable minor-allele-count filtering.</li>
     <li><strong>Clustering:</strong> <code>useCluster</code> defaults to <code>FALSE</code>. When set to <code>TRUE</code>, FID from the PLINK <code>.fam</code> file is passed to PALM; this is only supported for native PLINK input, and all-zero FIDs still disable clustering.</li>
-    <li><strong>correct:</strong> forwarded to <code>PALM::palm.get.summary()</code>. Use <code>median</code> for median-based compositional correction, <code>tune</code> for a data-driven tuned correction, or <code>NULL</code> / empty string to disable compositional correction and keep relative-abundance-level summary statistics.</li>
+    <li><strong>correct:</strong> forwarded to <code>PALM::palm.get.summary()</code>. Use <code>median</code> for median-based compositional correction, <code>tune</code> for a data-driven tuned correction, or <code>NULL</code> / empty string to disable compositional correction and keep abundance-level summary statistics.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
@@ -297,7 +297,7 @@ docker run --rm --platform=linux/amd64 \
     <tr><td><code>--alleleOrder</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>BGEN allele-order setting passed to <code>plink2 --bgen</code>; use <code>ref-first</code>, <code>ref-last</code>, or <code>ref-unknown</code></td><td><code>--alleleOrder=ref-last</code>; <code>--alleleOrder=NULL</code></td></tr>
     <tr><td><code>--keepTemp</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Keep temporary converted PLINK files for VCF/BGEN input</td><td><code>--keepTemp=TRUE</code>; <code>--keepTemp=FALSE</code></td></tr>
     <tr><td><code>--NULLmodelFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Null model generated by Step1</td><td><code>--NULLmodelFile=example/output/study1/step1_allpheno.rda</code></td></tr>
-    <tr><td><code>--PALMOutputFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for per-phenotype result files</td><td><code>--PALMOutputFile=example/output/study1/step2_allchr</code></td></tr>
+    <tr><td><code>--PALMOutputFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for per-taxon result files</td><td><code>--PALMOutputFile=example/output/study1/step2_allchr</code></td></tr>
     <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>""</code></td><td>Optional chromosome subset; leave empty to keep all chromosomes</td><td><code>--chrom=1</code>; omit it or set <code>--chrom=</code> for all chromosomes</td></tr>
     <tr><td><code>--minMAF</code></td><td><code>double</code></td><td><code>0.05</code></td><td>Optional minimum minor allele frequency threshold for SNP filtering</td><td><code>--minMAF=0.05</code>; <code>--minMAF=0</code></td></tr>
     <tr><td><code>--minMAC</code></td><td><code>integer</code></td><td><code>5</code></td><td>Optional minimum minor allele count threshold for SNP filtering</td><td><code>--minMAC=5</code>; <code>--minMAC=0</code></td></tr>
@@ -322,28 +322,28 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --metaPrefix=${metaPrefix}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> <code>studyFile</code> is a text file with two columns per line: <code>studyID</code> and Step2 output directory. Files inside those directories are selected by <code>pattern</code>.</li>
-    <li><strong>Outputs:</strong> one file per phenotype in <code>metaDir</code> named <code>metaPrefix&lt;pheno&gt;.txt</code>, containing <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
+    <li><strong>Outputs:</strong> one file per taxon in <code>metaDir</code> named <code>metaPrefix&lt;pheno&gt;.txt</code>, containing <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
     <li><strong>Single-study mode:</strong> still useful to standardize column names for plotting.</li>
-    <li><strong>Pattern:</strong> this is the key setting for Step3. Step2 writes files such as <code>step2_allchr_g_Bifidobacterium.txt</code> and <code>step2_allchr_g_Peptoniphilus_unclassified.txt</code>, where the phenotype name is embedded in the filename. Your <code>pattern</code> should match the fixed prefix and suffix, but leave the phenotype part to be captured from the filename, for example <code>step2_allchr_.*[.]txt$</code> or <code>step2_chr1_.*[.]txt$</code>. In other words, the regex should include the position where the phenotype name appears, rather than hard-coding one phenotype.</li>
+    <li><strong>Pattern:</strong> this is the key setting for Step3. Step2 writes files such as <code>step2_allchr_g_Bifidobacterium.txt</code> and <code>step2_allchr_g_Peptoniphilus_unclassified.txt</code>, where the taxon name is embedded in the filename. Your <code>pattern</code> should match the fixed prefix and suffix, but leave the taxon part to be captured from the filename, for example <code>step2_allchr_.*[.]txt$</code> or <code>step2_chr1_.*[.]txt$</code>. In other words, the regex should include the position where the taxon name appears, rather than hard-coding one taxon.</li>
     <li><strong>Current CLI behavior:</strong> the wrapper fixes <code>features = NULL</code> and <code>keep_het = TRUE</code>.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
     <tr><td><code>--studyFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Study list file mapping study IDs to result directories</td><td><code>--studyFile=example/input/study_dirs.txt</code> for local pixi runs; <code>--studyFile=example/input/study_dirs_docker.txt</code> for Docker runs</td></tr>
-    <tr><td><code>--pattern</code></td><td><code>character</code></td><td><code>""</code></td><td>Regex selecting which Step2 result files to meta-analyze. Step2 filenames contain the phenotype in the middle, such as <code>step2_allchr_g_Bifidobacterium.txt</code>, so the regex should match the fixed prefix/suffix and leave the phenotype part variable for extraction. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step2_allchr_.*[.]txt$'</code>; <code>--pattern='step2_chr1_.*[.]txt$'</code>; do not write <code>--pattern=step2_allchr_g_Bifidobacterium.txt</code> if you want all phenotypes</td></tr>
+    <tr><td><code>--pattern</code></td><td><code>character</code></td><td><code>""</code></td><td>Regex selecting which Step2 result files to meta-analyze. Step2 filenames contain the taxon in the middle, such as <code>step2_allchr_g_Bifidobacterium.txt</code>, so the regex should match the fixed prefix/suffix and leave the taxon part variable for extraction. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step2_allchr_.*[.]txt$'</code>; <code>--pattern='step2_chr1_.*[.]txt$'</code>; do not write <code>--pattern=step2_allchr_g_Bifidobacterium.txt</code> if you want all taxa</td></tr>
     <tr><td><code>--metaDir</code></td><td><code>character</code></td><td><code>""</code></td><td>Output directory for meta-analysis tables</td><td><code>--metaDir=example/output/meta</code></td></tr>
     <tr><td><code>--metaPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>Filename prefix for meta-analysis outputs</td><td><code>--metaPrefix=step3_meta_</code></td></tr>
   </table>
 
   <h2 id="viz">Visualization</h2>
-  <pre><code class="language-bash"># case 1: combined Manhattan across phenotypes
+  <pre><code class="language-bash"># case 1: combined Manhattan across taxa
 pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --metaDir=${metaDir} \
     --pattern='${visPattern}' \
     --plotDir=${plotDir} \
     --pCut=${pCut}
 
-# case 2: one phenotype
+# case 2: one taxon
 pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --metaDir=${metaDir} \
     --pattern='${visPattern}' \
@@ -351,7 +351,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --pheno=${pheno} \
     --manhattanCap=${manhattanCap:-10}
 
-# case 3: one SNP across phenotypes
+# case 3: one SNP across taxa
 pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --metaDir=${metaDir} \
     --pattern='${visPattern}' \
@@ -361,7 +361,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --showMeta=${showMeta:-TRUE} \
     --showHet=${showHet:-TRUE}
 
-# case 4: one phenotype-SNP pair
+# case 4: one taxon-SNP pair
 pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --metaDir=${metaDir} \
     --pattern='${visPattern}' \
@@ -381,13 +381,13 @@ docker run --rm --platform=linux/amd64 \
     --pCut=${pCut}</code></pre>
   <ul>
     <li><strong>Mode selection:</strong> the plotting mode is determined by whether <code>--pheno</code> and <code>--snp</code> are specified. Different combinations produce the following plot types.</li>
-    <li><strong>Case 1:</strong> no <code>--pheno</code> and no <code>--snp</code> gives a combined overview in which each SNP is represented by the phenotype with the smallest p-value for that SNP. Here <code>pCut</code> is used to keep only best-hit SNP/phenotype pairs with <code>p &lt;= pCut</code> in the printed/listed output; use <code>NA</code> to disable that filtering/reporting.</li>
-    <li><strong>Case 2:</strong> <code>--pheno</code> only gives a phenotype-specific Manhattan plot and QQ plot.</li>
-    <li><strong>Case 3:</strong> <code>--snp</code> only writes one forest plot per phenotype containing that SNP; here <code>pCut</code> is used to keep only phenotypes with <code>p &lt;= pCut</code>, and <code>NA</code> disables that filtering. Each figure now includes study-level columns such as effect, standard error, weight, and effect with 95% confidence interval.</li>
-    <li><strong>Case 4:</strong> both <code>--pheno</code> and <code>--snp</code> give a forest plot for one phenotype-SNP pair across studies.</li>
+    <li><strong>Case 1:</strong> no <code>--pheno</code> and no <code>--snp</code> gives a combined overview in which each SNP is represented by the taxon with the smallest p-value for that SNP. Here <code>pCut</code> is used to keep only best-hit SNP/taxon pairs with <code>p &lt;= pCut</code> in the printed/listed output; use <code>NA</code> to disable that filtering/reporting.</li>
+    <li><strong>Case 2:</strong> <code>--pheno</code> only gives a taxon-specific Manhattan plot and QQ plot.</li>
+    <li><strong>Case 3:</strong> <code>--snp</code> only writes one forest plot per taxon containing that SNP; here <code>pCut</code> is used to keep only taxa with <code>p &lt;= pCut</code>, and <code>NA</code> disables that filtering. Each figure now includes study-level columns such as effect, standard error, weight, and effect with 95% confidence interval.</li>
+    <li><strong>Case 4:</strong> both <code>--pheno</code> and <code>--snp</code> give a forest plot for one taxon-SNP pair across studies.</li>
     <li><strong>Single-study visualization:</strong> you can run visualization directly after Step2 by pointing <code>metaDir</code> to one study's Step2 output folder and setting <code>pattern</code> to match those files; in that case the plots summarize a single study rather than a meta-analysis.</li>
-    <li><strong>Outputs:</strong> plots saved to <code>--plotDir</code>; if <code>--PlotOutputFile</code> is not provided, the script auto-generates a file name based on mode, phenotype, and SNP.</li>
-    <li><strong>Input scope:</strong> <code>--metaDir</code> can point to Step3 outputs or any directory of Step2/Step3-like files matching <code>--pattern</code>. In normal use, <code>pattern</code> should match all phenotype files in that directory, so the later logic can decide what to show based on whether <code>--pheno</code> and <code>--snp</code> are specified.</li>
+    <li><strong>Outputs:</strong> plots saved to <code>--plotDir</code>; if <code>--PlotOutputFile</code> is not provided, the script auto-generates a file name based on mode, taxon, and SNP.</li>
+    <li><strong>Input scope:</strong> <code>--metaDir</code> can point to Step3 outputs or any directory of Step2/Step3-like files matching <code>--pattern</code>. In normal use, <code>pattern</code> should match all taxon files in that directory, so the later logic can decide what to show based on whether <code>--pheno</code> and <code>--snp</code> are specified.</li>
     <li><strong>Validation rules:</strong> <code>pCut</code> is only accepted in case 1 and case 3; <code>showMeta</code> and <code>showHet</code> require <code>--snp</code>; <code>manhattanCap</code> only affects Manhattan plots.</li>
     <li><strong>SNP-specific options:</strong> when <code>--snp</code> is supplied, you can additionally pass <code>--showMeta</code> and <code>--showHet</code>.</li>
   </ul>
@@ -395,11 +395,11 @@ docker run --rm --platform=linux/amd64 \
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
     <tr><td><code>--metaDir</code></td><td><code>character</code></td><td><code>""</code></td><td>Directory containing Step3 meta files or single-study Step2 files</td><td><code>--metaDir=example/output/meta</code></td></tr>
     <tr><td><code>--plotDir</code></td><td><code>character</code></td><td><code>""</code></td><td>Directory where plots will be written</td><td><code>--plotDir=example/output/plot</code></td></tr>
-    <tr><td><code>--pattern</code></td><td><code>character</code></td><td><code>""</code></td><td>Regex matching result files to plot. It should usually match all phenotype files in the target directory, so that the script can later subset by <code>--pheno</code> and/or <code>--snp</code>. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step3_meta_.*[.]txt$'</code>; <code>--pattern='step2_allchr_.*[.]txt$'</code> for single-study Step2 plots</td></tr>
-    <tr><td><code>--pheno</code></td><td><code>character</code></td><td><code>NA</code></td><td>Phenotype name; used in case 2 and case 4</td><td><code>--pheno=g_Peptoniphilus_unclassified</code>; omit it for case 1 or case 3</td></tr>
+    <tr><td><code>--pattern</code></td><td><code>character</code></td><td><code>""</code></td><td>Regex matching result files to plot. It should usually match all taxon files in the target directory, so that the script can later subset by <code>--pheno</code> and/or <code>--snp</code>. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step3_meta_.*[.]txt$'</code>; <code>--pattern='step2_allchr_.*[.]txt$'</code> for single-study Step2 plots</td></tr>
+    <tr><td><code>--pheno</code></td><td><code>character</code></td><td><code>NA</code></td><td>(Microbial) taxon name; used in case 2 and case 4</td><td><code>--pheno=g_Peptoniphilus_unclassified</code>; omit it for case 1 or case 3</td></tr>
     <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier; used in case 3 and case 4</td><td><code>--snp=chr1:14678191:A:C</code>; omit it for case 1 or case 2</td></tr>
-    <tr><td><code>--PlotOutputFile</code></td><td><code>character</code></td><td><code>NA</code></td><td>Optional explicit output filename; otherwise auto-generated. In case 3 this acts as a base name and the phenotype suffix is inserted before the extension for each generated forest plot.</td><td><code>--PlotOutputFile=example/output/plot/custom.png</code>; <code>--PlotOutputFile=NA</code>; omit it to auto-name</td></tr>
-    <tr><td><code>--pCut</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>"5e-8"</code></td><td>P-value cutoff used in case 1 printing and case 3 phenotype filtering; <code>NA</code>, <code>NULL</code>, or empty disables it</td><td><code>--pCut=1e-8</code>; <code>--pCut=NA</code>; <code>--pCut=NULL</code>; <code>--pCut=</code></td></tr>
+    <tr><td><code>--PlotOutputFile</code></td><td><code>character</code></td><td><code>NA</code></td><td>Optional explicit output filename; otherwise auto-generated. In case 3 this acts as a base name and the taxon suffix is inserted before the extension for each generated forest plot.</td><td><code>--PlotOutputFile=example/output/plot/custom.png</code>; <code>--PlotOutputFile=NA</code>; omit it to auto-name</td></tr>
+    <tr><td><code>--pCut</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>"5e-8"</code></td><td>P-value cutoff used in case 1 printing and case 3 taxon filtering; <code>NA</code>, <code>NULL</code>, or empty disables it</td><td><code>--pCut=1e-8</code>; <code>--pCut=NA</code>; <code>--pCut=NULL</code>; <code>--pCut=</code></td></tr>
     <tr><td><code>--showMeta</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Overlay meta estimates in SNP-based forest plots; valid only when <code>--snp</code> is supplied</td><td><code>--showMeta=TRUE</code>; <code>--showMeta=FALSE</code></td></tr>
     <tr><td><code>--showHet</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Emphasize heterogeneity information in SNP-based forest plots when available; valid only when <code>--snp</code> is supplied</td><td><code>--showHet=TRUE</code>; <code>--showHet=FALSE</code></td></tr>
     <tr><td><code>--manhattanCap</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>10</code></td><td>Optional Manhattan y-axis cap on the <code>-log10(P)</code> scale; the CLI default is <code>10</code>. A dashed line is drawn at the cap and points above it are plotted slightly above that line instead of stretching the full y-axis. Use <code>NA</code> to disable the cap.</td><td><code>--manhattanCap=12</code>; <code>--manhattanCap=10</code>; <code>--manhattanCap=NA</code></td></tr>
@@ -417,7 +417,7 @@ ID_001	6101	73	255	0	...
 ID_002	6102	17	294	321	...
 ID_003	3103	0	0	366	...
 ID_004	3104	0	372	411	...</code></pre>
-  <p>The first column is sample ID (<code>IID</code>), and each remaining column is a microbial feature/phenotype. The actual <code>study1</code> example contains many genus-, family-, and order-level features, so the table above is intentionally truncated after the first few phenotype columns.</p>
+  <p>The first column is sample ID (<code>IID</code>), and each remaining column is a microbial taxon. The actual <code>study1</code> example contains many genus-, family-, and order-level taxa, so the table above is intentionally truncated after the first few taxon columns.</p>
 
   <h3>Example Input: covariates</h3>
   <pre><code class="language-tsv"># file: example/input/study1/cov.txt
@@ -542,7 +542,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --NULLmodelFile=example/output/study1/step1_allpheno.rda</code></pre>
   <p><strong>Output:</strong> <code>example/output/study1/step1_allpheno.rda</code>, which is then passed into Step2 as <code>--NULLmodelFile</code>.</p>
 
-  <h3>Step2: null model + genotype to per-phenotype association files</h3>
+  <h3>Step2: null model + genotype to per-taxon association files</h3>
   <p><strong>Input:</strong> genotype input passed through <code>--genoFile</code> and null model <code>example/output/study1/step1_allpheno.rda</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_summary.R \
     --genoFile=example/input/study1/geno \
@@ -571,17 +571,17 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --minMAC=5 \
     --correct=NULL \
     --useCluster=FALSE</code></pre>
-  <p><strong>Output:</strong> one file per phenotype, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on.</p>
-  <p><strong>Current example files:</strong> in this repository the Step2 outputs use real phenotype names, for example <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
+  <p><strong>Output:</strong> one file per taxon, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on.</p>
+  <p><strong>Current example files:</strong> in this repository the Step2 outputs use real taxon names, for example <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
 
-  <h3>Example Output: Step2 per-phenotype summary</h3>
+  <h3>Example Output: Step2 per-taxon summary</h3>
   <pre><code class="language-tsv"># file: example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt
 SNP	CHR	POS	est	stderr	pval
 chr1:1837340:C:T	1	1837340	0.0474191553950809	0.0774090197587034	0.540154614991417
 chr1:2261200:G:C	1	2261200	0.00910291825612166	0.0603368037873752	0.880079512475897
 chr1:14678191:A:C	1	14678191	0.0520991490461496	0.0469469273278635	0.26710863943579
 chr1:14985097:C:T	1	14985097	-0.0257207814851513	0.0927341291837284	0.781503333099081</code></pre>
-  <p>Each Step2 file corresponds to one phenotype. Here, <code>g_Peptoniphilus_unclassified</code> has one file containing association statistics for all tested SNPs.</p>
+  <p>Each Step2 file corresponds to one taxon. Here, <code>g_Peptoniphilus_unclassified</code> has one file containing association statistics for all tested SNPs.</p>
 
   <h3>Step3: multiple Step2 folders to meta-analysis tables</h3>
   <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code> for local pixi runs or <code>example/input/study_dirs_docker.txt</code> for Docker runs, plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>.</p>
@@ -598,7 +598,7 @@ chr1:14985097:C:T	1	14985097	-0.0257207814851513	0.0927341291837284	0.7815033330
     --pattern='step2_allchr_.*[.]txt$' \
     --metaDir=/work/example/output/meta \
     --metaPrefix=step3_meta_</code></pre>
-  <p><strong>Output:</strong> one meta file per phenotype, such as <code>example/output/meta/step3_meta_g_Bifidobacterium.txt</code> or <code>example/output/meta/step3_meta_g_Peptoniphilus_unclassified.txt</code>.</p>
+  <p><strong>Output:</strong> one meta file per taxon, such as <code>example/output/meta/step3_meta_g_Bifidobacterium.txt</code> or <code>example/output/meta/step3_meta_g_Peptoniphilus_unclassified.txt</code>.</p>
 
   <h3>Example Output: Step3 meta-analysis</h3>
   <pre><code class="language-tsv"># file: example/output/meta/step3_meta_g_Peptoniphilus_unclassified.txt
@@ -636,7 +636,7 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   <div class="gallery">
     <figure>
       <img src="../example/output/plot/combined_hits.png" alt="Example combined hits plot">
-      <figcaption><code>example/output/plot/combined_hits.png</code>: combined overview across phenotypes using the best hit per SNP.</figcaption>
+      <figcaption><code>example/output/plot/combined_hits.png</code>: combined overview across taxa using the best hit per SNP.</figcaption>
     </figure>
   </div>
 
@@ -658,13 +658,13 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   <div class="gallery">
     <figure>
       <img src="../example/output/plot/manhattan_g_Peptoniphilus_unclassified.png" alt="Example Manhattan plot for g_Peptoniphilus_unclassified">
-      <figcaption><code>example/output/plot/manhattan_g_Peptoniphilus_unclassified.png</code>: phenotype-specific Manhattan plot for <code>g_Peptoniphilus_unclassified</code>.</figcaption>
+      <figcaption><code>example/output/plot/manhattan_g_Peptoniphilus_unclassified.png</code>: taxon-specific Manhattan plot for <code>g_Peptoniphilus_unclassified</code>.</figcaption>
     </figure>
   </div>
   <div class="gallery">
     <figure>
       <img src="../example/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png" alt="Example QQ plot for g_Peptoniphilus_unclassified">
-      <figcaption><code>example/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png</code>: QQ plot generated alongside the phenotype-specific Manhattan plot.</figcaption>
+      <figcaption><code>example/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png</code>: QQ plot generated alongside the taxon-specific Manhattan plot.</figcaption>
     </figure>
   </div>
 
@@ -684,17 +684,17 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
     --plotDir=example/output/plot \
     --snp=chr1:14678191:A:C \
     --pCut=5e-8</code></pre>
-  <p><strong>Output:</strong> this mode writes one file per retained phenotype. In the current example output, files include <code>example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png</code> and <code>example/output/plot/forest_chr1_14678191_A_C_g_Finegoldia_unclassified.png</code>, both shown below.</p>
+  <p><strong>Output:</strong> this mode writes one file per retained taxon. In the current example output, files include <code>example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png</code> and <code>example/output/plot/forest_chr1_14678191_A_C_g_Finegoldia_unclassified.png</code>, both shown below.</p>
   <div class="gallery">
     <figure>
-      <img src="../example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png" alt="Example SNP-across-phenotypes forest plot for g_Bifidobacterium">
-      <figcaption><code>example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png</code>: one of the phenotype-specific forest plots written for SNP <code>chr1:14678191:A:C</code>.</figcaption>
+      <img src="../example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png" alt="Example SNP-across-taxa forest plot for g_Bifidobacterium">
+      <figcaption><code>example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png</code>: one of the taxon-specific forest plots written for SNP <code>chr1:14678191:A:C</code>.</figcaption>
     </figure>
   </div>
   <div class="gallery">
     <figure>
-      <img src="../example/output/plot/forest_chr1_14678191_A_C_g_Finegoldia_unclassified.png" alt="Example SNP-across-phenotypes forest plot">
-      <figcaption><code>example/output/plot/forest_chr1_14678191_A_C_g_Finegoldia_unclassified.png</code>: one of the phenotype-specific forest plots written for SNP <code>chr1:14678191:A:C</code>.</figcaption>
+      <img src="../example/output/plot/forest_chr1_14678191_A_C_g_Finegoldia_unclassified.png" alt="Example SNP-across-taxa forest plot">
+      <figcaption><code>example/output/plot/forest_chr1_14678191_A_C_g_Finegoldia_unclassified.png</code>: one of the taxon-specific forest plots written for SNP <code>chr1:14678191:A:C</code>.</figcaption>
     </figure>
   </div>
 
@@ -718,7 +718,7 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   <div class="gallery">
     <figure>
       <img src="../example/output/plot/forest_g_Peptoniphilus_unclassified_chr1_14678191_A_C.png" alt="Example forest plot for g_Peptoniphilus_unclassified and chr1:14678191:A:C">
-      <figcaption><code>example/output/plot/forest_g_Peptoniphilus_unclassified_chr1_14678191_A_C.png</code>: one phenotype-SNP pair plotted across studies.</figcaption>
+      <figcaption><code>example/output/plot/forest_g_Peptoniphilus_unclassified_chr1_14678191_A_C.png</code>: one taxon-SNP pair plotted across studies.</figcaption>
     </figure>
   </div>
 
