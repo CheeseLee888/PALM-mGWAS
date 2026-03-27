@@ -35,7 +35,7 @@ option_list <- list(
         help = ""
     ),
     make_option("--minMAF",
-        type = "double", default = 0.1,
+        type = "double", default = 0.05,
         help = ""
     ),
     make_option("--minMAC",

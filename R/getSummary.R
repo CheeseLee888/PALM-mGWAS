@@ -28,7 +28,7 @@
 #' @param chrom Optional chromosome filter (numeric or string like `"chr1"`).
 #'   Use `NULL` to keep all chromosomes.
 #' @param minMAF Optional minimum minor allele frequency threshold used to
-#'   filter SNPs before running `PALM::palm.get.summary()`. Defaults to `0.1`.
+#'   filter SNPs before running `PALM::palm.get.summary()`. Defaults to `0.05`.
 #'   Use `0` to disable MAF filtering.
 #' @param minMAC Optional minimum minor allele count threshold used to filter
 #'   SNPs before running `PALM::palm.get.summary()`. Defaults to `5`. Use `0`
@@ -48,7 +48,7 @@ getSummary <- function(genoFile,
                        plink2Path = "plink2",
                        keepTemp = FALSE,
                        chrom = NULL,
-                       minMAF = 0.1,
+                       minMAF = 0.05,
                        minMAC = 5,
                        correct = "NULL",
                        useCluster = FALSE) {
