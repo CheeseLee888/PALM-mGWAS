@@ -10,10 +10,6 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
-    make_option("--phenoColList",
-        type = "character", default = "",
-        help = ""
-    ),
     make_option("--covFile",
         type = "character", default = "",
         help = ""
@@ -42,9 +38,6 @@ option_list <- list(
 
 opt <- parse_args(OptionParser(option_list = option_list))
 # normalize covFile from optparse (character) to R NULL
-if (is.null(opt$phenoColList) || !nzchar(opt$phenoColList) || toupper(opt$phenoColList) == "NULL") {
-  opt$phenoColList <- NULL
-}
 if (is.null(opt$covFile) || !nzchar(opt$covFile) || toupper(opt$covFile) == "NULL") {
   opt$covFile <- NULL
 }
@@ -57,7 +50,6 @@ if (is.null(opt$depthFile) || !nzchar(opt$depthFile) || toupper(opt$depthFile) =
 
 fitNULL(
   abdFile = opt$abdFile,
-  phenoColList = opt$phenoColList,
   covFile = opt$covFile,
   covarColList = opt$covarColList,
   depthFile = opt$depthFile,

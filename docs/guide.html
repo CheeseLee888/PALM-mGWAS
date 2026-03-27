@@ -212,7 +212,6 @@ docker run --rm --platform=linux/amd64 \
   <h2 id="step1">Step1: Fit Null Model</h2>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R \
     --abdFile=${abdFile} \
-    --phenoColList=${phenoColList} \
     --covFile=${covFile} \
     --covarColList=${covarColList} \
     --depthFile=${depthFile} \
@@ -224,7 +223,6 @@ docker run --rm --platform=linux/amd64 \
   cheeselee/palm-mgwas:latest \
   step1_null.R \
     --abdFile=${abdFile} \
-    --phenoColList=${phenoColList} \
     --covFile=${covFile} \
     --covarColList=${covarColList} \
     --depthFile=${depthFile} \
@@ -236,7 +234,6 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Outputs:</strong> <code>NULLmodelFile</code> containing <code>modglmm</code>; directories are created if missing.</li>
     <li><strong>Behavior:</strong> pass <code>--covFile=NULL</code> to run covariate-free; the CLI converts empty string or <code>NULL</code> to R <code>NULL</code>.</li>
     <li><strong>Docker path note:</strong> when you mount the project at <code>/work</code> and use <code>-w /work</code>, relative paths such as <code>example/input/study1/abd.txt</code> work directly inside the container. This also avoids invalid strings like <code>/work/NULL</code> for optional arguments.</li>
-    <li><strong>Phenotype subset:</strong> pass <code>--phenoColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code> to fit the null model on only those phenotype columns from <code>abdFile</code>.</li>
     <li><strong>Covariate subset:</strong> pass <code>--covarColList=AGE,SEX,PC01</code> to use only those columns from <code>covFile</code>; names must match the header exactly.</li>
     <li><strong>PALM arguments:</strong> <code>depthFile</code> maps to PALM <code>depth</code> using the second column as sequencing depth; <code>depth.filter</code> and <code>prev.filter</code> are forwarded directly to <code>PALM::palm.null.model()</code>.</li>
     <li><strong>Tips:</strong> ensure no duplicated sample IDs; use relative abundance; keep sessionInfo for reproducibility.</li>
@@ -244,7 +241,6 @@ docker run --rm --platform=linux/amd64 \
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
     <tr><td><code>--abdFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table used to fit the null model</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
-    <tr><td><code>--phenoColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated phenotype column names to keep from <code>abdFile</code></td><td><code>--phenoColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code>; <code>--phenoColList=NULL</code></td></tr>
     <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional covariate file; the CLI also accepts empty string or <code>NULL</code> to omit covariates</td><td><code>--covFile=example/input/study1/cov.txt</code>; <code>--covFile=NULL</code></td></tr>
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code></td><td><code>--covarColList=AGE,SEX</code>; <code>--covarColList=NULL</code></td></tr>
     <tr><td><code>--depthFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional sequencing-depth file keyed by sample ID; the second column is used as PALM <code>depth</code></td><td><code>--depthFile=example/output/study1/info_seqdepth.txt</code>; <code>--depthFile=NULL</code></td></tr>
@@ -527,7 +523,6 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
   <p><strong>Input:</strong> aligned abundance and covariate tables from the previous step.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R \
     --abdFile=example/input/study1/abd.txt \
-    --phenoColList=NULL \
     --covFile=example/input/study1/cov.txt \
     --covarColList=AGE,SEX,PC01 \
     --depthFile=NULL \
@@ -539,7 +534,6 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
   cheeselee/palm-mgwas:latest \
   step1_null.R \
     --abdFile=example/input/study1/abd.txt \
-    --phenoColList=NULL \
     --covFile=example/input/study1/cov.txt \
     --covarColList=AGE,SEX,PC01 \
     --depthFile=NULL \

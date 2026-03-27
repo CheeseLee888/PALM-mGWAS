@@ -18,7 +18,6 @@ echo "Finish: Check input files."
 echo "Start: Fit null model."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step1_null.R \
     --abdFile=${abdFile} \
-    --phenoColList=${phenoColList:-NULL} \
     --covFile=${covFile} \
     --covarColList=${covarColList:-NULL} \
     --depthFile=${depthFile:-NULL} \

@@ -6,7 +6,7 @@ source "$WORK/config.sh"
 ################################# workflow below (do not modify) #################################
 
 # step2: score test
-echo "Start: Performe score test."
+echo "Start: Perform score test."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary.R \
     --genoFile=${genoFile} \
     --vcfField=${vcfField:-DS} \
@@ -19,4 +19,4 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary
     --minMAC=${minMAC:-5} \
     --correct=${correct:-NULL} \
     --useCluster=${useCluster:-FALSE}
-echo "Finish: Performe score test."
+echo "Finish: Perform score test."
