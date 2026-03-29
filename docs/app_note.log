@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.11.29)  23 MAR 2026 22:50
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.11.29)  28 MAR 2026 22:52
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -379,6 +379,45 @@ Package: enumitem 2019/06/20 v3.9 Customized lists
 \enit@count@id=\count299
 \enitdp@description=\count300
 )
+(/usr/local/texlive/2024/texmf-dist/tex/latex/caption/subcaption.sty
+Package: subcaption 2023/07/28 v1.6b Sub-captions (AR)
+
+(/usr/local/texlive/2024/texmf-dist/tex/latex/caption/caption.sty
+Package: caption 2023/08/05 v3.6o Customizing captions (AR)
+
+(/usr/local/texlive/2024/texmf-dist/tex/latex/caption/caption3.sty
+Package: caption3 2023/07/31 v2.4d caption3 kernel (AR)
+\caption@tempdima=\dimen182
+\captionmargin=\dimen183
+\caption@leftmargin=\dimen184
+\caption@rightmargin=\dimen185
+\caption@width=\dimen186
+\caption@indent=\dimen187
+\caption@parindent=\dimen188
+\caption@hangindent=\dimen189
+Package caption Info: Standard document class detected.
+)
+\c@caption@flags=\count301
+\c@continuedfloat=\count302
+Package caption Info: hyperref package is loaded.
+Package caption Info: longtable package is loaded.
+
+(/usr/local/texlive/2024/texmf-dist/tex/latex/caption/ltcaption.sty
+Package: ltcaption 2021/01/08 v1.4c longtable captions (AR)
+))
+Package caption Info: New subtype `subfigure' on input line 238.
+\c@subfigure=\count303
+Package caption Info: New subtype `subtable' on input line 238.
+\c@subtable=\count304
+)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/float/float.sty
+Package: float 2001/11/08 v1.3d Float enhancements (AL)
+\c@float@type=\count305
+\float@exts=\toks29
+\float@box=\box61
+\@float@everytoks=\toks30
+\@floatcapt=\box62
+)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/xcolor/xcolor.sty
 Package: xcolor 2023/11/15 v3.01 LaTeX color extensions (UK)
 
@@ -398,8 +437,8 @@ Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1371.
 Package xcolor Info: Model `Gray' substituted by `gray' on input line 1372.
 Package xcolor Info: Model `wave' substituted by `hsb' on input line 1373.
 )
-Package hyperref Info: Option `colorlinks' set `true' on input line 22.
-LaTeX Font Info:    Trying to load font information for T1+lmr on input line 38
+Package hyperref Info: Option `colorlinks' set `true' on input line 25.
+LaTeX Font Info:    Trying to load font information for T1+lmr on input line 41
 .
 
 (/usr/local/texlive/2024/texmf-dist/tex/latex/lm/t1lmr.fd
@@ -407,30 +446,30 @@ File: t1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 (/usr/local/texlive/2024/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2024-02-20 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count301
-\l__pdf_internal_box=\box61
+\l__color_backend_stack_int=\count306
+\l__pdf_internal_box=\box63
 )
 (./app_note.aux)
 \openout1 = `app_note.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 41.
+LaTeX Font Info:    ... okay on input line 41.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 41.
+LaTeX Font Info:    ... okay on input line 41.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 41.
+LaTeX Font Info:    ... okay on input line 41.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 41.
+LaTeX Font Info:    ... okay on input line 41.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 41.
+LaTeX Font Info:    ... okay on input line 41.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 41.
+LaTeX Font Info:    ... okay on input line 41.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 41.
+LaTeX Font Info:    ... okay on input line 41.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 41.
+LaTeX Font Info:    ... okay on input line 41.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 41.
+LaTeX Font Info:    ... okay on input line 41.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -466,7 +505,7 @@ LaTeX Font Info:    ... okay on input line 38.
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-Package hyperref Info: Link coloring ON on input line 38.
+Package hyperref Info: Link coloring ON on input line 41.
 (./app_note.out) (./app_note.out)
 \@outlinefile=\write3
 \openout3 = `app_note.out'.
@@ -474,17 +513,17 @@ Package hyperref Info: Link coloring ON on input line 38.
 
 (/usr/local/texlive/2024/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count302
-\scratchdimen=\dimen182
-\scratchbox=\box62
-\nofMPsegments=\count303
-\nofMParguments=\count304
-\everyMPshowfont=\toks29
-\MPscratchCnt=\count305
-\MPscratchDim=\dimen183
-\MPnumerator=\count306
-\makeMPintoPDFobject=\count307
-\everyMPtoPDFconversion=\toks30
+\scratchcounter=\count307
+\scratchdimen=\dimen190
+\scratchbox=\box64
+\nofMPsegments=\count308
+\nofMParguments=\count309
+\everyMPshowfont=\toks31
+\MPscratchCnt=\count310
+\MPscratchDim=\dimen191
+\MPnumerator=\count311
+\makeMPintoPDFobject=\count312
+\everyMPtoPDFconversion=\toks32
 ) (/usr/local/texlive/2024/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
 Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
@@ -494,49 +533,62 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
+Package caption Info: Begin \AtBeginDocument code.
+Package caption Info: float package is loaded.
+Package caption Info: End \AtBeginDocument code.
 LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 4
-0.
+3.
 
 (/usr/local/texlive/2024/texmf-dist/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OML+lmm on input line 4
-0.
+3.
 
 (/usr/local/texlive/2024/texmf-dist/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 
-40.
+43.
 
 (/usr/local/texlive/2024/texmf-dist/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 
-40.
+43.
 
 (/usr/local/texlive/2024/texmf-dist/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <12> on input line 40.
+(Font)              <12> on input line 43.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 40.
+(Font)              <8> on input line 43.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 40.
+(Font)              <6> on input line 43.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <9> on input line 40.
+(Font)              <9> on input line 43.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 40.
+(Font)              <5> on input line 43.
 
-Underfull \hbox (badness 6575) in paragraph at lines 46--49
+Underfull \hbox (badness 6575) in paragraph at lines 49--52
 \T1/lmr/bx/n/10 Availability and im-ple-men-ta-tion: \T1/lmr/m/n/10 PALM-
  []
 
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 6
+6.
+(/usr/local/texlive/2024/texmf-dist/tex/latex/lm/t1lmtt.fd
+File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 64.
+(Font)              <10> on input line 75.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 64.
+(Font)              <7> on input line 75.
+
+Overfull \hbox (7.51213pt too wide) in paragraph at lines 75--84
+ [][] 
+ []
+
 [1{/usr/local/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/l
 ocal/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/usr/local/texlive/2
 024/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}{/usr/local/texlive/2024/texmf-dist
@@ -545,74 +597,105 @@ ocal/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/usr/local/texlive/2
 
 
 ]
-Underfull \hbox (badness 1067) in paragraph at lines 68--69
-[]\T1/lmr/m/n/10 Across co-horts, PALM-mGWAS com-bines per-
+<../example/output/plot/manhattan_g_Peptoniphilus_unclassified.png, id=61, 3312
+.375pt x 1505.625pt>
+File: ../example/output/plot/manhattan_g_Peptoniphilus_unclassified.png Graphic
+ file (type png)
+<use ../example/output/plot/manhattan_g_Peptoniphilus_unclassified.png>
+Package pdftex.def Info: ../example/output/plot/manhattan_g_Peptoniphilus_uncla
+ssified.png  used on input line 93.
+(pdftex.def)             Requested size: 229.8775pt x 104.48555pt.
+<../example/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png, id=62, 1
+806.75pt x 1806.75pt>
+File: ../example/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png Grap
+hic file (type png)
+<use ../example/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png>
+Package pdftex.def Info: ../example/output/plot/manhattan_g_Peptoniphilus_uncla
+ssified_qq.png  used on input line 99.
+(pdftex.def)             Requested size: 160.91354pt x 160.89122pt.
+<../example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png, id=63, 
+3854.4pt x 1445.4pt>
+File: ../example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png Gra
+phic file (type png)
+<use ../example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png>
+Package pdftex.def Info: ../example/output/plot/forest_chr1_14678191_A_C_g_Bifi
+dobacterium.png  used on input line 108.
+(pdftex.def)             Requested size: 229.8775pt x 86.19093pt.
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+
+Overfull \hbox (0.65492pt too wide) in paragraph at lines 121--121
+[]|\T1/lmr/m/n/10 14678191|  
  []
 
-LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 7
-2.
-(/usr/local/texlive/2024/texmf-dist/tex/latex/lm/t1lmtt.fd
-File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-)
-Underfull \hbox (badness 7362) in paragraph at lines 78--79
-[]\T1/lmtt/m/n/10 info\T1/lmr/m/n/10 : gen-er-a-tion of SNP, fea-ture, and
+
+Overfull \hbox (0.65492pt too wide) in paragraph at lines 122--122
+[]|\T1/lmr/m/n/10 69617754|  
  []
 
 
-Underfull \hbox (badness 7540) in paragraph at lines 80--81
-[]\T1/lmtt/m/n/10 step2\T1/lmr/m/n/10 : per-study genome-wide summary-
+Overfull \hbox (0.65492pt too wide) in paragraph at lines 123--123
+[]|\T1/lmr/m/n/10 37013405|  
  []
 
 
-Overfull \hbox (7.51213pt too wide) in paragraph at lines 94--103
- [][] 
+Overfull \hbox (40.4026pt too wide) in paragraph at lines 123--124
+[]|\T1/lmtt/m/n/10 g_Lachnospiraceae_NK4A136_group|  
  []
 
 
-Underfull \hbox (badness 1642) in paragraph at lines 105--105
+Overfull \hbox (0.65492pt too wide) in paragraph at lines 124--124
+[]|\T1/lmr/m/n/10 76998986|  
+ []
+
+
+Overfull \hbox (3.451pt too wide) in paragraph at lines 125--125
+[]|\T1/lmtt/m/n/10 chr4:134350906:C:T|  
+ []
+
+
+Overfull \hbox (5.65492pt too wide) in paragraph at lines 125--125
+[]|\T1/lmr/m/n/10 134350906|  
+ []
+
+
+Underfull \hbox (badness 1642) in paragraph at lines 130--130
 []\T1/lmr/bx/n/12 Comparison with ex-ist-ing soft-
  []
 
 
-Underfull \hbox (badness 3108) in paragraph at lines 106--107
-\T1/lmr/m/it/10 mbQTL \T1/lmr/m/n/10 em-pha-sizes microbiome--host as-so-ci-a-t
-ion
+Underfull \hbox (badness 1270) in paragraph at lines 131--132
+\T1/lmr/m/n/10 on within-cohort as-so-ci-a-tion es-ti-ma-tion, whereas
  []
 
+[2 <../example/output/plot/manhattan_g_Peptoniphilus_unclassified.png> <../exam
+ple/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png> <../example/outp
+ut/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png>]
+Underfull \vbox (badness 1024) has occurred while \output is active []
 
-Underfull \hbox (badness 1983) in paragraph at lines 106--107
-\T1/lmr/m/n/10 anal-y-sis within a sin-gle pack-age. MASS and
+
+Underfull \hbox (badness 1708) in paragraph at lines 170--173
+\T1/lmr/m/n/10 Movassagh, M. R. \T1/lmr/m/it/10 et al. \T1/lmr/m/n/10 (2023) \T
+1/lmr/m/it/10 mbQTL\T1/lmr/m/n/10 : an
  []
 
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 1
-09.
-(/usr/local/texlive/2024/texmf-dist/tex/latex/lm/ts1lmr.fd
-File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-)
-Underfull \vbox (badness 7012) has occurred while \output is active []
-
- [2{/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}]
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
- [3]
-[4
-
-] (./app_note.aux)
+[3] (./app_note.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
  ***********
 Package rerunfilecheck Info: File `app_note.out' has not changed.
-(rerunfilecheck)             Checksum: 7E188DA72C9C6DCD0123C001B5864DAC;1042.
+(rerunfilecheck)             Checksum: 7BD74423062EB38890F60EFA62EE1A51;1090.
  ) 
 Here is how much of TeX's memory you used:
- 11115 strings out of 474116
- 171267 string characters out of 5743681
- 1950187 words of memory out of 5000000
- 33274 multiletter control sequences out of 15000+600000
- 613187 words of font info for 70 fonts, out of 8000000 for 9000
+ 12630 strings out of 474116
+ 201732 string characters out of 5743681
+ 1947187 words of memory out of 5000000
+ 34786 multiletter control sequences out of 15000+600000
+ 612822 words of font info for 69 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,11n,79p,871b,564s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,12n,79p,1053b,534s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/lo
 cal/texlive/2024/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texliv
 e/2024/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></usr/local/texlive/2024/tex
@@ -620,16 +703,18 @@ mf-dist/fonts/type1/public/lm/lmmi8.pfb></usr/local/texlive/2024/texmf-dist/fon
 ts/type1/public/lm/lmr10.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/pu
 blic/lm/lmr12.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmr
 17.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmr6.pfb></usr
-/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmr8.pfb></usr/local/texli
-ve/2024/texmf-dist/fonts/type1/public/lm/lmr9.pfb></usr/local/texlive/2024/texm
-f-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2024/texmf-dist/fon
-ts/type1/public/lm/lmsy8.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/pu
-blic/lm/lmsy9.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmt
-t10.pfb>
-Output written on app_note.pdf (4 pages, 264019 bytes).
+/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmr7.pfb></usr/local/texli
+ve/2024/texmf-dist/fonts/type1/public/lm/lmr8.pfb></usr/local/texlive/2024/texm
+f-dist/fonts/type1/public/lm/lmr9.pfb></usr/local/texlive/2024/texmf-dist/fonts
+/type1/public/lm/lmri10.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/pub
+lic/lm/lmsy10.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lms
+y7.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmsy8.pfb></us
+r/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmsy9.pfb></usr/local/tex
+live/2024/texmf-dist/fonts/type1/public/lm/lmtt10.pfb>
+Output written on app_note.pdf (3 pages, 839490 bytes).
 PDF statistics:
- 163 PDF objects out of 1000 (max. 8388607)
- 126 compressed objects within 2 object streams
- 30 named destinations out of 1000 (max. 500000)
- 73 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 171 PDF objects out of 1000 (max. 8388607)
+ 125 compressed objects within 2 object streams
+ 22 named destinations out of 1000 (max. 500000)
+ 88 words of extra memory for PDF output out of 10000 (max. 10000000)
 
