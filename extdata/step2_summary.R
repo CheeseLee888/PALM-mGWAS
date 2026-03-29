@@ -60,6 +60,9 @@ if (is.null(opt$alleleOrder) || !nzchar(opt$alleleOrder) || toupper(opt$alleleOr
   opt$alleleOrder <- NULL
 }
 
+ptm <- proc.time()
+message("step2: PALM summary started.")
+
 getSummary(
   genoFile = opt$genoFile,
   vcfField = opt$vcfField,
@@ -72,4 +75,14 @@ getSummary(
   minMAC = opt$minMAC,
   correct = opt$correct,
   useCluster = opt$useCluster
+)
+
+elapsed <- proc.time() - ptm
+message(
+  sprintf(
+    "step2: PALM summary finished. user=%.2fs system=%.2fs elapsed=%.2fs",
+    unname(elapsed["user.self"]),
+    unname(elapsed["sys.self"]),
+    unname(elapsed["elapsed"])
+  )
 )
