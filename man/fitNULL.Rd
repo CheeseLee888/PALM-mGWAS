@@ -9,7 +9,7 @@ fitNULL(
   phenoColList = NULL,
   covFile = NULL,
   covarColList = NULL,
-  depthFile = NULL,
+  depthCol = NULL,
   depth.filter = 0,
   prev.filter = 0.1,
   NULLmodelFile
@@ -29,8 +29,9 @@ Use `NULL` (default) to fit without covariates.}
 Accepts either a character vector or a single comma-separated string.
 By default, all non-ID columns in `covFile` are used.}
 
-\item{depthFile}{Optional path to a sequencing-depth table with sample IDs in
-the first column and depth values in the second column.}
+\item{depthCol}{Optional column name in `covFile` to use as sequencing depth.
+If not provided, `depth = NULL` is passed to PALM so sequencing depth is
+computed from row sums of `abdFile`.}
 
 \item{depth.filter}{Passed to `PALM::palm.null.model()`; samples with depth
 less than or equal to this threshold are removed. Defaults to `0`.}

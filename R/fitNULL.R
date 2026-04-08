@@ -12,8 +12,9 @@
 #' @param covarColList Optional covariate column names to keep from `covFile`.
 #'   Accepts either a character vector or a single comma-separated string.
 #'   By default, all non-ID columns in `covFile` are used.
-#' @param depthFile Optional path to a sequencing-depth table with sample IDs in
-#'   the first column and depth values in the second column.
+#' @param depthCol Optional column name in `covFile` to use as sequencing depth.
+#'   If not provided, `depth = NULL` is passed to PALM so sequencing depth is
+#'   computed from row sums of `abdFile`.
 #' @param depth.filter Passed to `PALM::palm.null.model()`; samples with depth
 #'   less than or equal to this threshold are removed. Defaults to `0`.
 #' @param prev.filter Passed to `PALM::palm.null.model()`; features with
@@ -26,7 +27,7 @@ fitNULL <- function(abdFile,
                     phenoColList = NULL,
                     covFile = NULL,
                     covarColList = NULL,
-                    depthFile = NULL,
+                    depthCol = NULL,
                     depth.filter = 0,
                     prev.filter = 0.1,
                     NULLmodelFile) {
@@ -42,6 +43,9 @@ fitNULL <- function(abdFile,
   }
   if (is.null(covFile) && !is.null(covarColList)) {
     stop("'covarColList' requires a non-NULL 'covFile'.")
+  }
+  if (is.null(covFile) && !is.null(depthCol)) {
+    stop("'depthCol' requires a non-NULL 'covFile'.")
   }
   if (missing(NULLmodelFile) || !nzchar(NULLmodelFile)) {
     stop("'NULLmodelFile' must be provided.")
@@ -83,26 +87,46 @@ fitNULL <- function(abdFile,
     "Input abundance matrix: ", nrow(abd), " samples x ", ncol(abd), " features."
   )
 
+  cov <- NULL
+  if (!is.null(covFile)) {
+    if (!file.exists(covFile)) {
+      stop("'covFile' does not exist: ", covFile)
+    }
+    cov <- read_firstcol_as_rownames(covFile)
+  }
+
+  depthCol <- normalize_col_list(depthCol, "depthCol")
+  if (!is.null(depthCol) && length(depthCol) != 1L) {
+    stop("'depthCol' must specify exactly one column name.")
+  }
+
   depth <- NULL
-  if (!is.null(depthFile)) {
-    message("depthFile provided: using the second column as sequencing depth from ", depthFile)
-    depth <- read_named_vector(depthFile, numeric = TRUE)
+  if (!is.null(depthCol)) {
+    if (!(depthCol %in% colnames(cov))) {
+      stop("Requested depth column not found in 'covFile': ", depthCol)
+    }
+    depth <- suppressWarnings(as.numeric(cov[[depthCol]]))
+    if (any(is.na(depth) & !is.na(cov[[depthCol]]))) {
+      stop("Requested depth column in 'covFile' cannot be safely converted to numeric: ", depthCol)
+    }
+    names(depth) <- rownames(cov)
     missing_ids <- setdiff(rownames(abd), names(depth))
     if (length(missing_ids) > 0) {
       stop("Missing depth values for sample IDs: ", paste(utils::head(missing_ids, 5), collapse = ", "))
     }
     depth <- depth[rownames(abd)]
+    message("depthCol provided: using '", depthCol, "' from ", covFile, " as sequencing depth.")
     message(
       "Depth filtering enabled. depth.filter=", depth.filter,
       "; depth summary min/median/max=",
       min(depth), "/", stats::median(depth), "/", max(depth)
     )
   } else {
-    message("No depthFile provided: PALM will use row sums of abundance as depth.")
+    message("No depthCol provided: PALM will use row sums of abundance as depth.")
   }
   message("Prevalence filter setting: prev.filter=", prev.filter)
 
-  if (is.null(covFile)) {
+  if (is.null(cov)) {
     message("Fitting PALM null model without covariates.")
     modglmm <- PALM::palm.null.model(
       rel.abd = abd,
@@ -111,10 +135,6 @@ fitNULL <- function(abdFile,
       prev.filter = prev.filter
     )
   } else {
-    if (!file.exists(covFile)) {
-      stop("'covFile' does not exist: ", covFile)
-    }
-    cov <- read_firstcol_as_rownames(covFile)
     covarColList <- normalize_col_list(covarColList, "covarColList")
     if (!is.null(covarColList)) {
       missing_cols <- setdiff(covarColList, colnames(cov))

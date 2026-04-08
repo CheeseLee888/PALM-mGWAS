@@ -214,7 +214,7 @@ docker run --rm --platform=linux/amd64 \
     --abdFile=${abdFile} \
     --covFile=${covFile} \
     --covarColList=${covarColList} \
-    --depthFile=${depthFile} \
+    --depthCol=${depthCol} \
     --depth.filter=${depth_filter} \
     --prev.filter=${prev_filter} \
     --NULLmodelFile=${NULLmodelFile}</code></pre>
@@ -225,7 +225,7 @@ docker run --rm --platform=linux/amd64 \
     --abdFile=${abdFile} \
     --covFile=${covFile} \
     --covarColList=${covarColList} \
-    --depthFile=${depthFile} \
+    --depthCol=${depthCol} \
     --depth.filter=${depth_filter} \
     --prev.filter=${prev_filter} \
     --NULLmodelFile=${NULLmodelFile}</code></pre>
@@ -235,7 +235,7 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Behavior:</strong> pass <code>--covFile=NULL</code> to run covariate-free; the CLI converts empty string or <code>NULL</code> to R <code>NULL</code>.</li>
     <li><strong>Docker path note:</strong> when you mount the project at <code>/work</code> and use <code>-w /work</code>, relative paths such as <code>example/input/study1/abd.txt</code> work directly inside the container. This also avoids invalid strings like <code>/work/NULL</code> for optional arguments.</li>
     <li><strong>Covariate subset:</strong> pass <code>--covarColList=AGE,SEX,PC01</code> to use only those columns from <code>covFile</code>; names must match the header exactly.</li>
-    <li><strong>PALM arguments:</strong> <code>depthFile</code> maps to PALM <code>depth</code> using the second column as sequencing depth; <code>depth.filter</code> and <code>prev.filter</code> are forwarded directly to <code>PALM::palm.null.model()</code>.</li>
+    <li><strong>PALM arguments:</strong> <code>depthCol</code> selects one column from <code>covFile</code> as PALM <code>depth</code>; if omitted, PALM uses row sums of <code>abdFile</code>. <code>depth.filter</code> and <code>prev.filter</code> are forwarded directly to <code>PALM::palm.null.model()</code>.</li>
     <li><strong>Tips:</strong> ensure no duplicated sample IDs; use abundance(count); keep sessionInfo for reproducibility.</li>
   </ul>
   <table>
@@ -243,7 +243,7 @@ docker run --rm --platform=linux/amd64 \
     <tr><td><code>--abdFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table used to fit the null model</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
     <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional covariate file; the CLI also accepts empty string or <code>NULL</code> to omit covariates</td><td><code>--covFile=example/input/study1/cov.txt</code>; <code>--covFile=NULL</code></td></tr>
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code></td><td><code>--covarColList=AGE,SEX</code>; <code>--covarColList=NULL</code></td></tr>
-    <tr><td><code>--depthFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional sequencing-depth file keyed by sample ID; the second column is used as PALM <code>depth</code></td><td><code>--depthFile=example/output/study1/info_seqdepth.txt</code>; <code>--depthFile=NULL</code></td></tr>
+    <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as PALM <code>depth</code>; if omitted, PALM uses row sums of <code>abdFile</code></td><td><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></td></tr>
     <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Sample-level depth threshold passed to PALM</td><td><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></td></tr>
     <tr><td><code>--prev.filter</code></td><td><code>double</code></td><td><code>0.1</code></td><td>Feature prevalence threshold passed to PALM</td><td><code>--prev.filter=0.1</code>; <code>--prev.filter=0</code></td></tr>
     <tr><td><code>--NULLmodelFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output <code>.rda</code> file storing the fitted PALM null model</td><td><code>--NULLmodelFile=example/output/study1/step1_allpheno.rda</code></td></tr>
@@ -525,7 +525,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --abdFile=example/input/study1/abd.txt \
     --covFile=example/input/study1/cov.txt \
     --covarColList=AGE,SEX,PC01 \
-    --depthFile=NULL \
+    --depthCol=NULL \
     --depth.filter=0 \
     --prev.filter=0.1 \
     --NULLmodelFile=example/output/study1/step1_allpheno.rda</code></pre>
@@ -536,7 +536,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --abdFile=example/input/study1/abd.txt \
     --covFile=example/input/study1/cov.txt \
     --covarColList=AGE,SEX,PC01 \
-    --depthFile=NULL \
+    --depthCol=NULL \
     --depth.filter=0 \
     --prev.filter=0.1 \
     --NULLmodelFile=example/output/study1/step1_allpheno.rda</code></pre>

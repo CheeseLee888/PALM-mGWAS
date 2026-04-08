@@ -18,7 +18,7 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
-    make_option("--depthFile",
+    make_option("--depthCol",
         type = "character", default = "",
         help = ""
     ),
@@ -44,15 +44,15 @@ if (is.null(opt$covFile) || !nzchar(opt$covFile) || toupper(opt$covFile) == "NUL
 if (is.null(opt$covarColList) || !nzchar(opt$covarColList) || toupper(opt$covarColList) == "NULL") {
   opt$covarColList <- NULL
 }
-if (is.null(opt$depthFile) || !nzchar(opt$depthFile) || toupper(opt$depthFile) == "NULL") {
-  opt$depthFile <- NULL
+if (is.null(opt$depthCol) || !nzchar(opt$depthCol) || toupper(opt$depthCol) == "NULL") {
+  opt$depthCol <- NULL
 }
 
 fitNULL(
   abdFile = opt$abdFile,
   covFile = opt$covFile,
   covarColList = opt$covarColList,
-  depthFile = opt$depthFile,
+  depthCol = opt$depthCol,
   depth.filter = opt$depth.filter,
   prev.filter = opt$prev.filter,
   NULLmodelFile = opt$NULLmodelFile
