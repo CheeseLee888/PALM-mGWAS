@@ -12,7 +12,6 @@ getSummary(
   alleleOrder = NULL,
   plinkPath = "plink",
   plink2Path = "plink2",
-  keepTemp = FALSE,
   chrom = NULL,
   minMAF = 0.05,
   minMAC = 5,
@@ -47,9 +46,6 @@ conversion fallback. Defaults to `"plink"`.}
 
 \item{plink2Path}{Path to the `plink2` executable used for BGEN conversion
 and preferred VCF conversion. Defaults to `"plink2"`.}
-
-\item{keepTemp}{Logical; if `TRUE`, keep temporary converted PLINK files for
-VCF/BGEN inputs. Defaults to `FALSE`.}
 
 \item{chrom}{Optional chromosome filter (numeric or string like `"chr1"`).
 Use `NULL` to keep all chromosomes.}

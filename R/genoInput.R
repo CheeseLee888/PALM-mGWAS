@@ -257,14 +257,10 @@ prepare_plink_input <- function(genoFile,
                                 alleleOrder = NULL,
                                 plinkPath = "plink",
                                 plink2Path = "plink2",
-                                keepTemp = FALSE,
                                 tempPrefix = NULL,
                                 tempLabel = "plink") {
   if (missing(genoFile) || is.null(genoFile) || !nzchar(genoFile)) {
     stop("'genoFile' must be provided.")
-  }
-  if (!is.logical(keepTemp) || length(keepTemp) != 1L || is.na(keepTemp)) {
-    stop("'keepTemp' must be TRUE or FALSE.")
   }
 
   genoFormat <- infer_geno_format(genoFile)
@@ -380,10 +376,6 @@ prepare_plink_input <- function(genoFile,
     if (!file.exists(f)) {
       stop("Conversion to temporary PLINK files failed; missing output: ", f)
     }
-  }
-
-  if (keepTemp) {
-    message("Keeping temporary converted PLINK files with prefix: ", tempPrefix)
   }
 
   list(prefix = tempPrefix, format = genoFormat, cleanup = cleanup)

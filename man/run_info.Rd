@@ -12,7 +12,6 @@ run_info(
   output_seqdepth,
   vcf_field = NULL,
   allele_order = NULL,
-  keep_temp = FALSE,
   plink_path = "plink",
   plink2_path = "plink2"
 )
@@ -35,9 +34,6 @@ auto-detects and prefers \code{"DS"} when present, otherwise falls back to
 
 \item{allele_order}{Allele order for BGEN conversion. Defaults to
 \code{"ref-last"} when \code{genoFile} is BGEN input.}
-
-\item{keep_temp}{Logical; if \code{TRUE}, keep temporary PLINK files created
-for VCF/BGEN inputs. Defaults to \code{FALSE}.}
 
 \item{plink_path}{Path to the \code{plink} executable used as a VCF conversion
 fallback. Defaults to \code{"plink"}.}

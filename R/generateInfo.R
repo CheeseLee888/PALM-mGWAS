@@ -151,8 +151,9 @@ parse_snp_ids <- function(snp_ids) {
 
 #' Compute SNP counts and allele frequency from genotype input
 #'
-#' Accepts a PLINK prefix directly, or converts VCF/BGEN input to a temporary
-#' PLINK dataset before reading SNP counts and allele frequencies.
+#' Accepts a PLINK prefix directly. VCF input is read directly; BGEN input is
+#' converted to a temporary PLINK dataset before reading SNP counts and allele
+#' frequencies.
 #'
 #' @param genoFile Genotype input path. If the value ends with `.vcf`,
 #'   `.vcf.gz`, or `.vcf.bgz`, VCF input is assumed. If it ends with `.bgen`,
@@ -168,21 +169,15 @@ parse_snp_ids <- function(snp_ids) {
 #'   fallback. Defaults to `"plink"`.
 #' @param plink2_path Path to the `plink2` executable used for BGEN conversion
 #'   and preferred VCF conversion. Defaults to `"plink2"`.
-#' @param keep_temp Logical; if `TRUE`, keep temporary converted PLINK files for
-#'   VCF/BGEN input. Defaults to `FALSE`.
 #' @return Data frame with CHR, SNP, POS, A1, A2, N, AF.
 #' @export
 snp_info <- function(genoFile,
                      vcf_field = NULL,
                      allele_order = NULL,
                      plink_path = "plink",
-                     plink2_path = "plink2",
-                     keep_temp = FALSE) {
+                     plink2_path = "plink2") {
   if (missing(genoFile) || is.null(genoFile) || !nzchar(genoFile)) {
     stop("`genoFile` is required")
-  }
-  if (!is.logical(keep_temp) || length(keep_temp) != 1L || is.na(keep_temp)) {
-    stop("`keep_temp` must be TRUE or FALSE.")
   }
   geno_format <- infer_geno_format(genoFile)
   if (identical(geno_format, "vcf")) {
@@ -196,10 +191,9 @@ snp_info <- function(genoFile,
     alleleOrder = allele_order,
     plinkPath = plink_path,
     plink2Path = plink2_path,
-    keepTemp = keep_temp,
     tempLabel = "info_tmp"
   )
-  if (!keep_temp && length(geno_input$cleanup) > 0L) {
+  if (length(geno_input$cleanup) > 0L) {
     on.exit(unlink(geno_input$cleanup, force = TRUE), add = TRUE)
   }
 
@@ -237,8 +231,6 @@ snp_info <- function(genoFile,
 #'   `"GT"`.
 #' @param allele_order Allele order for BGEN conversion. Defaults to
 #'   `"ref-last"` when `genoFile` is BGEN input.
-#' @param keep_temp Logical; if `TRUE`, keep temporary PLINK files created for
-#'   VCF/BGEN inputs. Defaults to `FALSE`.
 #' @param plink_path Path to the `plink` executable used as a VCF conversion
 #'   fallback. Defaults to `"plink"`.
 #' @param plink2_path Path to the `plink2` executable used for BGEN conversion
@@ -252,7 +244,6 @@ run_info <- function(genoFile,
                      output_seqdepth,
                      vcf_field = NULL,
                      allele_order = NULL,
-                     keep_temp = FALSE,
                      plink_path = "plink",
                      plink2_path = "plink2") {
   missing_args <- vapply(
@@ -271,8 +262,7 @@ run_info <- function(genoFile,
     vcf_field = vcf_field,
     allele_order = allele_order,
     plink_path = plink_path,
-    plink2_path = plink2_path,
-    keep_temp = keep_temp
+    plink2_path = plink2_path
   )
 
   dir.create(dirname(output_snp), recursive = TRUE, showWarnings = FALSE)

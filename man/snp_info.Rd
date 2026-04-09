@@ -9,8 +9,7 @@ snp_info(
   vcf_field = NULL,
   allele_order = NULL,
   plink_path = "plink",
-  plink2_path = "plink2",
-  keep_temp = FALSE
+  plink2_path = "plink2"
 )
 }
 \arguments{
@@ -33,8 +32,6 @@ fallback. Defaults to \code{"plink"}.}
 \item{plink2_path}{Path to the \code{plink2} executable used for BGEN
 conversion and preferred VCF conversion. Defaults to \code{"plink2"}.}
 
-\item{keep_temp}{Logical; if \code{TRUE}, keep temporary converted PLINK files
-for VCF/BGEN input. Defaults to \code{FALSE}.}
 }
 \value{
 Data frame with CHR, SNP, POS, A1, A2, N, AF.

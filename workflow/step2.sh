@@ -9,8 +9,6 @@ source "$WORK/config.sh"
 echo "Start: Perform score test."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary.R \
     --genoFile=${genoFile} \
-    --alleleOrder=${alleleOrder:-NULL} \
-    --keepTemp=${keepTemp:-FALSE} \
     --NULLmodelFile=${NULLmodelFile} \
     --PALMOutputFile=${palm1_step2_prefix} \
     --chrom=${chrom:-NULL} \

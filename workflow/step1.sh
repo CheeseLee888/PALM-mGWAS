@@ -17,8 +17,6 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step0_checkIn
     --depthCol=${depthCol:-NULL} \
     --depth.filter=${depth_filter:-0} \
     --genoFile=${genoFile} \
-    --alleleOrder=${alleleOrder:-NULL} \
-    --keepTemp=${keepTemp:-FALSE} \
     --outputSeqDepthFile=${outputSeqDepthFile:-NULL}
 echo "Finish: Check input files."    
 

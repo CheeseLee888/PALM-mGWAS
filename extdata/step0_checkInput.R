@@ -23,10 +23,6 @@ option_list <- list(
               help = "Sample-level depth threshold; samples with depth <= threshold are removed before ID matching [default %default]"),
   make_option("--genoFile", type = "character",
               help = "Genotype input: PLINK prefix, VCF(.vcf/.vcf.gz/.vcf.bgz), or BGEN(.bgen)"),
-  make_option("--alleleOrder", type = "character", default = "NULL",
-              help = "BGEN allele order: ref-first, ref-last, ref-unknown, or NULL [default %default]"),
-  make_option("--keepTemp", type = "logical", default = FALSE,
-              help = "Keep temporary converted PLINK files for VCF/BGEN input [default %default]"),
   make_option("--outputSeqDepthFile", type = "character", default = "NULL",
               help = "Optional output file for sequencing depth info used by Step0 filtering [default %default]")
 )
@@ -86,7 +82,7 @@ read_fam_iid <- function(prefix) {
   ids
 }
 
-read_geno_iid <- function(geno_file, allele_order, keep_temp) {
+read_geno_iid <- function(geno_file) {
   geno_format <- PALMmGWAS:::infer_geno_format(geno_file)
   if (identical(geno_format, "vcf")) {
     ids <- PALMmGWAS:::read_vcf_header(geno_file)$sample_ids
@@ -96,8 +92,6 @@ read_geno_iid <- function(geno_file, allele_order, keep_temp) {
 
   geno_input <- PALMmGWAS:::prepare_plink_input(
     genoFile = geno_file,
-    alleleOrder = allele_order,
-    keepTemp = keep_temp,
     tempLabel = "check_tmp"
   )
   list(ids = read_fam_iid(geno_input$prefix), cleanup = geno_input$cleanup)
@@ -121,9 +115,6 @@ cat(
   " sample(s), cov=", nrow(cov_df), " sample(s).\n",
   sep = ""
 )
-if (is.null(opt$alleleOrder) || !nzchar(opt$alleleOrder) || toupper(opt$alleleOrder) == "NULL") {
-  opt$alleleOrder <- NULL
-}
 if (is.null(opt$outputSeqDepthFile) || !nzchar(opt$outputSeqDepthFile) || toupper(opt$outputSeqDepthFile) == "NULL") {
   opt$outputSeqDepthFile <- NULL
 }
@@ -247,11 +238,9 @@ cat("Matched abd/cov sample count: ", length(abd_ids), ".\n", sep = "")
 # 2) Use genotype sample order as the reference order; genotype may contain extra samples
 changed <- FALSE
 geno_input <- read_geno_iid(
-  geno_file = opt$genoFile,
-  allele_order = opt$alleleOrder,
-  keep_temp = opt$keepTemp
+  geno_file = opt$genoFile
 )
-if (!opt$keepTemp && length(geno_input$cleanup) > 0L) {
+if (length(geno_input$cleanup) > 0L) {
   on.exit(unlink(geno_input$cleanup, force = TRUE), add = TRUE)
 }
 geno_ids <- geno_input$ids

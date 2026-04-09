@@ -2,8 +2,8 @@
 #'
 #' Reads genotype data from PLINK, VCF, or BGEN input, applies a pre-fitted
 #' PALM null model, and writes per-phenotype summary statistics (one file per
-#' phenotype). Non-PLINK inputs are converted to a temporary PLINK dataset
-#' before testing.
+#' phenotype). VCF input is read directly; other non-PLINK inputs are converted
+#' to a temporary PLINK dataset before testing.
 #'
 #' @param genoFile Path to genotype input. If the path ends with
 #'   `.vcf`, `.vcf.gz`, or `.vcf.bgz`, VCF input is assumed. If it ends with
@@ -24,8 +24,6 @@
 #'   conversion fallback. Defaults to `"plink"`.
 #' @param plink2Path Path to the `plink2` executable used for BGEN conversion
 #'   and preferred VCF conversion. Defaults to `"plink2"`.
-#' @param keepTemp Logical; if `TRUE`, keep temporary converted PLINK files for
-#'   VCF/BGEN inputs. Defaults to `FALSE`.
 #' @param chrom Optional chromosome filter (numeric or string like `"chr1"`).
 #'   Use `NULL` to keep all chromosomes.
 #' @param minMAF Optional minimum minor allele frequency threshold used to
@@ -51,7 +49,6 @@ getSummary <- function(genoFile,
                        alleleOrder = NULL,
                        plinkPath = "plink",
                        plink2Path = "plink2",
-                       keepTemp = FALSE,
                        chrom = NULL,
                        minMAF = 0.05,
                        minMAC = 5,
@@ -82,9 +79,6 @@ getSummary <- function(genoFile,
   }
   if (!is.numeric(minMAC) || length(minMAC) != 1L || is.na(minMAC) || minMAC < 0 || minMAC != as.integer(minMAC)) {
     stop("'minMAC' must be a single non-negative integer value.")
-  }
-  if (!is.logical(keepTemp) || length(keepTemp) != 1L || is.na(keepTemp)) {
-    stop("'keepTemp' must be TRUE or FALSE.")
   }
   output_dir <- dirname(PALMOutputFile)
   if (!output_dir %in% c("", ".")) {
@@ -169,7 +163,6 @@ getSummary <- function(genoFile,
       alleleOrder = alleleOrder,
       plinkPath = plinkPath,
       plink2Path = plink2Path,
-      keepTemp = keepTemp,
       tempPrefix = file.path(
         dirname(PALMOutputFile),
         paste0(
@@ -180,7 +173,7 @@ getSummary <- function(genoFile,
         )
       )
     )
-    if (!keepTemp && length(geno_input$cleanup) > 0L) {
+    if (length(geno_input$cleanup) > 0L) {
       on.exit(unlink(geno_input$cleanup, force = TRUE), add = TRUE)
     }
     genoPrefix <- geno_input$prefix
