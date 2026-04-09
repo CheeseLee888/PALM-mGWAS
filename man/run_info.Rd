@@ -10,7 +10,7 @@ run_info(
   output_snp,
   output_feature,
   output_seqdepth,
-  vcf_field = "DS",
+  vcf_field = NULL,
   allele_order = NULL,
   keep_temp = FALSE,
   plink_path = "plink",
@@ -29,8 +29,9 @@ VCF/BGEN file that will be converted to a temporary PLINK dataset.}
 
 \item{output_seqdepth}{Output path for sequencing depth info.}
 
-\item{vcf_field}{VCF FORMAT field to import when \code{genoFile} is VCF input.
-Defaults to \code{"DS"}.}
+\item{vcf_field}{Optional VCF FORMAT field override. By default the reader
+auto-detects and prefers \code{"DS"} when present, otherwise falls back to
+\code{"GT"}.}
 
 \item{allele_order}{Allele order for BGEN conversion. Defaults to
 \code{"ref-last"} when \code{genoFile} is BGEN input.}

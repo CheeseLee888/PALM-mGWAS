@@ -124,7 +124,7 @@ docker run --rm --platform=linux/amd64 \
   </div>
   <ul>
     <li><strong>Genotype input used by Step0 / Step2:</strong> set <code>genoFile</code> once, as a PLINK prefix such as <code>example/input/study1/geno</code>, a VCF path such as <code>example/input/study1_vcf/geno.vcf.gz</code>, or a BGEN path such as <code>example/input/study1_bgen/geno.bgen</code>.</li>
-    <li><strong>Format-specific options:</strong> use <code>--vcfField=DS</code> or <code>GT</code> for VCF input, and <code>--alleleOrder=ref-first</code>, <code>ref-last</code>, or <code>ref-unknown</code> for BGEN input. <code>--keepTemp=TRUE</code> keeps the temporary PLINK files created for VCF/BGEN conversion.</li>
+    <li><strong>Format-specific options:</strong> VCF input is auto-detected from <code>DS</code> or <code>GT</code> FORMAT fields, preferring <code>DS</code> when present. For BGEN input use <code>--alleleOrder=ref-first</code>, <code>ref-last</code>, or <code>ref-unknown</code>. <code>--keepTemp=TRUE</code> keeps the temporary PLINK files created for BGEN input.</li>
   </ul>
 
   <h2 id="step0">Step0: Check and Align Input IDs</h2>
@@ -137,7 +137,6 @@ docker run --rm --platform=linux/amd64 \
     --depthCol=${depthCol} \
     --depth.filter=${depth_filter} \
     --genoFile=${genoFile} \
-    --vcfField=${vcfField} \
     --alleleOrder=${alleleOrder} \
     --keepTemp=${keepTemp} \
     --outputSeqDepthFile=${outputSeqDepthFile}</code></pre>
@@ -153,7 +152,6 @@ docker run --rm --platform=linux/amd64 \
     --depthCol=${depthCol} \
     --depth.filter=${depth_filter} \
     --genoFile=/work/${genoFile} \
-    --vcfField=${vcfField} \
     --alleleOrder=${alleleOrder} \
     --keepTemp=${keepTemp} \
     --outputSeqDepthFile=/work/${outputSeqDepthFile}</code></pre>
@@ -163,7 +161,7 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Missing-value filtering:</strong> samples with missing values in Step1-required variables from <code>covarColList</code> and <code>depthCol</code> are removed before ID matching. If <code>covarColList=NULL</code>, Step0 defaults to all non-ID columns in <code>covFile</code>, matching Step1 behavior.</li>
     <li><strong>Alignment rule:</strong> the step keeps samples matched across <code>abdFile</code>, <code>covFile</code>, and genotype input, then orders the retained samples to match genotype sample order.</li>
     <li><strong>Genotype sample count:</strong> genotype input may contain extra samples, but it must not miss any sample retained from <code>abdFile</code>/<code>covFile</code> after filtering.</li>
-    <li><strong>VCF/BGEN handling:</strong> within Step0, non-PLINK genotype input is converted to a temporary PLINK dataset and sample IDs are read from the converted <code>.fam</code>.</li>
+    <li><strong>VCF/BGEN handling:</strong> within Step0, VCF sample IDs are read directly from the VCF header. BGEN input is converted to a temporary PLINK dataset and sample IDs are read from the converted <code>.fam</code>.</li>
     <li><strong>Optional info output:</strong> set <code>--outputSeqDepthFile</code> to write <code>DepthInfo</code>. Behavior definition: <code>DepthInfo</code> uses the exact depth values Step0 uses for sample filtering. If <code>depthCol</code> is provided, this file comes from that covariate column; otherwise it uses row sums of <code>abdFile</code>.</li>
     <li><strong>Requirement:</strong> all three inputs are mandatory in the current CLI.</li>
     <li><strong>Accepted genotype input:</strong> PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, <code>.vcf.bgz</code>, or <code>.bgen</code>.</li>
@@ -179,9 +177,8 @@ docker run --rm --platform=linux/amd64 \
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td><td><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></td></tr>
     <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Sample-level depth threshold applied before genotype ID matching; samples with depth <code>&lt;=</code> this value are removed</td><td><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></td></tr>
     <tr><td><code>--genoFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the sample-order reference: PLINK prefix, VCF, or BGEN</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_bgen/geno.bgen</code></td></tr>
-    <tr><td><code>--vcfField</code></td><td><code>character</code></td><td><code>"DS"</code></td><td>VCF FORMAT field to import when <code>genoFile</code> is VCF input; allowed values are <code>DS</code> and <code>GT</code></td><td><code>--vcfField=DS</code>; <code>--vcfField=GT</code></td></tr>
     <tr><td><code>--alleleOrder</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>BGEN allele-order setting passed to <code>plink2 --bgen</code>; use <code>ref-first</code>, <code>ref-last</code>, or <code>ref-unknown</code></td><td><code>--alleleOrder=ref-last</code>; <code>--alleleOrder=NULL</code></td></tr>
-    <tr><td><code>--keepTemp</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Keep temporary converted PLINK files for VCF/BGEN input</td><td><code>--keepTemp=TRUE</code>; <code>--keepTemp=FALSE</code></td></tr>
+    <tr><td><code>--keepTemp</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Keep temporary converted PLINK files for BGEN input</td><td><code>--keepTemp=TRUE</code>; <code>--keepTemp=FALSE</code></td></tr>
     <tr><td><code>--outputSeqDepthFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for sequencing-depth info used by Step0 sample filtering</td><td><code>--outputSeqDepthFile=example/output/study1/info_seqdepth.txt</code>; <code>--outputSeqDepthFile=NULL</code></td></tr>
   </table>
 
@@ -229,7 +226,6 @@ docker run --rm --platform=linux/amd64 \
   <h2 id="step2">Step2: Per-study Summary</h2>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_summary.R \
     --genoFile=${genoFile} \
-    --vcfField=${vcfField} \
     --alleleOrder=${alleleOrder} \
     --keepTemp=${keepTemp} \
     --NULLmodelFile=${NULLmodelFile} \
@@ -245,7 +241,6 @@ docker run --rm --platform=linux/amd64 \
   cheeselee/palm-mgwas:latest \
   step2_summary.R \
     --genoFile=/work/${genoFile} \
-    --vcfField=${vcfField} \
     --alleleOrder=${alleleOrder} \
     --keepTemp=${keepTemp} \
     --NULLmodelFile=/work/${NULLmodelFile} \
@@ -260,8 +255,8 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>. Step2 accepts a PLINK prefix, <code>.vcf/.vcf.gz/.vcf.bgz</code>, or <code>.bgen</code>.</li>
     <li><strong>Outputs:</strong> one per-taxon <code>.txt</code> file with columns <code>SNP, CHR, POS, est, stderr, pval</code>.</li>
     <li><strong>SNP format:</strong> dots are replaced by colons, e.g., <code>chr1:12345:REF:ALT</code>.</li>
-    <li><strong>Temporary conversion:</strong> VCF and BGEN inputs are converted to a temporary PLINK dataset before calling PALM. Use <code>--keepTemp=TRUE</code> if you want to inspect those intermediate files.</li>
-    <li><strong>VCF import:</strong> <code>--vcfField</code> accepts <code>DS</code> or <code>GT</code>; the default is <code>DS</code>.</li>
+    <li><strong>Temporary conversion:</strong> VCF input is read directly. BGEN input is converted to a temporary PLINK dataset before calling PALM. Use <code>--keepTemp=TRUE</code> if you want to inspect those BGEN intermediate files.</li>
+    <li><strong>VCF import:</strong> Step2 auto-detects <code>DS</code> or <code>GT</code> from the VCF FORMAT field and prefers <code>DS</code> when present.</li>
     <li><strong>BGEN import:</strong> <code>--alleleOrder</code> accepts <code>ref-first</code>, <code>ref-last</code>, or <code>ref-unknown</code>. If omitted for BGEN input, the current default is <code>ref-last</code>.</li>
     <li><strong>Chrom filter:</strong> current CLI default is empty string; use <code>--chrom=1</code> to restrict, otherwise leave empty to keep all chromosomes.</li>
     <li><strong>MAF filter:</strong> default is <code>--minMAF=0.05</code>; use another threshold as needed, and <code>0</code> disables this filter.</li>
@@ -273,9 +268,8 @@ docker run --rm --platform=linux/amd64 \
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
     <tr><td><code>--genoFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input for association testing: PLINK prefix, VCF, or BGEN</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_bgen/geno.bgen</code></td></tr>
-    <tr><td><code>--vcfField</code></td><td><code>character</code></td><td><code>"DS"</code></td><td>VCF FORMAT field to import when <code>genoFile</code> is VCF input; allowed values are <code>DS</code> and <code>GT</code></td><td><code>--vcfField=DS</code>; <code>--vcfField=GT</code></td></tr>
     <tr><td><code>--alleleOrder</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>BGEN allele-order setting passed to <code>plink2 --bgen</code>; use <code>ref-first</code>, <code>ref-last</code>, or <code>ref-unknown</code></td><td><code>--alleleOrder=ref-last</code>; <code>--alleleOrder=NULL</code></td></tr>
-    <tr><td><code>--keepTemp</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Keep temporary converted PLINK files for VCF/BGEN input</td><td><code>--keepTemp=TRUE</code>; <code>--keepTemp=FALSE</code></td></tr>
+    <tr><td><code>--keepTemp</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Keep temporary converted PLINK files for BGEN input</td><td><code>--keepTemp=TRUE</code>; <code>--keepTemp=FALSE</code></td></tr>
     <tr><td><code>--NULLmodelFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Null model generated by Step1</td><td><code>--NULLmodelFile=example/output/study1/step1_allpheno.rda</code></td></tr>
     <tr><td><code>--PALMOutputFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for per-taxon result files</td><td><code>--PALMOutputFile=example/output/study1/step2_allchr</code></td></tr>
     <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>""</code></td><td>Optional chromosome subset; leave empty to keep all chromosomes</td><td><code>--chrom=1</code>; omit it or set <code>--chrom=</code> for all chromosomes</td></tr>
@@ -465,7 +459,6 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --depthCol=NULL \
     --depth.filter=0 \
     --genoFile=example/input/study1/geno \
-    --vcfField=DS \
     --alleleOrder=NULL \
     --keepTemp=FALSE \
     --outputSeqDepthFile=example/output/study1/info_seqdepth.txt</code></pre>
@@ -481,7 +474,6 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --depthCol=NULL \
     --depth.filter=0 \
     --genoFile=/work/example/input/study1/geno \
-    --vcfField=DS \
     --alleleOrder=NULL \
     --keepTemp=FALSE \
     --outputSeqDepthFile=/work/example/output/study1/info_seqdepth.txt</code></pre>
@@ -514,7 +506,6 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
   <p><strong>Input:</strong> genotype input passed through <code>--genoFile</code> and null model <code>example/output/study1/step1_allpheno.rda</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_summary.R \
     --genoFile=example/input/study1/geno \
-    --vcfField=DS \
     --alleleOrder=NULL \
     --keepTemp=FALSE \
     --NULLmodelFile=example/output/study1/step1_allpheno.rda \
@@ -530,7 +521,6 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
   cheeselee/palm-mgwas:latest \
   step2_summary.R \
     --genoFile=/work/example/input/study1/geno \
-    --vcfField=DS \
     --alleleOrder=NULL \
     --keepTemp=FALSE \
     --NULLmodelFile=/work/example/output/study1/step1_allpheno.rda \

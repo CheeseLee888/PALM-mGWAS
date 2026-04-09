@@ -9,7 +9,6 @@ source "$WORK/config.sh"
 echo "Start: Perform score test."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary.R \
     --genoFile=${genoFile} \
-    --vcfField=${vcfField:-DS} \
     --alleleOrder=${alleleOrder:-NULL} \
     --keepTemp=${keepTemp:-FALSE} \
     --NULLmodelFile=${NULLmodelFile} \

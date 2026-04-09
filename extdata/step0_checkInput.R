@@ -23,8 +23,6 @@ option_list <- list(
               help = "Sample-level depth threshold; samples with depth <= threshold are removed before ID matching [default %default]"),
   make_option("--genoFile", type = "character",
               help = "Genotype input: PLINK prefix, VCF(.vcf/.vcf.gz/.vcf.bgz), or BGEN(.bgen)"),
-  make_option("--vcfField", type = "character", default = "DS",
-              help = "VCF FORMAT field to import for VCF input: DS or GT [default %default]"),
   make_option("--alleleOrder", type = "character", default = "NULL",
               help = "BGEN allele order: ref-first, ref-last, ref-unknown, or NULL [default %default]"),
   make_option("--keepTemp", type = "logical", default = FALSE,
@@ -86,6 +84,23 @@ read_fam_iid <- function(prefix) {
   ids <- as.character(fam_df[[2]])  # IID
   if (anyDuplicated(ids)) stop("Duplicated IID in .fam: ", fam)
   ids
+}
+
+read_geno_iid <- function(geno_file, allele_order, keep_temp) {
+  geno_format <- PALMmGWAS:::infer_geno_format(geno_file)
+  if (identical(geno_format, "vcf")) {
+    ids <- PALMmGWAS:::read_vcf_header(geno_file)$sample_ids
+    if (anyDuplicated(ids)) stop("Duplicated IID in VCF header: ", geno_file)
+    return(list(ids = ids, cleanup = character(0)))
+  }
+
+  geno_input <- PALMmGWAS:::prepare_plink_input(
+    genoFile = geno_file,
+    alleleOrder = allele_order,
+    keepTemp = keep_temp,
+    tempLabel = "check_tmp"
+  )
+  list(ids = read_fam_iid(geno_input$prefix), cleanup = geno_input$cleanup)
 }
 
 reorder_df_to_ref <- function(df, ref_ids, path_label) {
@@ -231,21 +246,19 @@ cat("Matched abd/cov sample count: ", length(abd_ids), ".\n", sep = "")
 
 # 2) Use genotype sample order as the reference order; genotype may contain extra samples
 changed <- FALSE
-geno_input <- PALMmGWAS:::prepare_plink_input(
-  genoFile = opt$genoFile,
-  vcfField = opt$vcfField,
-  alleleOrder = opt$alleleOrder,
-  keepTemp = opt$keepTemp,
-  tempLabel = "check_tmp"
+geno_input <- read_geno_iid(
+  geno_file = opt$genoFile,
+  allele_order = opt$alleleOrder,
+  keep_temp = opt$keepTemp
 )
 if (!opt$keepTemp && length(geno_input$cleanup) > 0L) {
   on.exit(unlink(geno_input$cleanup, force = TRUE), add = TRUE)
 }
-geno_ids <- read_fam_iid(geno_input$prefix)
+geno_ids <- geno_input$ids
 cat("Genotype sample count: ", length(geno_ids), ".\n", sep = "")
 missing_in_geno <- setdiff(abd_ids, geno_ids)
 if (length(missing_in_geno) > 0) {
-  stop("IID set mismatch: filtered abd/cov samples missing from genoFile (.fam): ",
+  stop("IID set mismatch: filtered abd/cov samples missing from genotype input: ",
        paste(utils::head(missing_in_geno, 5), collapse = ", "))
 }
 

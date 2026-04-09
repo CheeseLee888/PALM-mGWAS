@@ -8,7 +8,7 @@ getSummary(
   genoFile,
   NULLmodelFile,
   PALMOutputFile,
-  vcfField = "DS",
+  vcfField = NULL,
   alleleOrder = NULL,
   plinkPath = "plink",
   plink2Path = "plink2",
@@ -33,8 +33,9 @@ object named `modglmm`.}
 \item{PALMOutputFile}{Output prefix for per-phenotype result files; each
 phenotype file will be written as `<PALMOutputFile>_<pheno>.txt`.}
 
-\item{vcfField}{VCF FORMAT field to import when converting VCF input.
-Supported values are `"DS"` and `"GT"`.}
+\item{vcfField}{Optional VCF FORMAT field override. By default the reader
+auto-detects and prefers `"DS"` when present, otherwise falls back to
+`"GT"`. Supported explicit values are `"DS"` and `"GT"`.}
 
 \item{alleleOrder}{Allele order for BGEN conversion. Supported values are
 `"ref-first"`, `"ref-last"`, and `"ref-unknown"`. Defaults to
@@ -77,6 +78,6 @@ Invisibly returns a character vector of written file paths.
 \description{
 Reads genotype data from PLINK, VCF, or BGEN input, applies a pre-fitted
 PALM null model, and writes per-phenotype summary statistics (one file per
-phenotype). Non-PLINK inputs are converted to a temporary PLINK dataset
-before testing.
+phenotype). VCF input is read directly; other non-PLINK inputs are converted
+to a temporary PLINK dataset before testing.
 }

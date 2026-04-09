@@ -158,8 +158,9 @@ parse_snp_ids <- function(snp_ids) {
 #'   `.vcf.gz`, or `.vcf.bgz`, VCF input is assumed. If it ends with `.bgen`,
 #'   BGEN input is assumed. Otherwise it is treated as a PLINK prefix without
 #'   `.bed/.bim/.fam`.
-#' @param vcf_field VCF FORMAT field to import when converting VCF input.
-#'   Supported values are `"DS"` and `"GT"`. Defaults to `"DS"`.
+#' @param vcf_field Optional VCF FORMAT field override. By default the reader
+#'   auto-detects and prefers `"DS"` when present, otherwise falls back to
+#'   `"GT"`. Supported explicit values are `"DS"` and `"GT"`.
 #' @param allele_order Allele order for BGEN conversion. Supported values are
 #'   `"ref-first"`, `"ref-last"`, and `"ref-unknown"`. Defaults to
 #'   `"ref-last"` for BGEN input.
@@ -172,7 +173,7 @@ parse_snp_ids <- function(snp_ids) {
 #' @return Data frame with CHR, SNP, POS, A1, A2, N, AF.
 #' @export
 snp_info <- function(genoFile,
-                     vcf_field = "DS",
+                     vcf_field = NULL,
                      allele_order = NULL,
                      plink_path = "plink",
                      plink2_path = "plink2",
@@ -183,6 +184,12 @@ snp_info <- function(genoFile,
   if (!is.logical(keep_temp) || length(keep_temp) != 1L || is.na(keep_temp)) {
     stop("`keep_temp` must be TRUE or FALSE.")
   }
+  geno_format <- infer_geno_format(genoFile)
+  if (identical(geno_format, "vcf")) {
+    vcf_input <- read_vcf_genotypes(genoFile, vcfField = vcf_field)
+    return(snp_info_from_geno_matrix(vcf_input$geno, snp_ids = colnames(vcf_input$geno)))
+  }
+
   geno_input <- prepare_plink_input(
     genoFile = genoFile,
     vcfField = vcf_field,
@@ -225,8 +232,9 @@ snp_info <- function(genoFile,
 #' @param output_snp Output path for SNP info.
 #' @param output_feature Output path for feature info.
 #' @param output_seqdepth Output path for sequencing depth info.
-#' @param vcf_field VCF FORMAT field to import when `genoFile` is VCF input.
-#'   Defaults to `"DS"`.
+#' @param vcf_field Optional VCF FORMAT field override. By default the reader
+#'   auto-detects and prefers `"DS"` when present, otherwise falls back to
+#'   `"GT"`.
 #' @param allele_order Allele order for BGEN conversion. Defaults to
 #'   `"ref-last"` when `genoFile` is BGEN input.
 #' @param keep_temp Logical; if `TRUE`, keep temporary PLINK files created for
@@ -242,7 +250,7 @@ run_info <- function(genoFile,
                      output_snp,
                      output_feature,
                      output_seqdepth,
-                     vcf_field = "DS",
+                     vcf_field = NULL,
                      allele_order = NULL,
                      keep_temp = FALSE,
                      plink_path = "plink",

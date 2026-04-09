@@ -13,8 +13,9 @@
 #'   object named `modglmm`.
 #' @param PALMOutputFile Output prefix for per-phenotype result files; each
 #'   phenotype file will be written as `<PALMOutputFile>_<pheno>.txt`.
-#' @param vcfField VCF FORMAT field to import when converting VCF input.
-#'   Supported values are `"DS"` and `"GT"`.
+#' @param vcfField Optional VCF FORMAT field override. By default the reader
+#'   auto-detects and prefers `"DS"` when present, otherwise falls back to
+#'   `"GT"`. Supported explicit values are `"DS"` and `"GT"`.
 #' @param alleleOrder Allele order for BGEN conversion. Supported values are
 #'   `"ref-first"`, `"ref-last"`, and `"ref-unknown"`. Defaults to
 #'   `"ref-last"` for BGEN so imported allele coding matches the existing
@@ -46,7 +47,7 @@
 getSummary <- function(genoFile,
                        NULLmodelFile,
                        PALMOutputFile,
-                       vcfField = "DS",
+                       vcfField = NULL,
                        alleleOrder = NULL,
                        plinkPath = "plink",
                        plink2Path = "plink2",
@@ -155,64 +156,64 @@ getSummary <- function(genoFile,
   if (!identical(genoFormat, "plink") && isTRUE(useCluster)) {
     stop("`useCluster=TRUE` is only supported for native PLINK input.")
   }
-
-  geno_input <- prepare_plink_input(
-    genoFile = genoFile,
-    vcfField = vcfField,
-    alleleOrder = alleleOrder,
-    plinkPath = plinkPath,
-    plink2Path = plink2Path,
-    keepTemp = keepTemp,
-    tempPrefix = file.path(
-      dirname(PALMOutputFile),
-      paste0(
-        basename(PALMOutputFile),
-        "_tmp_",
-        genoFormat,
-        "_plink"
+  cluster <- NULL
+  chr_map <- NULL
+  if (identical(genoFormat, "vcf")) {
+    vcf_input <- read_vcf_genotypes(genoFile, vcfField = vcfField)
+    geno <- vcf_input$geno
+    chr_map <- as.character(vcf_input$map$chromosome)
+  } else {
+    geno_input <- prepare_plink_input(
+      genoFile = genoFile,
+      vcfField = vcfField,
+      alleleOrder = alleleOrder,
+      plinkPath = plinkPath,
+      plink2Path = plink2Path,
+      keepTemp = keepTemp,
+      tempPrefix = file.path(
+        dirname(PALMOutputFile),
+        paste0(
+          basename(PALMOutputFile),
+          "_tmp_",
+          genoFormat,
+          "_plink"
+        )
       )
     )
-  )
-  if (!keepTemp && length(geno_input$cleanup) > 0L) {
-    on.exit(unlink(geno_input$cleanup, force = TRUE), add = TRUE)
-  }
-  genoPrefix <- geno_input$prefix
-
-  # read genotype data and make it a data.frame
-  bed <- paste0(genoPrefix, ".bed")
-  bim <- paste0(genoPrefix, ".bim")
-  fam <- paste0(genoPrefix, ".fam")
-  for (f in c(bed, bim, fam)) if (!file.exists(f)) stop("Missing PLINK file: ", f)
-
-  # read fam to get cluster info (make sure IDs align with abdFile's)
-  cluster <- NULL
-  if (useCluster) {
-    message("Reading PLINK .fam file for cluster info.")
-    fam_data <- utils::read.table(fam, stringsAsFactors = FALSE)
-    colnames(fam_data) <- c("FID", "IID", "PID", "MID", "SEX", "PHENO")
-    cluster <- fam_data$FID
-    names(cluster) <- fam_data$IID
-    ## Handle FID = 0 case
-    if (all(cluster == 0)) {
-      message("All FID values are 0. No valid cluster information detected. Setting useCluster = FALSE.")
-      useCluster <- FALSE
-      cluster <- NULL
+    if (!keepTemp && length(geno_input$cleanup) > 0L) {
+      on.exit(unlink(geno_input$cleanup, force = TRUE), add = TRUE)
     }
+    genoPrefix <- geno_input$prefix
+
+    bed <- paste0(genoPrefix, ".bed")
+    bim <- paste0(genoPrefix, ".bim")
+    fam <- paste0(genoPrefix, ".fam")
+    for (f in c(bed, bim, fam)) if (!file.exists(f)) stop("Missing PLINK file: ", f)
+
+    if (useCluster) {
+      message("Reading PLINK .fam file for cluster info.")
+      fam_data <- utils::read.table(fam, stringsAsFactors = FALSE)
+      colnames(fam_data) <- c("FID", "IID", "PID", "MID", "SEX", "PHENO")
+      cluster <- fam_data$FID
+      names(cluster) <- fam_data$IID
+      if (all(cluster == 0)) {
+        message("All FID values are 0. No valid cluster information detected. Setting useCluster = FALSE.")
+        useCluster <- FALSE
+        cluster <- NULL
+      }
+    }
+
+    plink <- snpStats::read.plink(bed, bim, fam)
+    G <- plink$genotypes
+    iid <- rownames(G)
+    if (is.null(iid)) stop("No rownames (IID) found in genotype matrix from read.plink().")
+
+    geno <- as(G, "numeric")
+    rownames(geno) <- iid
+    colnames(geno) <- colnames(G)
+    chr_map <- as.character(plink$map$chromosome)
+    message("Loaded genotype matrix: ", nrow(geno), " samples x ", ncol(geno), " SNPs before chromosome filtering.")
   }
-  # ----------------------------
-
-  plink <- snpStats::read.plink(bed, bim, fam)
-
-  G <- plink$genotypes
-
-  iid <- rownames(G)
-  if (is.null(iid)) stop("No rownames (IID) found in genotype matrix from read.plink().")
-
-  # Convert to numeric 0/1/2/NA matrix, then to data.frame
-  geno <- as(G, "numeric") # returns matrix with 0/1/2 and NA
-  rownames(geno) <- iid
-  colnames(geno) <- colnames(G)
-  message("Loaded genotype matrix: ", nrow(geno), " samples x ", ncol(geno), " SNPs before chromosome filtering.")
 
   if (!is.null(null_sample_ids)) {
     missing_null_ids <- setdiff(null_sample_ids, rownames(geno))
@@ -239,8 +240,6 @@ getSummary <- function(genoFile,
     message("Subsetting genotype data for chromosome: ", chrom)
     chrom <- sub("^chr", "", chrom, ignore.case = TRUE)
 
-    # plink$map has chromosome info from .bim
-    chr_map <- as.character(plink$map$chromosome)
     chr_map <- sub("^chr", "", chr_map, ignore.case = TRUE)
     keep <- which(chr_map == chrom)
 

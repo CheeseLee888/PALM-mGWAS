@@ -10,10 +10,6 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
-    make_option("--vcfField",
-        type = "character", default = "DS",
-        help = ""
-    ),
     make_option("--alleleOrder",
         type = "character", default = "",
         help = ""
@@ -72,7 +68,6 @@ message("step2: PALM summary started.")
 
 getSummary(
   genoFile = opt$genoFile,
-  vcfField = opt$vcfField,
   alleleOrder = opt$alleleOrder,
   keepTemp = opt$keepTemp,
   NULLmodelFile = opt$NULLmodelFile,
