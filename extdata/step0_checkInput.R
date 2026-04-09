@@ -28,7 +28,9 @@ option_list <- list(
   make_option("--alleleOrder", type = "character", default = "NULL",
               help = "BGEN allele order: ref-first, ref-last, ref-unknown, or NULL [default %default]"),
   make_option("--keepTemp", type = "logical", default = FALSE,
-              help = "Keep temporary converted PLINK files for VCF/BGEN input [default %default]")
+              help = "Keep temporary converted PLINK files for VCF/BGEN input [default %default]"),
+  make_option("--outputSeqDepthFile", type = "character", default = "NULL",
+              help = "Optional output file for sequencing depth info used by Step0 filtering [default %default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
@@ -107,6 +109,9 @@ cat(
 if (is.null(opt$alleleOrder) || !nzchar(opt$alleleOrder) || toupper(opt$alleleOrder) == "NULL") {
   opt$alleleOrder <- NULL
 }
+if (is.null(opt$outputSeqDepthFile) || !nzchar(opt$outputSeqDepthFile) || toupper(opt$outputSeqDepthFile) == "NULL") {
+  opt$outputSeqDepthFile <- NULL
+}
 opt$covarColList <- normalize_col_list(opt$covarColList, "covarColList")
 opt$depthCol <- normalize_col_list(opt$depthCol, "depthCol")
 if (!is.null(opt$depthCol) && length(opt$depthCol) != 1L) {
@@ -159,6 +164,19 @@ cat(
   ", max=", max(depth), ".\n",
   sep = ""
 )
+if (!is.null(opt$outputSeqDepthFile)) {
+  cat("Generating DepthInfo from the exact depth values used by Step0 sample filtering...\n")
+  seqdepth_df <- PALMmGWAS:::seqdepth_info_from_values(names(depth), depth)
+  dir.create(dirname(opt$outputSeqDepthFile), recursive = TRUE, showWarnings = FALSE)
+  fwrite(seqdepth_df, file = opt$outputSeqDepthFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
+  cat(
+    "DepthInfo finished: ", nrow(seqdepth_df),
+    " sample(s) written to ", opt$outputSeqDepthFile, ".\n",
+    sep = ""
+  )
+} else {
+  cat("DepthInfo skipped: --outputSeqDepthFile is NULL.\n")
+}
 
 if (opt$depth.filter > 0) {
   keep_ids <- names(depth)[depth > opt$depth.filter]

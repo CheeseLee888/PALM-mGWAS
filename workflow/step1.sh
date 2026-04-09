@@ -19,7 +19,8 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step0_checkIn
     --genoFile=${genoFile} \
     --vcfField=${vcfField:-DS} \
     --alleleOrder=${alleleOrder:-NULL} \
-    --keepTemp=${keepTemp:-FALSE}
+    --keepTemp=${keepTemp:-FALSE} \
+    --outputSeqDepthFile=${outputSeqDepthFile:-NULL}
 echo "Finish: Check input files."    
 
 # step1: fit null model for all phenotypes
@@ -30,5 +31,6 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step1_null.R 
     --covarColList=${covarColList:-NULL} \
     --depthCol=${depthCol:-NULL} \
     --prev.filter=${prev_filter:-0.1} \
+    --outputFeatureFile=${outputFeatureFile:-NULL} \
     --NULLmodelFile=${NULLmodelFile}
 echo "Finish: Fit null model."

@@ -16,8 +16,9 @@ getSummary(
   chrom = NULL,
   minMAF = 0.05,
   minMAC = 5,
+  outputSnpFile = NULL,
   correct = "NULL",
-  useCluster = TRUE
+  useCluster = FALSE
 )
 }
 \arguments{
@@ -59,6 +60,11 @@ Use `0` to disable MAF filtering.}
 \item{minMAC}{Optional minimum minor allele count threshold used to filter
 SNPs before running `PALM::palm.get.summary()`. Defaults to `5`. Use `0`
 to disable MAC filtering.}
+
+\item{outputSnpFile}{Optional output path for SNP sample count and allele
+frequency computed from the Step2 genotype matrix after NULL-model sample
+alignment and optional chromosome subsetting, but before minMAF/minMAC
+filtering. Use `NULL` (default) to skip writing this file.}
 
 \item{correct}{Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.}
 

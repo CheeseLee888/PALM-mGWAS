@@ -33,6 +33,10 @@
 #' @param minMAC Optional minimum minor allele count threshold used to filter
 #'   SNPs before running `PALM::palm.get.summary()`. Defaults to `5`. Use `0`
 #'   to disable MAC filtering.
+#' @param outputSnpFile Optional output path for SNP sample count and allele
+#'   frequency computed from the Step2 genotype matrix after NULL-model sample
+#'   alignment and optional chromosome subsetting, but before minMAF/minMAC
+#'   filtering. Use `NULL` (default) to skip writing this file.
 #' @param correct Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.
 #' @param useCluster Logical; if `TRUE`, uses FID from `.fam` as cluster
 #'   information when available. Defaults to `FALSE`.
@@ -50,6 +54,7 @@ getSummary <- function(genoFile,
                        chrom = NULL,
                        minMAF = 0.05,
                        minMAC = 5,
+                       outputSnpFile = NULL,
                        correct = "NULL",
                        useCluster = FALSE) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
@@ -242,6 +247,27 @@ getSummary <- function(genoFile,
     if (length(keep) == 0L) stop("No SNPs found for --chrom=", chrom)
     geno <- geno[, keep, drop = FALSE]
     message("Genotype matrix after chromosome filtering: ", nrow(geno), " samples x ", ncol(geno), " SNPs.")
+  }
+
+  if (!is.null(outputSnpFile) && nzchar(outputSnpFile)) {
+    message(
+      "Generating SNPInfo from the Step2 genotype matrix after NULL-model sample alignment",
+      if (!is.null(chrom) && toupper(chrom) != "NULL") " and chromosome filtering" else "",
+      ", before minMAF/minMAC filtering. Output path: ",
+      outputSnpFile
+    )
+    snp_stats <- snp_info_from_geno_matrix(geno, snp_ids = colnames(geno))
+    dir.create(dirname(outputSnpFile), recursive = TRUE, showWarnings = FALSE)
+    data.table::fwrite(
+      snp_stats,
+      file = outputSnpFile,
+      sep = "\t",
+      quote = FALSE,
+      na = "NA"
+    )
+    message("SNPInfo finished: ", nrow(snp_stats), " SNP(s) written to ", outputSnpFile)
+  } else {
+    message("SNPInfo skipped: outputSnpFile is NULL.")
   }
 
   if (minMAF > 0 || minMAC > 0) {

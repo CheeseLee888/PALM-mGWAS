@@ -52,7 +52,7 @@ RUN pixi run R CMD INSTALL .
 
 # ---- wrapper scripts (optional) ----
 RUN for script in   step0_checkInput.R step1_null.R step2_summary.R step3_meta.R \
-                    Info.R Visualization.R; do \
+                    Visualization.R; do \
       echo '#!/bin/bash' > /usr/local/bin/$script && \
       echo 'cd /app' >> /usr/local/bin/$script && \
       echo 'exec pixi run Rscript /app/extdata/'$script' "$@"' >> /usr/local/bin/$script && \

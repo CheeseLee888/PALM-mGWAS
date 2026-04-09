@@ -17,6 +17,9 @@
 #'   computed from row sums of `abdFile`.
 #' @param prev.filter Passed to `PALM::palm.null.model()`; features with
 #'   prevalence less than or equal to this threshold are removed. Defaults to `0.1`.
+#' @param outputFeatureFile Optional output path for feature prevalence and
+#'   average proportion computed from the Step1 abundance input before
+#'   prevalence filtering. Use `NULL` (default) to skip writing this file.
 #' @param NULLmodelFile Full output path for the saved `.rda` file.
 #'
 #' @return Invisibly returns the fitted PALM null model object.
@@ -27,6 +30,7 @@ fitNULL <- function(abdFile,
                     covarColList = NULL,
                     depthCol = NULL,
                     prev.filter = 0.1,
+                    outputFeatureFile = NULL,
                     NULLmodelFile) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
@@ -80,9 +84,28 @@ fitNULL <- function(abdFile,
     abd <- abd[, phenoColList, drop = FALSE]
   }
   abd <- as.matrix(abd)
+  storage.mode(abd) <- "numeric"
   message(
     "Input abundance matrix: ", nrow(abd), " samples x ", ncol(abd), " features."
   )
+  if (!is.null(outputFeatureFile) && nzchar(outputFeatureFile)) {
+    message(
+      "Generating FeatureInfo from the Step1 input abundance matrix before prev.filter. ",
+      "Output path: ", outputFeatureFile
+    )
+    feature_stats <- feature_info_from_matrix(abd, feature_ids = colnames(abd))
+    dir.create(dirname(outputFeatureFile), recursive = TRUE, showWarnings = FALSE)
+    data.table::fwrite(
+      feature_stats,
+      file = outputFeatureFile,
+      sep = "\t",
+      quote = FALSE,
+      na = "NA"
+    )
+    message("FeatureInfo finished: ", nrow(feature_stats), " feature(s) written to ", outputFeatureFile)
+  } else {
+    message("FeatureInfo skipped: outputFeatureFile is NULL.")
+  }
 
   cov <- NULL
   if (!is.null(covFile)) {

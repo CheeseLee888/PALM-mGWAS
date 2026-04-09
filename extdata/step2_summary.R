@@ -42,6 +42,10 @@ option_list <- list(
         type = "integer", default = 5,
         help = ""
     ),
+    make_option("--outputSnpFile",
+        type = "character", default = "",
+        help = ""
+    ),
     make_option("--correct",
         type = "character", default = "NULL",
         help = ""
@@ -59,6 +63,9 @@ if (is.null(opt$correct) || !nzchar(opt$correct) || toupper(opt$correct) == "NUL
 if (is.null(opt$alleleOrder) || !nzchar(opt$alleleOrder) || toupper(opt$alleleOrder) == "NULL") {
   opt$alleleOrder <- NULL
 }
+if (is.null(opt$outputSnpFile) || !nzchar(opt$outputSnpFile) || toupper(opt$outputSnpFile) == "NULL") {
+  opt$outputSnpFile <- NULL
+}
 
 ptm <- proc.time()
 message("step2: PALM summary started.")
@@ -73,6 +80,7 @@ getSummary(
   chrom = opt$chrom,
   minMAF = opt$minMAF,
   minMAC = opt$minMAC,
+  outputSnpFile = opt$outputSnpFile,
   correct = opt$correct,
   useCluster = opt$useCluster
 )

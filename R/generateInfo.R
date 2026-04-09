@@ -1,4 +1,66 @@
-# step0 information helpers
+# step information helpers
+
+feature_info_from_matrix <- function(gene_mat, feature_ids = colnames(gene_mat)) {
+  gene_mat <- as.matrix(gene_mat)
+  storage.mode(gene_mat) <- "numeric"
+  n_sample <- nrow(gene_mat)
+  if (n_sample < 1L) {
+    stop("gene_mat must contain at least one sample")
+  }
+  if (ncol(gene_mat) < 1L) {
+    stop("gene_mat must contain at least one feature")
+  }
+
+  prevalence <- colSums(gene_mat > 0, na.rm = TRUE) / n_sample
+
+  row_sum <- rowSums(gene_mat, na.rm = TRUE)
+  row_sum[row_sum == 0] <- NA
+  gene_prop <- gene_mat / row_sum
+  avg_proportion <- colMeans(gene_prop, na.rm = TRUE)
+
+  data.frame(
+    FeatureID = feature_ids,
+    Prevalence = prevalence,
+    AvgProportion = avg_proportion,
+    row.names = NULL,
+    check.names = FALSE
+  )
+}
+
+seqdepth_info_from_values <- function(sample_ids, depth_values) {
+  if (length(sample_ids) != length(depth_values)) {
+    stop("sample_ids and depth_values must have the same length")
+  }
+  data.frame(
+    SampleID = as.character(sample_ids),
+    SeqDepth = as.numeric(depth_values),
+    row.names = NULL,
+    check.names = FALSE
+  )
+}
+
+snp_info_from_geno_matrix <- function(geno, snp_ids = colnames(geno)) {
+  geno <- as.matrix(geno)
+  storage.mode(geno) <- "numeric"
+  if (ncol(geno) < 1L) {
+    stop("geno must contain at least one SNP")
+  }
+  if (is.null(snp_ids)) {
+    stop("snp_ids are required")
+  }
+
+  n_called <- colSums(!is.na(geno))
+  mac <- colSums(geno, na.rm = TRUE)
+  af <- rep(NA_real_, length(snp_ids))
+  ok <- n_called > 0
+  af[ok] <- (mac[ok] / n_called[ok]) / 2
+
+  info <- parse_snp_ids(snp_ids)
+  info$N <- as.integer(n_called)
+  info$AF <- as.numeric(af)
+
+  info[, c("CHR", "SNP", "POS", "A1", "A2", "N", "AF")]
+}
 
 #' Compute feature-level prevalence and average proportion
 #'
@@ -19,23 +81,8 @@ feature_info <- function(abd_file) {
   }
 
   gene_mat <- as.matrix(abd_data[, -1, drop = FALSE])
-  gene_mat <- apply(gene_mat, 2, as.numeric)
-  n_sample <- nrow(gene_mat)
-
-  prevalence <- colSums(gene_mat > 0, na.rm = TRUE) / n_sample
-
-  row_sum <- rowSums(gene_mat, na.rm = TRUE)
-  row_sum[row_sum == 0] <- NA
-  gene_prop <- gene_mat / row_sum
-  avg_proportion <- colMeans(gene_prop, na.rm = TRUE)
-
-  data.frame(
-    FeatureID = colnames(gene_mat),
-    Prevalence = prevalence,
-    AvgProportion = avg_proportion,
-    row.names = NULL,
-    check.names = FALSE
-  )
+  storage.mode(gene_mat) <- "numeric"
+  feature_info_from_matrix(gene_mat, feature_ids = colnames(gene_mat))
 }
 
 
@@ -61,12 +108,7 @@ seqdepth_info <- function(abd_file) {
   abd_mat <- as.matrix(abd[, -1, drop = FALSE])
   rownames(abd_mat) <- sample_id
 
-  data.frame(
-    SampleID = sample_id,
-    SeqDepth = rowSums(abd_mat, na.rm = TRUE),
-    row.names = NULL,
-    check.names = FALSE
-  )
+  seqdepth_info_from_values(sample_id, rowSums(abd_mat, na.rm = TRUE))
 }
 
 
@@ -171,17 +213,7 @@ snp_info <- function(genoFile,
     stop("No SNP names found in PLINK genotypes.")
   }
 
-  N <- colSums(!is.na(G))
-  MAC <- colSums(G, na.rm = TRUE)
-  AF <- rep(NA_real_, length(snps))
-  ok <- N > 0
-  AF[ok] <- (MAC[ok] / N[ok]) / 2
-
-  info <- parse_snp_ids(snps)
-  info$N <- as.integer(N)
-  info$AF <- as.numeric(AF)
-
-  info[, c("CHR", "SNP", "POS", "A1", "A2", "N", "AF")]
+  snp_info_from_geno_matrix(G, snp_ids = snps)
 }
 
 
