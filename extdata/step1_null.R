@@ -22,10 +22,6 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
-    make_option("--depth.filter",
-        type = "double", default = 0,
-        help = ""
-    ),
     make_option("--prev.filter",
         type = "double", default = 0.1,
         help = ""
@@ -53,7 +49,6 @@ fitNULL(
   covFile = opt$covFile,
   covarColList = opt$covarColList,
   depthCol = opt$depthCol,
-  depth.filter = opt$depth.filter,
   prev.filter = opt$prev.filter,
   NULLmodelFile = opt$NULLmodelFile
 )

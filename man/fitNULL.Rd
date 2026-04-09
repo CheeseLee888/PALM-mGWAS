@@ -10,7 +10,6 @@ fitNULL(
   covFile = NULL,
   covarColList = NULL,
   depthCol = NULL,
-  depth.filter = 0,
   prev.filter = 0.1,
   NULLmodelFile
 )
@@ -32,9 +31,6 @@ By default, all non-ID columns in `covFile` are used.}
 \item{depthCol}{Optional column name in `covFile` to use as sequencing depth.
 If not provided, `depth = NULL` is passed to PALM so sequencing depth is
 computed from row sums of `abdFile`.}
-
-\item{depth.filter}{Passed to `PALM::palm.null.model()`; samples with depth
-less than or equal to this threshold are removed. Defaults to `0`.}
 
 \item{prev.filter}{Passed to `PALM::palm.null.model()`; features with
 prevalence less than or equal to this threshold are removed. Defaults to `0.1`.}

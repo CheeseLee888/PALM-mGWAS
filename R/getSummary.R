@@ -96,6 +96,31 @@ getSummary <- function(genoFile,
   modglmm <- env$modglmm
   message("Loaded NULL model from ", NULLmodelFile)
 
+  extract_null_sample_ids <- function(null_obj) {
+    if (!is.list(null_obj) || length(null_obj) < 1L) {
+      return(NULL)
+    }
+    first_study <- null_obj[[1]]
+    if (!is.list(first_study)) {
+      return(NULL)
+    }
+    for (candidate in c("Z", "Y_I", "Y_R")) {
+      mat <- first_study[[candidate]]
+      ids <- rownames(mat)
+      if (!is.null(ids) && length(ids) > 0L) {
+        return(ids)
+      }
+    }
+    NULL
+  }
+
+  null_sample_ids <- extract_null_sample_ids(modglmm)
+  if (is.null(null_sample_ids)) {
+    message("Could not infer sample IDs from NULL model; using genotype rows as-is.")
+  } else {
+    message("NULL model sample count: ", length(null_sample_ids))
+  }
+
   # normalize chrom input: treat "" or "NULL" as NULL
   if (!is.null(chrom) && is.character(chrom)) {
     if (!nzchar(chrom) || toupper(chrom) == "NULL") chrom <- NULL
@@ -183,6 +208,21 @@ getSummary <- function(genoFile,
   rownames(geno) <- iid
   colnames(geno) <- colnames(G)
   message("Loaded genotype matrix: ", nrow(geno), " samples x ", ncol(geno), " SNPs before chromosome filtering.")
+
+  if (!is.null(null_sample_ids)) {
+    missing_null_ids <- setdiff(null_sample_ids, rownames(geno))
+    if (length(missing_null_ids) > 0L) {
+      stop(
+        "Some NULL-model samples are missing from genotype input: ",
+        paste(utils::head(missing_null_ids, 5), collapse = ", ")
+      )
+    }
+    geno <- geno[null_sample_ids, , drop = FALSE]
+    if (!is.null(cluster)) {
+      cluster <- cluster[null_sample_ids]
+    }
+    message("Genotype matrix after aligning to NULL model samples: ", nrow(geno), " samples x ", ncol(geno), " SNPs.")
+  }
 
   # Subset for quick testing (every 10th SNP)
   # geno <- geno[, seq(1, ncol(geno), by = 10), drop = FALSE]
@@ -340,6 +380,7 @@ getSummary <- function(genoFile,
   if (is.null(rownames(res)) || any(rownames(res) == "")) {
     stop("res has no rownames (phenotype names). Please ensure rownames(res)=pheno names.")
   }
+  message("Writing ", nrow(res), " per-phenotype result file(s).")
 
   # PALMOutputFile can be a "directory" or "prefix"; here we treat it as a directory for clarity
   out_dir <- dirname(PALMOutputFile)
@@ -395,10 +436,9 @@ getSummary <- function(genoFile,
       file = out_file, sep = "\t",
       quote = FALSE, row.names = FALSE, col.names = TRUE
     )
-    message("Wrote per-pheno file: ", out_file)
     out_paths <- c(out_paths, out_file)
   }
 
-  message("Done. PALM summary results saved with prefix: ", PALMOutputFile)
+  message("Done. Wrote ", length(out_paths), " file(s) with prefix: ", PALMOutputFile)
   invisible(out_paths)
 }

@@ -15,8 +15,6 @@
 #' @param depthCol Optional column name in `covFile` to use as sequencing depth.
 #'   If not provided, `depth = NULL` is passed to PALM so sequencing depth is
 #'   computed from row sums of `abdFile`.
-#' @param depth.filter Passed to `PALM::palm.null.model()`; samples with depth
-#'   less than or equal to this threshold are removed. Defaults to `0`.
 #' @param prev.filter Passed to `PALM::palm.null.model()`; features with
 #'   prevalence less than or equal to this threshold are removed. Defaults to `0.1`.
 #' @param NULLmodelFile Full output path for the saved `.rda` file.
@@ -28,7 +26,6 @@ fitNULL <- function(abdFile,
                     covFile = NULL,
                     covarColList = NULL,
                     depthCol = NULL,
-                    depth.filter = 0,
                     prev.filter = 0.1,
                     NULLmodelFile) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
@@ -116,11 +113,7 @@ fitNULL <- function(abdFile,
     }
     depth <- depth[rownames(abd)]
     message("depthCol provided: using '", depthCol, "' from ", covFile, " as sequencing depth.")
-    message(
-      "Depth filtering enabled. depth.filter=", depth.filter,
-      "; depth summary min/median/max=",
-      min(depth), "/", stats::median(depth), "/", max(depth)
-    )
+    message("Depth summary min/median/max=", min(depth), "/", stats::median(depth), "/", max(depth))
   } else {
     message("No depthCol provided: PALM will use row sums of abundance as depth.")
   }
@@ -131,7 +124,6 @@ fitNULL <- function(abdFile,
     modglmm <- PALM::palm.null.model(
       rel.abd = abd,
       depth = depth,
-      depth.filter = depth.filter,
       prev.filter = prev.filter
     )
   } else {
@@ -153,7 +145,6 @@ fitNULL <- function(abdFile,
       rel.abd = abd,
       covariate.adjust = cov,
       depth = depth,
-      depth.filter = depth.filter,
       prev.filter = prev.filter
     )
   }
