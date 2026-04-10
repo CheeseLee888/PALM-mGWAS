@@ -150,7 +150,7 @@ docker run --rm --platform=linux/amd64 \
     --depthCol=${depthCol} \
     --depth.filter=${depth_filter} \
     --genoFile=/work/${genoFile} \
-    --outputSeqDepthFile=/work/${outputSeqDepthFile}</code></pre>
+    --outputSeqDepthFile=${outputSeqDepthFile}</code></pre>
   <ul>
     <li><strong>Purpose:</strong> optionally filter low-depth samples, then verify that abundance, covariates, and genotype input remain aligned before modeling.</li>
     <li><strong>Behavior:</strong> if <code>depth.filter &gt; 0</code>, samples with depth <code>&lt;= depth.filter</code> are removed before genotype matching. Depth comes from <code>covFile[depthCol]</code> when <code>depthCol</code> is supplied, otherwise from row sums of <code>abdFile</code>.</li>
@@ -240,7 +240,7 @@ docker run --rm --platform=linux/amd64 \
     --featureColList=${featureColList} \
     --minMAF=${minMAF} \
     --minMAC=${minMAC} \
-    --outputSnpFile=/work/${outputSnpFile} \
+    --outputSnpFile=${outputSnpFile} \
     --correct=${correct} \
     --useCluster=${useCluster}</code></pre>
   <ul>
@@ -451,7 +451,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --depthCol=NULL \
     --depth.filter=0 \
     --genoFile=example/input/study1/geno \
-    --outputSeqDepthFile=example/output/study1/info_seqdepth.txt</code></pre>
+    --outputSeqDepthFile=NULL</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
@@ -464,7 +464,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --depthCol=NULL \
     --depth.filter=0 \
     --genoFile=/work/example/input/study1/geno \
-    --outputSeqDepthFile=/work/example/output/study1/info_seqdepth.txt</code></pre>
+    --outputSeqDepthFile=NULL</code></pre>
   <p><strong>Output:</strong> Step0 writes new files such as <code>abd_aligned.txt</code> and <code>cov_aligned.txt</code>; if requested, it also writes <code>example/output/study1/info_seqdepth.txt</code>. The original input files are not overwritten.</p>
 
   <h3>Step1: fit the null model</h3>
@@ -475,7 +475,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --covarColList=AGE,SEX,PC01 \
     --depthCol=NULL \
     --prev.filter=0.1 \
-    --outputFeatureFile=example/output/study1/info_feature.txt \
+    --outputFeatureFile=NULL \
     --NULLmodelFile=example/output/study1/step1_allpheno.rda</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
@@ -486,7 +486,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --covarColList=AGE,SEX,PC01 \
     --depthCol=NULL \
     --prev.filter=0.1 \
-    --outputFeatureFile=/work/example/output/study1/info_feature.txt \
+    --outputFeatureFile=NULL \
     --NULLmodelFile=example/output/study1/step1_allpheno.rda</code></pre>
   <p><strong>Output:</strong> <code>example/output/study1/step1_allpheno.rda</code>, which is then passed into Step2 as <code>--NULLmodelFile</code>. If requested, Step1 also writes <code>example/output/study1/info_feature.txt</code>.</p>
 
@@ -499,7 +499,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --chrom=NULL \
     --minMAF=0.05 \
     --minMAC=5 \
-    --outputSnpFile=example/output/study1/info_snp.txt \
+    --outputSnpFile=NULL \
     --correct=NULL \
     --useCluster=FALSE</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
@@ -512,7 +512,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --chrom=NULL \
     --minMAF=0.05 \
     --minMAC=5 \
-    --outputSnpFile=/work/example/output/study1/info_snp.txt \
+    --outputSnpFile=NULL \
     --correct=NULL \
     --useCluster=FALSE</code></pre>
   <p><strong>Output:</strong> one file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on. If requested, Step2 also writes <code>example/output/study1/info_snp.txt</code>.</p>

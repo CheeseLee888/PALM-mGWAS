@@ -35,7 +35,7 @@ option_list <- list(
         help = ""
     ),
     make_option("--outputSnpFile",
-        type = "character", default = "",
+        type = "character", default = "NULL",
         help = ""
     ),
     make_option("--correct",

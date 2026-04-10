@@ -31,7 +31,7 @@ option_list <- list(
         help = ""
     ),
     make_option("--outputFeatureFile",
-        type = "character", default = "",
+        type = "character", default = "NULL",
         help = ""
     )
 )
