@@ -12,6 +12,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_summary
     --NULLmodelFile=${NULLmodelFile} \
     --PALMOutputFile=${palm1_step2_prefix} \
     --chrom=${chrom:-NULL} \
+    --featureColList=${featureColList:-NULL} \
     --minMAF=${minMAF:-0.05} \
     --minMAC=${minMAC:-5} \
     --outputSnpFile=${outputSnpFile:-NULL} \

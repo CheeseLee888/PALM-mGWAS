@@ -26,6 +26,9 @@
 #'   and preferred VCF conversion. Defaults to `"plink2"`.
 #' @param chrom Optional chromosome filter (numeric or string like `"chr1"`).
 #'   Use `NULL` to keep all chromosomes.
+#' @param featureColList Optional feature IDs to keep from the Step1 null model.
+#'   Accepts either a character vector or a single comma-separated string.
+#'   Use `NULL` (default) to keep all modeled features.
 #' @param minMAF Optional minimum minor allele frequency threshold used to
 #'   filter SNPs before running `PALM::palm.get.summary()`. Defaults to `0.05`.
 #'   Use `0` to disable MAF filtering.
@@ -50,6 +53,7 @@ getSummary <- function(genoFile,
                        plinkPath = "plink",
                        plink2Path = "plink2",
                        chrom = NULL,
+                       featureColList = NULL,
                        minMAF = 0.05,
                        minMAC = 5,
                        outputSnpFile = NULL,
@@ -96,6 +100,52 @@ getSummary <- function(genoFile,
   modglmm <- env$modglmm
   message("Loaded NULL model from ", NULLmodelFile)
 
+  normalize_col_list <- function(x, arg_name) {
+    if (is.null(x)) {
+      return(NULL)
+    }
+    if (length(x) == 1L) {
+      x <- trimws(strsplit(x, ",", fixed = TRUE)[[1]])
+    } else {
+      x <- trimws(as.character(x))
+    }
+    x <- x[nzchar(x)]
+    if (!length(x)) {
+      stop("'", arg_name, "' did not contain any valid column names.")
+    }
+    x
+  }
+
+  subset_null_model_features <- function(null_obj, feature_ids) {
+    if (is.null(feature_ids)) {
+      return(null_obj)
+    }
+    feature_by_study <- lapply(names(null_obj), function(d) colnames(null_obj[[d]]$Y_I))
+    names(feature_by_study) <- names(null_obj)
+    feature_union <- sort(unique(unlist(feature_by_study, use.names = FALSE)))
+    missing_features <- setdiff(feature_ids, feature_union)
+    if (length(missing_features) > 0L) {
+      stop(
+        "Requested feature(s) not found in NULL model: ",
+        paste(missing_features, collapse = ", ")
+      )
+    }
+
+    null_subset <- null_obj
+    for (d in names(null_subset)) {
+      keep <- intersect(feature_ids, colnames(null_subset[[d]]$Y_I))
+      if (!length(keep)) {
+        stop(
+          "Requested feature(s) are absent from study '", d,
+          "' in the NULL model after prevalence filtering."
+        )
+      }
+      null_subset[[d]]$Y_I <- null_subset[[d]]$Y_I[, keep, drop = FALSE]
+      null_subset[[d]]$Y_R <- null_subset[[d]]$Y_R[, keep, drop = FALSE]
+    }
+    null_subset
+  }
+
   extract_null_sample_ids <- function(null_obj) {
     if (!is.list(null_obj) || length(null_obj) < 1L) {
       return(NULL)
@@ -119,6 +169,22 @@ getSummary <- function(genoFile,
     message("Could not infer sample IDs from NULL model; using genotype rows as-is.")
   } else {
     message("NULL model sample count: ", length(null_sample_ids))
+  }
+
+  featureColList <- normalize_col_list(featureColList, "featureColList")
+  if (is.null(featureColList)) {
+    message("Feature filter disabled: using all modeled features.")
+  } else {
+    message("Feature filter enabled: requested ", length(featureColList), " feature(s).")
+    modglmm <- subset_null_model_features(modglmm, featureColList)
+    message(
+      "NULL model after feature filtering: ",
+      paste(
+        sprintf("%s=%d", names(modglmm), vapply(modglmm, function(x) ncol(x$Y_I), integer(1))),
+        collapse = "; "
+      ),
+      " feature(s) per study."
+    )
   }
 
   # normalize chrom input: treat "" or "NULL" as NULL

@@ -22,6 +22,10 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
+    make_option("--featureColList",
+        type = "character", default = "",
+        help = ""
+    ),
     make_option("--minMAF",
         type = "double", default = 0.05,
         help = ""
@@ -51,15 +55,29 @@ if (is.null(opt$correct) || !nzchar(opt$correct) || toupper(opt$correct) == "NUL
 if (is.null(opt$outputSnpFile) || !nzchar(opt$outputSnpFile) || toupper(opt$outputSnpFile) == "NULL") {
   opt$outputSnpFile <- NULL
 }
+if (is.null(opt$featureColList) || !nzchar(opt$featureColList) || toupper(opt$featureColList) == "NULL") {
+  opt$featureColList <- NULL
+}
 
 ptm <- proc.time()
 message("step2: PALM summary started.")
+message("step2: output prefix = ", opt$PALMOutputFile)
+message("step2: chromosome = ", if (is.null(opt$chrom) || !nzchar(opt$chrom)) "NULL" else opt$chrom)
+message(
+  "step2: featureColList = ",
+  if (is.null(opt$featureColList)) {
+    "NULL (all modeled features)"
+  } else {
+    opt$featureColList
+  }
+)
 
 getSummary(
   genoFile = opt$genoFile,
   NULLmodelFile = opt$NULLmodelFile,
   PALMOutputFile = opt$PALMOutputFile,
   chrom = opt$chrom,
+  featureColList = opt$featureColList,
   minMAF = opt$minMAF,
   minMAC = opt$minMAC,
   outputSnpFile = opt$outputSnpFile,
