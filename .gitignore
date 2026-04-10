@@ -28,3 +28,5 @@ example_old/
 config.sh
 *.sbatch
 log*
+simulation/input/
+simulation/output/
