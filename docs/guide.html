@@ -252,6 +252,7 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>BGEN import:</strong> BGEN input currently uses internal allele-order handling equivalent to <code>ref-last</code>.</li>
     <li><strong>Chrom filter:</strong> current CLI default is empty string; use <code>--chrom=1</code> to restrict, otherwise leave empty to keep all chromosomes.</li>
     <li><strong>Feature subset:</strong> pass <code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code> to test only those modeled features from the Step1 null model; <code>NULL</code> keeps all features.</li>
+    <li><strong>Parallelization pattern:</strong> the software exposes <code>--chrom</code> and <code>--featureColList</code> so users can decompose Step2 into independent jobs. In other words, <code>chrom x feature</code> parallelism is achieved by scheduler-level job submission, not by internal multithreading within one Step2 process.</li>
     <li><strong>MAF filter:</strong> default is <code>--minMAF=0.05</code>; use another threshold as needed, and <code>0</code> disables this filter.</li>
     <li><strong>MAC filter:</strong> default is <code>--minMAC=5</code>; use <code>0</code> to disable minor-allele-count filtering.</li>
     <li><strong>Optional info output:</strong> set <code>--outputSnpFile</code> to write <code>SNPInfo</code>. Behavior definition: <code>SNPInfo</code> is computed from the Step2 genotype matrix after NULL-model sample alignment and optional chromosome filtering, but before <code>minMAF</code>/<code>minMAC</code> remove SNPs.</li>

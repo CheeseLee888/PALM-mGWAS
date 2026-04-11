@@ -14,21 +14,21 @@ get_script_path <- function() {
 }
 
 script_path <- get_script_path()
-repo_root <- normalizePath(file.path(dirname(script_path), ".."), mustWork = TRUE)
+simu_root <- normalizePath(dirname(script_path), mustWork = TRUE)
 
 seed <- 20260409L
 set.seed(seed)
 
-provided_dir <- file.path(repo_root, "simulation", "provided")
+provided_dir <- file.path(simu_root, "provided")
 variant_file <- file.path(provided_dir, "snp_reference.tsv")
 feature_file <- file.path(provided_dir, "feature_names.txt")
 covariate_file <- file.path(provided_dir, "covariate_names.txt")
 sample_file <- file.path(provided_dir, "sample_config.tsv")
 
-input_dir <- file.path(repo_root, "simulation", "input", "study1")
+input_dir <- file.path(simu_root, "input", "study1")
 dir.create(input_dir, recursive = TRUE, showWarnings = FALSE)
 
-message("Reading simulation metadata from simulation/provided.")
+message("Reading simulation metadata from provided/.")
 variant_dt <- fread(variant_file)
 required_variant_cols <- c("CHR", "SNP", "POS", "A1", "A2", "N", "AF")
 missing_variant_cols <- setdiff(required_variant_cols, names(variant_dt))

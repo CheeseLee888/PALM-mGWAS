@@ -20,6 +20,9 @@
 #' @param outputFeatureFile Optional output path for feature prevalence and
 #'   average proportion computed from the Step1 abundance input before
 #'   prevalence filtering. Use `NULL` (default) to skip writing this file.
+#' @param outputFeatureListFile Optional output path for the modeled feature IDs
+#'   retained in the fitted Step1 null model after prevalence filtering. Use
+#'   `NULL` (default) to skip writing this file.
 #' @param NULLmodelFile Full output path for the saved `.rda` file.
 #'
 #' @return Invisibly returns the fitted PALM null model object.
@@ -31,6 +34,7 @@ fitNULL <- function(abdFile,
                     depthCol = NULL,
                     prev.filter = 0.1,
                     outputFeatureFile = NULL,
+                    outputFeatureListFile = NULL,
                     NULLmodelFile) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
@@ -175,5 +179,20 @@ fitNULL <- function(abdFile,
   dir.create(dirname(NULLmodelFile), recursive = TRUE, showWarnings = FALSE)
   save(modglmm, file = NULLmodelFile)
   message("Done. PALM null model saved to ", NULLmodelFile)
+
+  if (!is.null(outputFeatureListFile) && nzchar(outputFeatureListFile)) {
+    feature_ids <- unique(unlist(lapply(modglmm, function(x) colnames(x$Y_I)), use.names = FALSE))
+    if (!length(feature_ids)) {
+      stop("No modeled features found in fitted null model; cannot write outputFeatureListFile.")
+    }
+    dir.create(dirname(outputFeatureListFile), recursive = TRUE, showWarnings = FALSE)
+    writeLines(feature_ids, outputFeatureListFile, useBytes = TRUE)
+    message(
+      "FeatureList finished: ", length(feature_ids),
+      " feature(s) written to ", outputFeatureListFile
+    )
+  } else {
+    message("FeatureList skipped: outputFeatureListFile is NULL.")
+  }
   invisible(modglmm)
 }

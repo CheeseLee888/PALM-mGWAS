@@ -33,6 +33,10 @@ option_list <- list(
     make_option("--outputFeatureFile",
         type = "character", default = "NULL",
         help = ""
+    ),
+    make_option("--outputFeatureListFile",
+        type = "character", default = "NULL",
+        help = ""
     )
 )
 
@@ -50,6 +54,9 @@ if (is.null(opt$depthCol) || !nzchar(opt$depthCol) || toupper(opt$depthCol) == "
 if (is.null(opt$outputFeatureFile) || !nzchar(opt$outputFeatureFile) || toupper(opt$outputFeatureFile) == "NULL") {
   opt$outputFeatureFile <- NULL
 }
+if (is.null(opt$outputFeatureListFile) || !nzchar(opt$outputFeatureListFile) || toupper(opt$outputFeatureListFile) == "NULL") {
+  opt$outputFeatureListFile <- NULL
+}
 
 fitNULL(
   abdFile = opt$abdFile,
@@ -58,5 +65,6 @@ fitNULL(
   depthCol = opt$depthCol,
   prev.filter = opt$prev.filter,
   outputFeatureFile = opt$outputFeatureFile,
+  outputFeatureListFile = opt$outputFeatureListFile,
   NULLmodelFile = opt$NULLmodelFile
 )

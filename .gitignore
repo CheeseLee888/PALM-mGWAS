@@ -26,7 +26,7 @@ guide/*.synctex.gz
 mytest/
 example_old/
 config.sh
-*.sbatch
+workflow/*.sbatch
 log*
 simulation/input/
 simulation/output/
