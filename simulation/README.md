@@ -1,6 +1,6 @@
 # Simulation Dataset
 
-This directory provides a reproducible single-study simulation intended to show a larger sample size than `example/` and give users a more realistic sense of `step2` runtime and memory usage.
+This directory provides a reproducible multi-study simulation intended to show a larger sample size than `example/`, give users a more realistic sense of `step2` runtime and memory usage, and provide compatible inputs for later meta-analysis testing.
 
 The working directory is:
 
@@ -16,9 +16,11 @@ That directory directly contains:
 
 Core design:
 
-- The sample size is fixed at `502`, defined in `simulation/provided/sample_config.tsv`
+- The generator now writes three studies: `study1`, `study2`, and `study3`
+- The baseline sample size is defined in `simulation/provided/sample_config.tsv`, and `study2` and `study3` use different sample sizes to mimic heterogeneous cohorts
 - The SNP list and all `CHR/POS/A1/A2/AF` values are taken from `simulation/provided/snp_reference.tsv`
 - Feature names and covariate names are stored in `simulation/provided/feature_names.txt` and `simulation/provided/covariate_names.txt`
+- The three studies intentionally share the same SNP and feature backbone, but `study2` and `study3` each drop a small subset of SNPs and features so later meta-analysis can test imperfect overlap
 - The generated `abd` and `cov` tables follow the same overall column structure as `example/input/study1`
 - The random seed is fixed at `20260409`, so any user running the same script will generate identical inputs and outputs
 - A strong genetic signal is planted in `g_Acinetobacter` so the Manhattan plot contains clear high peaks
@@ -45,11 +47,9 @@ bash run_simulation.sh
 
 The script will automatically:
 
-1. Generate `input/study1/abd.txt`
-2. Generate `input/study1/cov.txt`
-3. Generate `input/study1/geno.{bed,bim,fam}`
-4. Run `Step0 -> Step1 -> Step2`
-5. Write the Manhattan/QQ plot for `g_Acinetobacter`
+1. Generate `input/study1`, `input/study2`, and `input/study3`
+2. Run `Step0 -> Step1 -> Step2` for the default study configured in the analysis scripts
+3. Write the Manhattan/QQ plot for `g_Acinetobacter`
 
 ## Slurm submission order
 
@@ -62,7 +62,7 @@ cd /mnt/scratch/group/ztang2/pli297/simulation
 bash submit_input.sh
 ```
 
-This submits [generate_input_simu.sbatch](/Users/peterli/Desktop/PALM-mGWAS/simulation/generate_input_simu.sbatch), which creates the files under `input/study1/`.
+This submits [generate_input_simu.sbatch](/Users/peterli/Desktop/PALM-mGWAS/simulation/generate_input_simu.sbatch), which creates the files under `input/study1/`, `input/study2/`, and `input/study3/`.
 
 Phase 2: run analysis
 
@@ -72,6 +72,31 @@ bash submit_all.sh
 ```
 
 This submits `Step0 -> Step1 -> Step2`.
+
+After all Step2 array jobs finish, run:
+
+```bash
+cd /mnt/scratch/group/ztang2/pli297/simulation
+bash merge_and_vis.sh
+```
+
+This now performs three stages:
+
+- merge per-chromosome Step2 outputs into per-phenotype `step2_allchr_*` files within each study
+- run Step3 meta-analysis across studies
+- run the same four visualization modes used in the main workflow on the meta-analysis results
+
+- phenotype + SNP forest
+- phenotype-only Manhattan/QQ
+- SNP-only forest across phenotypes
+- combined overview across phenotypes
+
+By default, `merge_and_vis.sh` uses `study1,study2,study3`. If needed, you can restrict it to one study or a subset:
+
+```bash
+STUDY=study2 bash merge_and_vis.sh
+STUDIES=study1,study3 bash merge_and_vis.sh
+```
 
 You can also run the analysis chain manually in three scheduler steps:
 
@@ -107,12 +132,13 @@ sbatch \
   step2_simu_array.sbatch
 ```
 
-`step1_simu.sbatch` writes `output/study1/feature_list.txt` automatically, so Step2 can use it directly.
+`step1_simu.sbatch` writes `output/<study>/feature_list.txt` automatically for the selected study, so Step2 can use it directly.
 
-`submit_all.sh` submits all three analysis stages in one command: Step0, Step1, and then a bridge job which computes `TOTAL_TASKS` after Step1 finishes and submits the Step2 array automatically.
+`submit_all.sh` submits the analysis stages through Step2. The merge, meta-analysis, and visualization stages are intentionally run later as a separate manual `bash merge_and_vis.sh` command after Step2 finishes.
 
 ## Main outputs
 
+- `input/study1/`, `input/study2/`, `input/study3/`
 - `output/study1/step2_allchr_g_Acinetobacter.txt`
 - `output/study1/info_snp.txt`
 - `output/study1/info_feature.txt`
@@ -123,6 +149,18 @@ sbatch \
 If you want to parallelize simulated `step2` runs across both chromosome and feature subsets, run `Step0` and `Step1` once first, then submit `step2_simu_array.sbatch`.
 
 This has already been validated in the simulation workflow: `step2` array jobs were launched across multiple chromosomes and feature blocks, and the expected per-chromosome outputs were produced.
+
+After the array completes, the simulation workflow merges files sharing the same phenotype across chromosomes. For example:
+
+- `step2_chr1_g_Acinetobacter.txt`
+- `step2_chr2_g_Acinetobacter.txt`
+- ...
+
+are merged into:
+
+- `step2_allchr_g_Acinetobacter.txt`
+
+The meta-analysis step then reads the merged `step2_allchr_*.txt` files and writes `step3_meta_*.txt`. The visualization step reads those meta files.
 
 Choose a feature block size, for example `10` features per task:
 
@@ -157,6 +195,6 @@ This script uses 1-based array indexing:
 
 ## Note
 
-This simulation currently uses a single-study workflow, so the visualization step reads `step2` outputs directly instead of `step3` meta-analysis outputs.
+The input generator now creates three related studies for later meta-analysis work. The current Slurm analysis scripts still default to `study1`, so if you want to run `study2` or `study3`, override `STUDY` at submit time or edit the default inside the sbatch files. By contrast, `merge_and_vis.sh` defaults to combining all three studies for meta-analysis unless you restrict `STUDY` or `STUDIES`.
 
 The simulation working directory keeps the lightweight metadata under `provided/`. Users regenerate `input/` and `output/` locally by running the scripts above.

@@ -17,10 +17,15 @@ echo "submit_all: study = ${STUDY}"
 echo "submit_all: feature block = ${FEATURE_BLOCK}"
 echo "submit_all: chrom list = ${CHROMS}"
 
-jid0=$(sbatch --parsable step0_simu.sbatch)
+jid0=$(sbatch --parsable \
+  --export=ALL,SIMU_ROOT=${SIMU_ROOT},STUDY=${STUDY} \
+  step0_simu.sbatch)
 echo "submit_all: submitted Step0 job ${jid0}"
 
-jid1=$(sbatch --parsable --dependency=afterok:${jid0} step1_simu.sbatch)
+jid1=$(sbatch --parsable \
+  --dependency=afterok:${jid0} \
+  --export=ALL,SIMU_ROOT=${SIMU_ROOT},STUDY=${STUDY} \
+  step1_simu.sbatch)
 echo "submit_all: submitted Step1 job ${jid1}"
 
 jid2=$(sbatch --parsable \
