@@ -748,18 +748,18 @@ forest_plot_single_pheno <- function(r, pheno, snp, outFile,
 
   span <- diff(alim)
   plot_xmin <- alim[1] - 2.45 * span
-  plot_xmax <- alim[2] + 2.35 * span
+  plot_xmax <- alim[2] + 1.65 * span
   est_x <- alim[1] - 1.55 * span
   se_x <- alim[1] - 0.98 * span
   wt_x <- alim[1] - 0.42 * span
-  ci_x <- alim[2] + 0.52 * span
+  ci_x <- alim[2] + 0.38 * span
 
   k <- length(yi)
   rows <- seq(from = k + 1, to = 2, by = -1)
   header_y <- k + 2.4
   meta_row <- 1
 
-  auto_width <- if (is.na(width)) 12.8 else width
+  auto_width <- if (is.na(width)) 10.2 else width
   auto_height <- if (is.na(height)) max(4.8, 2.7 + 0.48 * k + if (meta_ok) 0.4 else 0) else height
 
   tbl_est <- fmt_num(yi)
@@ -782,7 +782,7 @@ forest_plot_single_pheno <- function(r, pheno, snp, outFile,
   old_par <- graphics::par(no.readonly = TRUE)
   on.exit(graphics::par(old_par), add = TRUE)
 
-  graphics::par(mar = c(4.8, 4.2, 4.4, 10.5), xpd = NA)
+  graphics::par(mar = c(4.8, 4.2, 4.4, 2), xpd = NA)
 
   metafor::forest.default(
     x = yi,
@@ -791,7 +791,7 @@ forest_plot_single_pheno <- function(r, pheno, snp, outFile,
     rows = rows,
     xlim = c(plot_xmin, plot_xmax),
     alim = alim,
-    refline = 0,
+    refline = NA,
     xlab = "Effect",
     annotate = FALSE,
     header = FALSE,
@@ -873,10 +873,10 @@ mode_big_combined <- function(metaIndex, outFile,
 
     keep <- df |>
       dplyr::filter(!is.na(.data[[pcol]]), .data[[pcol]] > 0) |>
-      dplyr::mutate(pheno = ph) |>
+      dplyr::mutate(feature = ph) |>
       dplyr::select(
-        dplyr::any_of(c("SNP", "CHR", "POS", pcol)),
-        .data$pheno
+        dplyr::any_of(c("SNP", "CHR", "POS", "meta_est", "meta_stderr", pcol, "est", "stderr")),
+        .data$feature
       )
 
     if (nrow(keep) == 0) next
@@ -891,7 +891,7 @@ mode_big_combined <- function(metaIndex, outFile,
   # pick the phenotype with the smallest p for each SNP
   best <- big |>
     dplyr::group_by(.data$SNP) |>
-    dplyr::arrange(.data$meta_pval, .data$pheno) |>
+    dplyr::arrange(.data$meta_pval, .data$feature) |>
     dplyr::slice_head(n = 1) |>
     dplyr::ungroup()
 
@@ -901,22 +901,18 @@ mode_big_combined <- function(metaIndex, outFile,
       dplyr::filter(!is.na(.data$meta_pval), .data$meta_pval < pCut) |>
       dplyr::arrange(.data$meta_pval)
 
-    # For single-study (step2-only), output columns: SNP CHR POS est stderr pval pheno
-    if ("mode" %in% names(metaIndex) && all(metaIndex$mode == "step2")) {
-      # ensure pval present
-      if (!("pval" %in% names(hits_to_print))) {
-        hits_to_print$pval <- hits_to_print$meta_pval
-      }
-      keep_cols <- c("SNP", "CHR", "POS", "est", "stderr", "pval", "pheno")
-      keep_cols <- intersect(keep_cols, names(hits_to_print))
-      hits_to_print <- hits_to_print |> dplyr::select(dplyr::all_of(keep_cols))
-    }
+    if ("meta_est" %in% names(hits_to_print)) hits_to_print$est <- hits_to_print$meta_est
+    if ("meta_stderr" %in% names(hits_to_print)) hits_to_print$stderr <- hits_to_print$meta_stderr
+    if ("meta_pval" %in% names(hits_to_print)) hits_to_print$pval <- hits_to_print$meta_pval
+    keep_cols <- c("SNP", "est", "stderr", "pval", "feature")
+    keep_cols <- intersect(keep_cols, names(hits_to_print))
+    hits_to_print <- hits_to_print |> dplyr::select(dplyr::all_of(keep_cols))
 
     if (nrow(hits_to_print) > 0) {
       msg("SNP/pheno pairs with p < %g (best per SNP):", pCut)
       apply(hits_to_print, 1, function(r) {
         p_out <- if ("meta_pval" %in% names(r)) as.numeric(r[["meta_pval"]]) else as.numeric(r[["pval"]])
-        msg("  %s\t%s\t%.3e", r[["SNP"]], r[["pheno"]], p_out)
+        msg("  %s\t%s\t%.3e", r[["SNP"]], r[["feature"]], p_out)
         NULL
       })
 

@@ -1,8 +1,9 @@
 # Fdb version 4
-["pdflatex"] 1774756337.22215 "app_note.tex" "app_note.pdf" "app_note" 1774756339.43645 0
-  "../example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png" 1774625267.78592 248416 6a2fefd884fd05d2c9156af397003baf ""
-  "../example/output/plot/manhattan_g_Peptoniphilus_unclassified.png" 1774625263.09512 264634 c8e25d8255e20b1fa0310a1e2aa3e5b0 ""
-  "../example/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png" 1774625263.15162 150043 5e539e1621310779724f38c9bea7eeb5 ""
+["pdflatex"] 1776108015.4538 "/Users/peterli/Desktop/PALM-mGWAS/docs/app_note.tex" "app_note.pdf" "app_note" 1776108016.15717 0
+  "../example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png" 1776107812.1632 137885 99b48b1f6533d305df96e01d817ffa44 ""
+  "../example/output/plot/manhattan_g_Peptoniphilus_unclassified.png" 1776108014.1314 264634 c8e25d8255e20b1fa0310a1e2aa3e5b0 ""
+  "../example/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png" 1776108014.16477 150043 5e539e1621310779724f38c9bea7eeb5 ""
+  "/Users/peterli/Desktop/PALM-mGWAS/docs/app_note.tex" 1774756331.02061 11609 cc1887101489d852a9b9279db47547f9 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc" 1254269338 2375 baa924870cfb487815765f9094cf3728 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc" 1202520719 2405 5dcf2c1b967ee25cc46c58cd52244aed ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc" 1202520719 2840 216e6e45ad352e2456e1149f28885bee ""
@@ -129,8 +130,8 @@
   "/usr/local/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1732923847.03093 5467645 128b85b7cde5f5edc5cb7f1dd7ff8736 ""
   "/usr/local/texlive/2024/texmf-var/web2c/pdftex/pdflatex.fmt" 1732923794 8221429 88d4a188c065932c053ad68f12eaf871 ""
   "/usr/local/texlive/2024/texmf.cnf" 1710266656 577 e590dabc9e28c5b61546e15f63eebcdf ""
-  "app_note.aux" 1774756339.21871 3290 4a232f99c172e0c652f0ae4a2e716288 "pdflatex"
-  "app_note.out" 1774756339.21984 1090 7bd74423062eb38890f60efa62ee1a51 "pdflatex"
+  "app_note.aux" 1776108016.0663 3290 7c72ce96523aa8e039d9b67f7fa1347a "pdflatex"
+  "app_note.out" 1776108016.06678 1090 7bd74423062eb38890f60efa62ee1a51 "pdflatex"
   "app_note.tex" 1774756331.02061 11609 cc1887101489d852a9b9279db47547f9 ""
   (generated)
   "app_note.aux"
