@@ -77,10 +77,11 @@ After all Step2 array jobs finish, run:
 
 ```bash
 cd /mnt/scratch/group/ztang2/pli297/simulation
-bash merge_and_vis.sh
+bash merge_and_meta.sh
+bash vis.sh
 ```
 
-This now performs three stages:
+This now performs three stages across two commands:
 
 - merge per-chromosome Step2 outputs into per-phenotype `step2_allchr_*` files within each study
 - run Step3 meta-analysis across studies
@@ -91,11 +92,17 @@ This now performs three stages:
 - SNP-only forest across phenotypes
 - combined overview across phenotypes
 
-By default, `merge_and_vis.sh` uses `study1,study2,study3`. If needed, you can restrict it to one study or a subset:
+By default, `merge_and_meta.sh` uses `study1,study2,study3`. If needed, you can restrict it to one study or a subset:
 
 ```bash
-STUDY=study2 bash merge_and_vis.sh
-STUDIES=study1,study3 bash merge_and_vis.sh
+STUDY=study2 bash merge_and_meta.sh
+STUDIES=study1,study3 bash merge_and_meta.sh
+```
+
+`vis.sh` reads the meta-analysis results from `/Volumes/ztang2/pli297/simulation/output/meta` by default and writes plots to `/Volumes/ztang2/pli297/simulation/output` by default:
+
+```bash
+PHENO=g_Acinetobacter SNP=chr4:1682869:G:C bash vis.sh
 ```
 
 You can also run the analysis chain manually in three scheduler steps:
@@ -134,7 +141,7 @@ sbatch \
 
 `step1_simu.sbatch` writes `output/<study>/feature_list.txt` automatically for the selected study, so Step2 can use it directly.
 
-`submit_all.sh` submits the analysis stages through Step2. The merge, meta-analysis, and visualization stages are intentionally run later as a separate manual `bash merge_and_vis.sh` command after Step2 finishes.
+`submit_all.sh` submits the analysis stages through Step2. The merge/meta stage and the visualization stage are intentionally run later as separate manual commands after Step2 finishes.
 
 ## Main outputs
 
@@ -195,6 +202,6 @@ This script uses 1-based array indexing:
 
 ## Note
 
-The input generator now creates three related studies for later meta-analysis work. The current Slurm analysis scripts still default to `study1`, so if you want to run `study2` or `study3`, override `STUDY` at submit time or edit the default inside the sbatch files. By contrast, `merge_and_vis.sh` defaults to combining all three studies for meta-analysis unless you restrict `STUDY` or `STUDIES`.
+The input generator now creates three related studies for later meta-analysis work. The current Slurm analysis scripts still default to `study1`, so if you want to run `study2` or `study3`, override `STUDY` at submit time or edit the default inside the sbatch files. By contrast, `merge_and_meta.sh` defaults to combining all three studies for meta-analysis unless you restrict `STUDY` or `STUDIES`.
 
 The simulation working directory keeps the lightweight metadata under `provided/`. Users regenerate `input/` and `output/` locally by running the scripts above.

@@ -265,13 +265,33 @@ with_suffix <- function(path, suffix) {
 # @param width,height,dpi Device size in inches and resolution.
 open_plot_device <- function(outFile, width, height, dpi = 300) {
   ext <- tolower(tools::file_ext(outFile))
+  out_dir <- dirname(outFile)
+  if (!dir.exists(out_dir)) {
+    dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  }
 
   if (ext %in% c("png", "")) {
+    if (requireNamespace("ragg", quietly = TRUE)) {
+      ragg::agg_png(outFile, width = width, height = height, units = "in", res = dpi)
+      return(invisible("agg_png"))
+    }
+    if (capabilities("cairo")) {
+      grDevices::png(outFile, width = width, height = height, units = "in", res = dpi, type = "cairo")
+      return(invisible("png_cairo"))
+    }
     grDevices::png(outFile, width = width, height = height, units = "in", res = dpi)
     return(invisible("png"))
   }
 
   if (ext %in% c("jpg", "jpeg")) {
+    if (requireNamespace("ragg", quietly = TRUE)) {
+      ragg::agg_jpeg(outFile, width = width, height = height, units = "in", res = dpi)
+      return(invisible("agg_jpeg"))
+    }
+    if (capabilities("cairo")) {
+      grDevices::jpeg(outFile, width = width, height = height, units = "in", res = dpi, type = "cairo")
+      return(invisible("jpeg_cairo"))
+    }
     grDevices::jpeg(outFile, width = width, height = height, units = "in", res = dpi)
     return(invisible("jpeg"))
   }
@@ -1028,6 +1048,7 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
   }
 
   df_all <- dplyr::bind_rows(rows)
+  msg("Mode C: retained %d phenotype(s) for SNP %s.", nrow(df_all), snp)
 
   # sort phenos by significance (use pval)
   if (!("meta_pval" %in% names(df_all))) {
@@ -1042,6 +1063,7 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
 
   for (i in seq_len(nrow(df_all))) {
     ph <- df_all$pheno[i]
+    msg("Mode C: plotting %d/%d phenotype(s): %s", i, nrow(df_all), ph)
     ph_out <- with_suffix(outFile, paste0("_", sanitize_filename(ph)))
     forest_plot_single_pheno(
       r = df_all[i, , drop = FALSE],

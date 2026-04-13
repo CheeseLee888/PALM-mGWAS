@@ -16,18 +16,8 @@ else
   STUDIES_CSV="study1,study2,study3"
 fi
 PLOT_DIR="${PLOT_DIR:-${SIMU_ROOT}/output/plot}"
-META_DIR="${META_DIR:-${SIMU_ROOT}/output/meta}"
+META_DIR="${META_DIR:-/Volumes/ztang2/pli297/simulation/output/meta}"
 META_PREFIX="${META_PREFIX:-step3_meta_}"
-VIS_PATTERN="${VIS_PATTERN:-step3_meta_.*\\.txt$}"
-PHENO="${PHENO:-g_Acinetobacter}"
-SNP="${SNP:-chr4:1682869:G:C}"
-PCUT1="${PCUT1:-5e-8}"
-PCUT2="${PCUT2:-5e-8}"
-SHOW_META="${SHOW_META:-TRUE}"
-SHOW_HET="${SHOW_HET:-TRUE}"
-PLOT_MIN_P="${PLOT_MIN_P:-1e-10}"
-PLOT_WIDTH="${PLOT_WIDTH:-NA}"
-PLOT_HEIGHT="${PLOT_HEIGHT:-NA}"
 
 cd "${SIMU_ROOT}"
 mkdir -p "${SIMU_ROOT}/logs" "${PLOT_DIR}" "${META_DIR}"
@@ -96,53 +86,4 @@ apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   --pattern='step2_allchr_.*\.txt$' \
   --metaDir="${META_DIR}" \
   --metaPrefix="${META_PREFIX}"
-
-echo "merge_and_vis: running visualization mode 1 (pheno + snp)"
-apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
-  Visualization.R \
-  --metaDir="${META_DIR}" \
-  --pattern="${VIS_PATTERN}" \
-  --plotDir="${PLOT_DIR}" \
-  --pheno="${PHENO}" \
-  --snp="${SNP}" \
-  --showMeta="${SHOW_META}" \
-  --showHet="${SHOW_HET}" \
-  --width="${PLOT_WIDTH}" \
-  --height="${PLOT_HEIGHT}"
-
-echo "merge_and_vis: running visualization mode 2 (pheno only)"
-apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
-  Visualization.R \
-  --metaDir="${META_DIR}" \
-  --pattern="${VIS_PATTERN}" \
-  --plotDir="${PLOT_DIR}" \
-  --pheno="${PHENO}" \
-  --plotMinP="${PLOT_MIN_P}" \
-  --width="${PLOT_WIDTH}" \
-  --height="${PLOT_HEIGHT}"
-
-echo "merge_and_vis: running visualization mode 3 (snp only)"
-apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
-  Visualization.R \
-  --metaDir="${META_DIR}" \
-  --pattern="${VIS_PATTERN}" \
-  --plotDir="${PLOT_DIR}" \
-  --snp="${SNP}" \
-  --pCut="${PCUT1}" \
-  --showMeta="${SHOW_META}" \
-  --showHet="${SHOW_HET}" \
-  --width="${PLOT_WIDTH}" \
-  --height="${PLOT_HEIGHT}"
-
-echo "merge_and_vis: running visualization mode 4 (combined)"
-apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
-  Visualization.R \
-  --metaDir="${META_DIR}" \
-  --pattern="${VIS_PATTERN}" \
-  --plotDir="${PLOT_DIR}" \
-  --pCut="${PCUT2}" \
-  --plotMinP="${PLOT_MIN_P}" \
-  --width="${PLOT_WIDTH}" \
-  --height="${PLOT_HEIGHT}"
-
-echo "merge_and_vis: finished"
+echo "merge_and_vis: finished merge + meta"
