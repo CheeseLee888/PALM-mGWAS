@@ -4,6 +4,16 @@ suppressPackageStartupMessages({
 })
 
 default_r_plot_file <- "Rplots.pdf"
+default_meta_pattern <- "step3_meta_.*\\.txt$"
+
+old_device_option <- getOption("device")
+options(device = function(...) {
+  grDevices::pdf(
+    file = tempfile(pattern = "Rplots_", tmpdir = tempdir(), fileext = ".pdf"),
+    ...
+  )
+})
+on.exit(options(device = old_device_option), add = TRUE)
 
 raw_args <- commandArgs(trailingOnly = TRUE)
 
@@ -18,7 +28,7 @@ option_list <- list(
               help = "Directory containing step3 meta files [default %default]"),
   make_option(c("--plotDir"), type = "character", default = "",
               help = "Directory to save plots [default %default]"),
-  make_option(c("--pattern"), type = "character", default = "",
+  make_option(c("--pattern"), type = "character", default = default_meta_pattern,
               help = "Regex pattern for meta filenames [default %default]"),
   make_option(c("--pheno"), type = "character", default = NA,
               help = "Phenotype name (suffix in step3 meta filename)"),

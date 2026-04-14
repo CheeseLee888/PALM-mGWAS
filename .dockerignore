@@ -3,6 +3,7 @@
 .Rhistory
 .RData
 .Ruserdata
+.rda
 
 # pixi virtual env
 .pixi
@@ -14,8 +15,9 @@
 *.sif
 *.tar
 
-# example
+# folders
 example/*
-
-# test
 mytest/*
+simulation/*
+logs/*
+docs/*

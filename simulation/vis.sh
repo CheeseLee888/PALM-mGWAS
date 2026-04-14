@@ -8,13 +8,14 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="${WORK:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
-PIXI_MANIFEST="${PIXI_MANIFEST:-${WORK}/pixi.toml}"
-META_DIR="${META_DIR:-/Volumes/ztang2/pli297/simulation/output/meta}"
-PLOT_DIR="${PLOT_DIR:-/Volumes/ztang2/pli297/simulation/output}"
+SIMU_ROOT="${SIMU_ROOT:-${SCRIPT_DIR}}"
+SIF="${SIF:-${SIMU_ROOT}/PALMmGWAS.sif}"
+META_DIR="${META_DIR:-/mnt/scratch/group/ztang2/pli297/testsimu/output/meta}"
+PLOT_DIR="${PLOT_DIR:-/mnt/scratch/group/ztang2/pli297/testsimu/output/plot}"
 VIS_PATTERN="${VIS_PATTERN:-step3_meta_.*\\.txt$}"
 PHENO="${PHENO:-g_Acinetobacter}"
 SNP="${SNP:-chr4:1682869:G:C}"
-PCUT1="${PCUT1:-5e-8}"
+PCUT1="${PCUT1:-1e-20}"
 PCUT2="${PCUT2:-5e-8}"
 SHOW_META="${SHOW_META:-TRUE}"
 SHOW_HET="${SHOW_HET:-TRUE}"
@@ -23,7 +24,8 @@ PLOT_WIDTH="${PLOT_WIDTH:-NA}"
 PLOT_HEIGHT="${PLOT_HEIGHT:-NA}"
 
 WORK="$(cd "${WORK}" && pwd)"
-PIXI_MANIFEST="$(cd "$(dirname "${PIXI_MANIFEST}")" && pwd)/$(basename "${PIXI_MANIFEST}")"
+SIMU_ROOT="$(cd "${SIMU_ROOT}" && pwd)"
+SIF="$(cd "$(dirname "${SIF}")" && pwd)/$(basename "${SIF}")"
 META_DIR="$(mkdir -p "${META_DIR}" && cd "${META_DIR}" && pwd)"
 PLOT_DIR="$(mkdir -p "${PLOT_DIR}" && cd "${PLOT_DIR}" && pwd)"
 
@@ -31,8 +33,8 @@ if [[ ! -d "${META_DIR}" ]]; then
   echo "vis: missing meta directory ${META_DIR}" >&2
   exit 1
 fi
-if [[ ! -f "${PIXI_MANIFEST}" ]]; then
-  echo "vis: missing pixi manifest ${PIXI_MANIFEST}" >&2
+if [[ ! -f "${SIF}" ]]; then
+  echo "vis: missing sif image ${SIF}" >&2
   exit 1
 fi
 
@@ -45,7 +47,8 @@ if [[ "${META_FILE_COUNT}" -eq 0 ]]; then
 fi
 
 echo "vis: work = ${WORK}"
-echo "vis: pixi manifest = ${PIXI_MANIFEST}"
+echo "vis: simulation root = ${SIMU_ROOT}"
+echo "vis: sif = ${SIF}"
 echo "vis: meta dir = ${META_DIR}"
 echo "vis: plot dir = ${PLOT_DIR}"
 echo "vis: pattern = ${VIS_PATTERN}"
@@ -53,7 +56,8 @@ echo "vis: pheno = ${PHENO}"
 echo "vis: snp = ${SNP}"
 
 echo "vis: running visualization mode 1 (pheno + snp)"
-pixi run --manifest-path="${PIXI_MANIFEST}" Rscript "${WORK}/extdata/Visualization.R" \
+apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
+  Visualization.R \
   --metaDir="${META_DIR}" \
   --pattern="${VIS_PATTERN}" \
   --plotDir="${PLOT_DIR}" \
@@ -65,7 +69,8 @@ pixi run --manifest-path="${PIXI_MANIFEST}" Rscript "${WORK}/extdata/Visualizati
   --height="${PLOT_HEIGHT}"
 
 echo "vis: running visualization mode 2 (pheno only)"
-pixi run --manifest-path="${PIXI_MANIFEST}" Rscript "${WORK}/extdata/Visualization.R" \
+apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
+  Visualization.R \
   --metaDir="${META_DIR}" \
   --pattern="${VIS_PATTERN}" \
   --plotDir="${PLOT_DIR}" \
@@ -74,9 +79,9 @@ pixi run --manifest-path="${PIXI_MANIFEST}" Rscript "${WORK}/extdata/Visualizati
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-
 echo "vis: running visualization mode 3 (snp only)"
-pixi run --manifest-path="${PIXI_MANIFEST}" Rscript "${WORK}/extdata/Visualization.R" \
+apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
+  Visualization.R \
   --metaDir="${META_DIR}" \
   --pattern="${VIS_PATTERN}" \
   --plotDir="${PLOT_DIR}" \
@@ -88,7 +93,8 @@ pixi run --manifest-path="${PIXI_MANIFEST}" Rscript "${WORK}/extdata/Visualizati
   --height="${PLOT_HEIGHT}"
 
 echo "vis: running visualization mode 4 (combined)"
-pixi run --manifest-path="${PIXI_MANIFEST}" Rscript "${WORK}/extdata/Visualization.R" \
+apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
+  Visualization.R \
   --metaDir="${META_DIR}" \
   --pattern="${VIS_PATTERN}" \
   --plotDir="${PLOT_DIR}" \

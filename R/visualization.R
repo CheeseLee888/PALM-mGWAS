@@ -259,6 +259,60 @@ with_suffix <- function(path, suffix) {
   paste0(base, suffix, ext_part)
 }
 
+# Choose a headless-safe graphics device function for ggsave/base output.
+#
+# @param outFile Output path whose extension controls the device choice.
+# @return A device function suitable for `ggsave(device=...)`.
+ggsave_device_for_path <- function(outFile) {
+  ext <- tolower(tools::file_ext(outFile))
+
+  if (ext %in% c("png", "")) {
+    if (requireNamespace("ragg", quietly = TRUE)) {
+      return(ragg::agg_png)
+    }
+    if (capabilities("cairo")) {
+      return(function(filename, width, height, units = "in", res = 300, ...) {
+        grDevices::png(
+          filename = filename,
+          width = width,
+          height = height,
+          units = units,
+          res = res,
+          type = "cairo",
+          ...
+        )
+      })
+    }
+    return(grDevices::png)
+  }
+
+  if (ext %in% c("jpg", "jpeg")) {
+    if (requireNamespace("ragg", quietly = TRUE)) {
+      return(ragg::agg_jpeg)
+    }
+    if (capabilities("cairo")) {
+      return(function(filename, width, height, units = "in", res = 300, ...) {
+        grDevices::jpeg(
+          filename = filename,
+          width = width,
+          height = height,
+          units = units,
+          res = res,
+          type = "cairo",
+          ...
+        )
+      })
+    }
+    return(grDevices::jpeg)
+  }
+
+  if (ext == "pdf") {
+    return(grDevices::pdf)
+  }
+
+  stop("Unsupported output extension: ", outFile)
+}
+
 # Open a graphics device based on the output file extension.
 #
 # @param outFile Output path.
@@ -436,11 +490,11 @@ plot_manhattan <- function(df, outFile, title = NULL,
   auto_height <- if (is.na(height)) 5 else height
 
   msg("Saving: %s", outFile)
-
-  grDevices::jpeg(outFile,
+  open_plot_device(outFile,
     width = auto_width, height = auto_height,
-    units = "in", res = dpi
+    dpi = dpi
   )
+  on.exit(grDevices::dev.off(), add = TRUE)
 
   qqman::manhattan(
     man,
@@ -459,8 +513,6 @@ plot_manhattan <- function(df, outFile, title = NULL,
   )
 
   graphics::abline(h = -log10(5e-8), lty = 2, lwd = 1, col = "red")
-
-  grDevices::dev.off()
 
   invisible(man)
 }
@@ -490,14 +542,13 @@ plot_qq <- function(df, outFile, title = NULL,
   auto_width <- if (is.na(width)) 6 else width
   auto_height <- if (is.na(height)) 6 else height
 
-  grDevices::jpeg(outFile,
+  open_plot_device(outFile,
     width = auto_width, height = auto_height,
-    units = "in", res = dpi
+    dpi = dpi
   )
+  on.exit(grDevices::dev.off(), add = TRUE)
 
   qqman::qq(df[[pcol]], main = title %||% "QQ Plot")
-
-  grDevices::dev.off()
 
   invisible(NULL)
 }
@@ -674,7 +725,8 @@ forest_plot <- function(df_long, y_levels, outFile, title = NULL, xlab = "Effect
     width = auto_width,
     height = auto_height,
     dpi = dpi,
-    limitsize = FALSE
+    limitsize = FALSE,
+    device = ggsave_device_for_path(outFile)
   )
   invisible(g)
 }
