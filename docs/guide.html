@@ -123,8 +123,8 @@ docker run --rm --platform=linux/amd64 \
     <div class="card"><strong>Visualization</strong><br><code>Visualization.R</code> generates Manhattan and forest plots.</div>
   </div>
   <ul>
-    <li><strong>Genotype input used by Step0 / Step2:</strong> set <code>genoFile</code> once, as a PLINK prefix such as <code>example/input/study1/geno</code>, a VCF path such as <code>example/input/study1_vcf/geno.vcf.gz</code>, or a BGEN path such as <code>example/input/study1_bgen/geno.bgen</code>.</li>
-    <li><strong>Format-specific options:</strong> VCF input is auto-detected from <code>DS</code> or <code>GT</code> FORMAT fields, preferring <code>DS</code> when present. BGEN input currently uses internal allele-order handling equivalent to <code>ref-last</code>.</li>
+    <li><strong>Genotype input used by Step0 / Step2:</strong> set <code>genoFile</code> once, as a PLINK prefix such as <code>example/input/study1/geno</code> or a VCF path such as <code>example/input/study1_vcf/geno.vcf.gz</code>.</li>
+    <li><strong>Format-specific options:</strong> VCF input is auto-detected from <code>DS</code> or <code>GT</code> FORMAT fields, preferring <code>DS</code> when present.</li>
   </ul>
 
   <h2 id="step0">Step0: Check and Align Input IDs</h2>
@@ -157,10 +157,10 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Missing-value filtering:</strong> samples with missing values in Step1-required variables from <code>covarColList</code> and <code>depthCol</code> are removed before ID matching. If <code>covarColList=NULL</code>, Step0 defaults to all non-ID columns in <code>covFile</code>, matching Step1 behavior.</li>
     <li><strong>Alignment rule:</strong> the step keeps samples matched across <code>abdFile</code>, <code>covFile</code>, and genotype input, then orders the retained samples to match genotype sample order.</li>
     <li><strong>Genotype sample count:</strong> genotype input may contain extra samples, but it must not miss any sample retained from <code>abdFile</code>/<code>covFile</code> after filtering.</li>
-    <li><strong>VCF/BGEN handling:</strong> within Step0, VCF sample IDs are read directly from the VCF header. BGEN input is converted to a temporary PLINK dataset and sample IDs are read from the converted <code>.fam</code>.</li>
+    <li><strong>VCF handling:</strong> within Step0, VCF sample IDs are read directly from the VCF header.</li>
     <li><strong>Optional info output:</strong> set <code>--outputSeqDepthFile</code> to write <code>DepthInfo</code>. Behavior definition: <code>DepthInfo</code> uses the exact depth values Step0 uses for sample filtering. If <code>depthCol</code> is provided, this file comes from that covariate column; otherwise it uses row sums of <code>abdFile</code>.</li>
     <li><strong>Requirement:</strong> all three inputs are mandatory in the current CLI.</li>
-    <li><strong>Accepted genotype input:</strong> PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, <code>.vcf.bgz</code>, or <code>.bgen</code>.</li>
+    <li><strong>Accepted genotype input:</strong> PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code>.</li>
     <li><strong>Failure cases:</strong> duplicated IDs, missing values, missing <code>.fam</code> for PLINK input, or non-identical IID sets.</li>
   </ul>
   <table>
@@ -172,7 +172,7 @@ docker run --rm --platform=linux/amd64 \
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated covariate columns required by Step1; if omitted, all non-ID columns in <code>covFile</code> are used. Samples missing these values are removed before ID matching</td><td><code>--covarColList=AGE,SEX,PC01</code>; <code>--covarColList=NULL</code></td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td><td><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></td></tr>
     <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Sample-level depth threshold applied before genotype ID matching; samples with depth <code>&lt;=</code> this value are removed</td><td><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></td></tr>
-    <tr><td><code>--genoFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the sample-order reference: PLINK prefix, VCF, or BGEN</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_bgen/geno.bgen</code></td></tr>
+    <tr><td><code>--genoFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the sample-order reference: PLINK prefix or VCF</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></td></tr>
     <tr><td><code>--outputSeqDepthFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for sequencing-depth info used by Step0 sample filtering</td><td><code>--outputSeqDepthFile=example/output/study1/info_seqdepth.txt</code>; <code>--outputSeqDepthFile=NULL</code></td></tr>
   </table>
 
@@ -244,12 +244,11 @@ docker run --rm --platform=linux/amd64 \
     --correct=${correct} \
     --useCluster=${useCluster}</code></pre>
   <ul>
-    <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>. Step2 accepts a PLINK prefix, <code>.vcf/.vcf.gz/.vcf.bgz</code>, or <code>.bgen</code>.</li>
+    <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>. Step2 accepts a PLINK prefix or <code>.vcf/.vcf.gz/.vcf.bgz</code>.</li>
     <li><strong>Outputs:</strong> one per-feature <code>.txt</code> file with columns <code>SNP, CHR, POS, est, stderr, pval</code>.</li>
     <li><strong>SNP format:</strong> dots are replaced by colons, e.g., <code>chr1:12345:REF:ALT</code>.</li>
-    <li><strong>Temporary conversion:</strong> VCF input is read directly. BGEN input is converted to a temporary PLINK dataset before calling PALM, and intermediate files are automatically cleaned up.</li>
+    <li><strong>Temporary conversion:</strong> VCF input is read directly.</li>
     <li><strong>VCF import:</strong> Step2 auto-detects <code>DS</code> or <code>GT</code> from the VCF FORMAT field and prefers <code>DS</code> when present.</li>
-    <li><strong>BGEN import:</strong> BGEN input currently uses internal allele-order handling equivalent to <code>ref-last</code>.</li>
     <li><strong>Chrom filter:</strong> current CLI default is empty string; use <code>--chrom=1</code> to restrict, otherwise leave empty to keep all chromosomes.</li>
     <li><strong>Feature subset:</strong> pass <code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code> to test only those modeled features from the Step1 null model; <code>NULL</code> keeps all features.</li>
     <li><strong>Parallelization pattern:</strong> the software exposes <code>--chrom</code> and <code>--featureColList</code> so users can decompose Step2 into independent jobs. In other words, <code>chrom x feature</code> parallelism is achieved by scheduler-level job submission, not by internal multithreading within one Step2 process.</li>
@@ -261,7 +260,7 @@ docker run --rm --platform=linux/amd64 \
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--genoFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input for association testing: PLINK prefix, VCF, or BGEN</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_bgen/geno.bgen</code></td></tr>
+    <tr><td><code>--genoFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input for association testing: PLINK prefix or VCF</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></td></tr>
     <tr><td><code>--NULLmodelFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Null model generated by Step1</td><td><code>--NULLmodelFile=example/output/study1/step1_allpheno.rda</code></td></tr>
     <tr><td><code>--PALMOutputFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for per-feature result files</td><td><code>--PALMOutputFile=example/output/study1/step2_allchr</code></td></tr>
     <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>""</code></td><td>Optional chromosome subset; leave empty to keep all chromosomes</td><td><code>--chrom=1</code>; omit it or set <code>--chrom=</code> for all chromosomes</td></tr>
@@ -409,7 +408,7 @@ study3  /work/example/output/study3</code></pre>
   <p>Use <code>study_dirs_docker.txt</code> when running Step3 inside Docker, because the container sees the mounted project under <code>/work</code> rather than your host filesystem path.</p>
 
   <h3>Example Input: genotype</h3>
-  <p>The primary genotype input for each study is stored as a PLINK dataset with prefix <code>example/input/study1/geno</code>, corresponding to the files <code>geno.bed</code>, <code>geno.bim</code>, and <code>geno.fam</code>. The repository also includes alternative input examples under <code>example/input/study1_bgen/</code> and <code>example/input/study1_vcf/</code> for testing Step2 with BGEN or VCF input.</p>
+  <p>The primary genotype input for each study is stored as a PLINK dataset with prefix <code>example/input/study1/geno</code>, corresponding to the files <code>geno.bed</code>, <code>geno.bim</code>, and <code>geno.fam</code>. The repository also includes an alternative input example under <code>example/input/study1_vcf/</code> for testing Step2 with VCF input.</p>
 
   <h3>Example Workflow: from input to output</h3>
   <p>The same example data can be read as a concrete workflow: what goes in, which script is called, which parameters matter, and what files come out.</p>

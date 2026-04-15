@@ -6,38 +6,23 @@
 \usage{
 snp_info(
   genoFile,
-  vcf_field = NULL,
-  allele_order = NULL,
-  plink_path = "plink",
-  plink2_path = "plink2"
+  vcf_field = NULL
 )
 }
 \arguments{
 \item{genoFile}{Genotype input path. If the value ends with \code{.vcf},
-\code{.vcf.gz}, or \code{.vcf.bgz}, VCF input is assumed. If it ends with
-\code{.bgen}, BGEN input is assumed. Otherwise it is treated as a PLINK prefix
-without \code{.bed/.bim/.fam}.}
+\code{.vcf.gz}, or \code{.vcf.bgz}, VCF input is assumed. Otherwise it is
+treated as a PLINK prefix without \code{.bed/.bim/.fam}.}
 
 \item{vcf_field}{Optional VCF FORMAT field override. By default the reader
 auto-detects and prefers \code{"DS"} when present, otherwise falls back to
 \code{"GT"}. Supported explicit values are \code{"DS"} and \code{"GT"}.}
-
-\item{allele_order}{Allele order for BGEN conversion. Supported values are
-\code{"ref-first"}, \code{"ref-last"}, and \code{"ref-unknown"}. Defaults to
-\code{"ref-last"} for BGEN input.}
-
-\item{plink_path}{Path to the \code{plink} executable used as a VCF conversion
-fallback. Defaults to \code{"plink"}.}
-
-\item{plink2_path}{Path to the \code{plink2} executable used for BGEN
-conversion and preferred VCF conversion. Defaults to \code{"plink2"}.}
 
 }
 \value{
 Data frame with CHR, SNP, POS, A1, A2, N, AF.
 }
 \description{
-Accepts a PLINK prefix directly. VCF input is read directly; BGEN input is
-converted to a temporary PLINK dataset before reading SNP counts and allele
-frequencies.
+Accepts a PLINK prefix directly. VCF input is read directly before reading
+SNP counts and allele frequencies.
 }

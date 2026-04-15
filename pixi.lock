@@ -93,8 +93,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pango-1.56.4-hadf4263_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pcre2-10.47-haa7fec5_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pixman-0.46.4-h54a6638_1.conda
-      - conda: https://conda.anaconda.org/bioconda/linux-64/plink-1.90b7.7-h18e278d_1.tar.bz2
-      - conda: https://conda.anaconda.org/bioconda/linux-64/plink2-2.0.0a.6.9-h9948957_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pthread-stubs-0.4-hb9d3cd8_1002.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.3-h32b2ec7_101_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-8_cp314.conda
@@ -302,8 +300,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/pango-1.56.4-h6ef8af8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/pcre2-10.47-h13923f0_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/pixman-0.46.4-ha059160_1.conda
-      - conda: https://conda.anaconda.org/bioconda/osx-64/plink-1.90b7.7-ha9ccf8d_1.tar.bz2
-      - conda: https://conda.anaconda.org/bioconda/osx-64/plink2-2.0.0a.6.9-h5fa12a8_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/osx-64/python-3.14.3-h4f44bb5_101_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-8_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/r-4.5-r45hd8ed1ab_1009.conda
@@ -2510,44 +2506,6 @@ packages:
   license_family: MIT
   size: 390942
   timestamp: 1754665233989
-- conda: https://conda.anaconda.org/bioconda/linux-64/plink-1.90b7.7-h18e278d_1.tar.bz2
-  sha256: 68f21f628450b7a41602c82b15a909099b06c4fe63dd0dec5834f5978e614031
-  md5: 1ab1ae7b594fcb5b98cd1a5b96137aa8
-  depends:
-  - libgcc >=13
-  - libopenblas
-  - libstdcxx >=13
-  - libzlib >=1.3.1,<2.0a0
-  license: GPL
-  size: 963787
-  timestamp: 1742298270545
-- conda: https://conda.anaconda.org/bioconda/osx-64/plink-1.90b7.7-ha9ccf8d_1.tar.bz2
-  sha256: b06b4e2b7b42a302036d86c1b072a612c75ab5cebed3c9c44371d589c84f85df
-  md5: 8cdb59fec961fdc520b64783ceaf186d
-  depends:
-  - libcxx >=18
-  - libopenblas
-  - libzlib >=1.3.1,<2.0a0
-  license: GPL
-  size: 985618
-  timestamp: 1742298878372
-- conda: https://conda.anaconda.org/bioconda/linux-64/plink2-2.0.0a.6.9-h9948957_0.tar.bz2
-  sha256: 8f9b2415a5035b5019ef83d2db6f6af2b9739796186a3e558a7baf69c14b0b6b
-  md5: b9e94cb7fa3bb4353c68e4c553690245
-  depends:
-  - libgcc >=13
-  - libstdcxx >=13
-  license: GPL-3
-  size: 7612061
-  timestamp: 1744207773346
-- conda: https://conda.anaconda.org/bioconda/osx-64/plink2-2.0.0a.6.9-h5fa12a8_0.tar.bz2
-  sha256: 432e614f9591444fe035820af1f445ca8d6a360e21bffbc358b3fefab1239104
-  md5: 26ef4c5cf77f02d5da7ca16d4f652b39
-  depends:
-  - libcxx >=18
-  license: GPL-3
-  size: 1628617
-  timestamp: 1744208433197
 - conda: https://conda.anaconda.org/conda-forge/linux-64/pthread-stubs-0.4-hb9d3cd8_1002.conda
   sha256: 9c88f8c64590e9567c6c80823f0328e58d3b1efb0e1c539c0315ceca764e0973
   md5: b3c17d95b5a10c6e64a21fa17573e70e

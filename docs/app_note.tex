@@ -46,7 +46,7 @@ Peter Li$^{1,\ast}$ \and Zhengzheng Tang$^{1}$
 \begin{abstract}
 \noindent
 \textbf{Summary:}
-Microbiome genome-wide association studies require software that can generate cohort-level summary statistics, combine results across studies, and return interpretable outputs without extensive custom scripting. We present \software, an R package and command-line workflow for microbiome GWAS based on the PALM framework. \software\ performs input checking, taxon-level and sequencing-depth summarization, PALM-based null model fitting, per-study genome-wide summary statistic generation, fixed-effect meta-analysis across studies, and downstream visualization. The workflow accepts PLINK, VCF, and BGEN genotype inputs, writes standardized file-per-taxon results, and is designed for both local and high-performance computing environments.
+Microbiome genome-wide association studies require software that can generate cohort-level summary statistics, combine results across studies, and return interpretable outputs without extensive custom scripting. We present \software, an R package and command-line workflow for microbiome GWAS based on the PALM framework. \software\ performs input checking, taxon-level and sequencing-depth summarization, PALM-based null model fitting, per-study genome-wide summary statistic generation, fixed-effect meta-analysis across studies, and downstream visualization. The workflow accepts PLINK and VCF genotype inputs, writes standardized file-per-taxon results, and is designed for both local and high-performance computing environments.
 
 \noindent
 \textbf{Availability and implementation:}
@@ -111,7 +111,7 @@ The visualization module summarizes meta-analysis results in forms suitable for 
 
   \node[inputbox, font=\sffamily\large, minimum width=4.0cm] (abd) at (2.7,13.2) {Feature abundance};
   \node[inputbox, font=\sffamily\large, minimum width=2.9cm] (cov) at (6.3,13.2) {Covariate};
-  \node[inputbox, font=\sffamily\large, minimum width=3.0cm] (geno) at (9.4,13.2) {SNP genotypes\\(in\\plink/vcf/bgen)};
+  \node[inputbox, font=\sffamily\large, minimum width=3.0cm] (geno) at (9.4,13.2) {SNP genotypes\\(in\\plink/vcf)};
 
   \node[stepbox, font=\sffamily\large, minimum width=9.8cm] (step0) at (6.2,11.9) {Step 0: ID matching, sample QC, missing check};
   \draw[arr] (abd.south) -- (abd.south |- step0.north);

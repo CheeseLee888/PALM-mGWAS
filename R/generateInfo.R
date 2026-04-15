@@ -151,31 +151,19 @@ parse_snp_ids <- function(snp_ids) {
 
 #' Compute SNP counts and allele frequency from genotype input
 #'
-#' Accepts a PLINK prefix directly. VCF input is read directly; BGEN input is
-#' converted to a temporary PLINK dataset before reading SNP counts and allele
-#' frequencies.
+#' Accepts a PLINK prefix directly. VCF input is read directly before reading
+#' SNP counts and allele frequencies.
 #'
 #' @param genoFile Genotype input path. If the value ends with `.vcf`,
-#'   `.vcf.gz`, or `.vcf.bgz`, VCF input is assumed. If it ends with `.bgen`,
-#'   BGEN input is assumed. Otherwise it is treated as a PLINK prefix without
-#'   `.bed/.bim/.fam`.
+#'   `.vcf.gz`, or `.vcf.bgz`, VCF input is assumed. Otherwise it is treated as
+#'   a PLINK prefix without `.bed/.bim/.fam`.
 #' @param vcf_field Optional VCF FORMAT field override. By default the reader
 #'   auto-detects and prefers `"DS"` when present, otherwise falls back to
 #'   `"GT"`. Supported explicit values are `"DS"` and `"GT"`.
-#' @param allele_order Allele order for BGEN conversion. Supported values are
-#'   `"ref-first"`, `"ref-last"`, and `"ref-unknown"`. Defaults to
-#'   `"ref-last"` for BGEN input.
-#' @param plink_path Path to the `plink` executable used as a VCF conversion
-#'   fallback. Defaults to `"plink"`.
-#' @param plink2_path Path to the `plink2` executable used for BGEN conversion
-#'   and preferred VCF conversion. Defaults to `"plink2"`.
 #' @return Data frame with CHR, SNP, POS, A1, A2, N, AF.
 #' @export
 snp_info <- function(genoFile,
-                     vcf_field = NULL,
-                     allele_order = NULL,
-                     plink_path = "plink",
-                     plink2_path = "plink2") {
+                     vcf_field = NULL) {
   if (missing(genoFile) || is.null(genoFile) || !nzchar(genoFile)) {
     stop("`genoFile` is required")
   }
@@ -187,10 +175,6 @@ snp_info <- function(genoFile,
 
   geno_input <- prepare_plink_input(
     genoFile = genoFile,
-    vcfField = vcf_field,
-    alleleOrder = allele_order,
-    plinkPath = plink_path,
-    plink2Path = plink2_path,
     tempLabel = "info_tmp"
   )
   if (length(geno_input$cleanup) > 0L) {
@@ -221,7 +205,7 @@ snp_info <- function(genoFile,
 #' Run all step0 info generation and write outputs
 #'
 #' @param genoFile Genotype input path. Accepts a PLINK prefix directly, or a
-#'   VCF/BGEN file that will be converted to a temporary PLINK dataset.
+#'   VCF file that will be read directly.
 #' @param abd_file Path to abundance table.
 #' @param output_snp Output path for SNP info.
 #' @param output_feature Output path for feature info.
@@ -229,12 +213,6 @@ snp_info <- function(genoFile,
 #' @param vcf_field Optional VCF FORMAT field override. By default the reader
 #'   auto-detects and prefers `"DS"` when present, otherwise falls back to
 #'   `"GT"`.
-#' @param allele_order Allele order for BGEN conversion. Defaults to
-#'   `"ref-last"` when `genoFile` is BGEN input.
-#' @param plink_path Path to the `plink` executable used as a VCF conversion
-#'   fallback. Defaults to `"plink"`.
-#' @param plink2_path Path to the `plink2` executable used for BGEN conversion
-#'   and preferred VCF conversion. Defaults to `"plink2"`.
 #' @return Invisibly returns a list of output paths.
 #' @export
 run_info <- function(genoFile,
@@ -242,10 +220,7 @@ run_info <- function(genoFile,
                      output_snp,
                      output_feature,
                      output_seqdepth,
-                     vcf_field = NULL,
-                     allele_order = NULL,
-                     plink_path = "plink",
-                     plink2_path = "plink2") {
+                     vcf_field = NULL) {
   missing_args <- vapply(
     list(genoFile, abd_file, output_snp, output_feature, output_seqdepth),
     function(x) is.null(x) || !nzchar(x),
@@ -259,10 +234,7 @@ run_info <- function(genoFile,
   seqdepth <- seqdepth_info(abd_file)
   snp <- snp_info(
     genoFile = genoFile,
-    vcf_field = vcf_field,
-    allele_order = allele_order,
-    plink_path = plink_path,
-    plink2_path = plink2_path
+    vcf_field = vcf_field
   )
 
   dir.create(dirname(output_snp), recursive = TRUE, showWarnings = FALSE)

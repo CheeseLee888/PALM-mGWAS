@@ -23,10 +23,6 @@ RUN curl -fsSL https://pixi.sh/install.sh | sh && \
     pixi install && \
     rm -rf /root/.cache
 
-# ---- command-line tool smoke tests from pixi env ----
-RUN pixi run which plink && pixi run plink --version
-RUN pixi run which plink2 && pixi run plink2 --version
-
 # ---- deps ----
 RUN pixi run Rscript -e 'install.packages("abess", repos="https://cloud.r-project.org")'
 

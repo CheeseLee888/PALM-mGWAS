@@ -12,8 +12,6 @@ cmd = "R -q -e 'install.packages(\"abess\", repos=\"https://cloud.r-project.org\
 boost-cpp = "*"
 cget = "*"
 openblas = "*"
-plink = "*"
-plink2 = "*"
 r = "*"
 r-optparse="*"
 r-rcpp="*"

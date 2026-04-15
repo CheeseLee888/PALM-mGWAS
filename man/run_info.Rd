@@ -10,15 +10,12 @@ run_info(
   output_snp,
   output_feature,
   output_seqdepth,
-  vcf_field = NULL,
-  allele_order = NULL,
-  plink_path = "plink",
-  plink2_path = "plink2"
+  vcf_field = NULL
 )
 }
 \arguments{
 \item{genoFile}{Genotype input path. Accepts a PLINK prefix directly, or a
-VCF/BGEN file that will be converted to a temporary PLINK dataset.}
+VCF file that will be read directly.}
 
 \item{abd_file}{Path to abundance table.}
 
@@ -32,14 +29,6 @@ VCF/BGEN file that will be converted to a temporary PLINK dataset.}
 auto-detects and prefers \code{"DS"} when present, otherwise falls back to
 \code{"GT"}.}
 
-\item{allele_order}{Allele order for BGEN conversion. Defaults to
-\code{"ref-last"} when \code{genoFile} is BGEN input.}
-
-\item{plink_path}{Path to the \code{plink} executable used as a VCF conversion
-fallback. Defaults to \code{"plink"}.}
-
-\item{plink2_path}{Path to the \code{plink2} executable used for BGEN
-conversion and preferred VCF conversion. Defaults to \code{"plink2"}.}
 }
 \value{
 Invisibly returns a list of output paths.

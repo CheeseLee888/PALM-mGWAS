@@ -9,9 +9,6 @@ getSummary(
   NULLmodelFile,
   PALMOutputFile,
   vcfField = NULL,
-  alleleOrder = NULL,
-  plinkPath = "plink",
-  plink2Path = "plink2",
   chrom = NULL,
   minMAF = 0.05,
   minMAC = 5,
@@ -22,9 +19,8 @@ getSummary(
 }
 \arguments{
 \item{genoFile}{Path to genotype input. If the path ends with
-`.vcf`, `.vcf.gz`, or `.vcf.bgz`, VCF input is assumed. If it ends with
-`.bgen`, BGEN input is assumed. Otherwise it is treated as a PLINK prefix
-without extension.}
+`.vcf`, `.vcf.gz`, or `.vcf.bgz`, VCF input is assumed. Otherwise it is
+treated as a PLINK prefix without extension.}
 
 \item{NULLmodelFile}{Path to `.rda` containing the fitted null model
 object named `modglmm`.}
@@ -35,17 +31,6 @@ phenotype file will be written as `<PALMOutputFile>_<pheno>.txt`.}
 \item{vcfField}{Optional VCF FORMAT field override. By default the reader
 auto-detects and prefers `"DS"` when present, otherwise falls back to
 `"GT"`. Supported explicit values are `"DS"` and `"GT"`.}
-
-\item{alleleOrder}{Allele order for BGEN conversion. Supported values are
-`"ref-first"`, `"ref-last"`, and `"ref-unknown"`. Defaults to
-`"ref-last"` for BGEN so imported allele coding matches the existing
-PLINK-based step2 convention.}
-
-\item{plinkPath}{Path to the `plink` executable used for PLINK/VCF
-conversion fallback. Defaults to `"plink"`.}
-
-\item{plink2Path}{Path to the `plink2` executable used for BGEN conversion
-and preferred VCF conversion. Defaults to `"plink2"`.}
 
 \item{chrom}{Optional chromosome filter (numeric or string like `"chr1"`).
 Use `NULL` to keep all chromosomes.}
@@ -72,8 +57,7 @@ information when available.}
 Invisibly returns a character vector of written file paths.
 }
 \description{
-Reads genotype data from PLINK, VCF, or BGEN input, applies a pre-fitted
-PALM null model, and writes per-phenotype summary statistics (one file per
-phenotype). VCF input is read directly; other non-PLINK inputs are converted
-to a temporary PLINK dataset before testing.
+Reads genotype data from PLINK or VCF input, applies a pre-fitted PALM null
+model, and writes per-phenotype summary statistics (one file per phenotype).
+VCF input is read directly.
 }

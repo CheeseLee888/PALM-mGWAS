@@ -22,7 +22,7 @@ option_list <- list(
   make_option("--depth.filter", type = "double", default = 0,
               help = "Sample-level depth threshold; samples with depth <= threshold are removed before ID matching [default %default]"),
   make_option("--genoFile", type = "character",
-              help = "Genotype input: PLINK prefix, VCF(.vcf/.vcf.gz/.vcf.bgz), or BGEN(.bgen)"),
+              help = "Genotype input: PLINK prefix or VCF(.vcf/.vcf.gz/.vcf.bgz)"),
   make_option("--outputSeqDepthFile", type = "character", default = "NULL",
               help = "Optional output file for sequencing depth info used by Step0 filtering [default %default]")
 )

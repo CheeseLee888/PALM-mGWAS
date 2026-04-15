@@ -1,14 +1,12 @@
 #' Run PALM summary statistics for genotype inputs
 #'
-#' Reads genotype data from PLINK, VCF, or BGEN input, applies a pre-fitted
-#' PALM null model, and writes per-phenotype summary statistics (one file per
-#' phenotype). VCF input is read directly; other non-PLINK inputs are converted
-#' to a temporary PLINK dataset before testing.
+#' Reads genotype data from PLINK or VCF input, applies a pre-fitted PALM null
+#' model, and writes per-phenotype summary statistics (one file per phenotype).
+#' VCF input is read directly.
 #'
 #' @param genoFile Path to genotype input. If the path ends with
-#'   `.vcf`, `.vcf.gz`, or `.vcf.bgz`, VCF input is assumed. If it ends with
-#'   `.bgen`, BGEN input is assumed. Otherwise it is treated as a PLINK prefix
-#'   without extension.
+#'   `.vcf`, `.vcf.gz`, or `.vcf.bgz`, VCF input is assumed. Otherwise it is
+#'   treated as a PLINK prefix without extension.
 #' @param NULLmodelFile Path to `.rda` containing the fitted null model
 #'   object named `modglmm`.
 #' @param PALMOutputFile Output prefix for per-phenotype result files; each
@@ -16,14 +14,6 @@
 #' @param vcfField Optional VCF FORMAT field override. By default the reader
 #'   auto-detects and prefers `"DS"` when present, otherwise falls back to
 #'   `"GT"`. Supported explicit values are `"DS"` and `"GT"`.
-#' @param alleleOrder Allele order for BGEN conversion. Supported values are
-#'   `"ref-first"`, `"ref-last"`, and `"ref-unknown"`. Defaults to
-#'   `"ref-last"` for BGEN so imported allele coding matches the existing
-#'   PLINK-based step2 convention.
-#' @param plinkPath Path to the `plink` executable used for PLINK/VCF
-#'   conversion fallback. Defaults to `"plink"`.
-#' @param plink2Path Path to the `plink2` executable used for BGEN conversion
-#'   and preferred VCF conversion. Defaults to `"plink2"`.
 #' @param chrom Optional chromosome filter (numeric or string like `"chr1"`).
 #'   Use `NULL` to keep all chromosomes.
 #' @param featureColList Optional feature IDs to keep from the Step1 null model.
@@ -49,9 +39,6 @@ getSummary <- function(genoFile,
                        NULLmodelFile,
                        PALMOutputFile,
                        vcfField = NULL,
-                       alleleOrder = NULL,
-                       plinkPath = "plink",
-                       plink2Path = "plink2",
                        chrom = NULL,
                        featureColList = NULL,
                        minMAF = 0.05,
@@ -225,19 +212,7 @@ getSummary <- function(genoFile,
   } else {
     geno_input <- prepare_plink_input(
       genoFile = genoFile,
-      vcfField = vcfField,
-      alleleOrder = alleleOrder,
-      plinkPath = plinkPath,
-      plink2Path = plink2Path,
-      tempPrefix = file.path(
-        dirname(PALMOutputFile),
-        paste0(
-          basename(PALMOutputFile),
-          "_tmp_",
-          genoFormat,
-          "_plink"
-        )
-      )
+      tempLabel = "summary"
     )
     if (length(geno_input$cleanup) > 0L) {
       on.exit(unlink(geno_input$cleanup, force = TRUE), add = TRUE)
