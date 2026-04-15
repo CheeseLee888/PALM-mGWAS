@@ -273,9 +273,9 @@ docker run --rm --platform=linux/amd64 \
   </table>
 
   <h2 id="step3">Step3: Meta Analysis</h2>
-  <pre><code class="language-bash"># studyFile lines: studyID<TAB>dir (e.g., "study1\t${outputFolder}/study1")
+  <pre><code class="language-bash"># studyDirFile lines: studyID<TAB>dir (e.g., "study1\t${outputFolder}/study1")
 pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
-    --studyFile=${studyFile} \
+    --studyDirFile=${studyDirFile} \
     --pattern='${pattern}' \
     --metaDir=${metaDir} \
     --metaPrefix=${metaPrefix}</code></pre>
@@ -283,12 +283,12 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step3_meta.R \
-    --studyFile=/work/${studyFile} \
+    --studyDirFile=/work/${studyDirFile} \
     --pattern='${pattern}' \
     --metaDir=/work/${metaDir} \
     --metaPrefix=${metaPrefix}</code></pre>
   <ul>
-    <li><strong>Inputs:</strong> <code>studyFile</code> is a text file with two columns per line: <code>studyID</code> and Step2 output directory. Files inside those directories are selected by <code>pattern</code>.</li>
+    <li><strong>Inputs:</strong> <code>studyDirFile</code> is a text file with two columns per line: <code>studyID</code> and Step2 output directory. Files inside those directories are selected by <code>pattern</code>.</li>
     <li><strong>Outputs:</strong> one file per feature in <code>metaDir</code> named <code>metaPrefix&lt;pheno&gt;.txt</code>, containing <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
     <li><strong>Single-study mode:</strong> still useful to standardize column names for plotting.</li>
     <li><strong>Pattern:</strong> this is the key setting for Step3. Step2 writes files such as <code>step2_allchr_g_Bifidobacterium.txt</code> and <code>step2_allchr_g_Peptoniphilus_unclassified.txt</code>, where the feature name is embedded in the filename. Your <code>pattern</code> should match the fixed prefix and suffix, but leave the feature part to be captured from the filename, for example <code>step2_allchr_.*[.]txt$</code> or <code>step2_chr1_.*[.]txt$</code>. In other words, the regex should include the position where the feature name appears, rather than hard-coding one feature.</li>
@@ -296,7 +296,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--studyFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Study list file mapping study IDs to result directories</td><td><code>--studyFile=example/input/study_dirs.txt</code> for local pixi runs; <code>--studyFile=example/input/study_dirs_docker.txt</code> for Docker runs</td></tr>
+    <tr><td><code>--studyDirFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Study list file mapping study IDs to result directories</td><td><code>--studyDirFile=example/input/study_dirs.txt</code> for local pixi runs; <code>--studyDirFile=example/input/study_dirs_docker.txt</code> for Docker runs</td></tr>
     <tr><td><code>--pattern</code></td><td><code>character</code></td><td><code>""</code></td><td>Regex selecting which Step2 result files to meta-analyze. Step2 filenames contain the feature in the middle, such as <code>step2_allchr_g_Bifidobacterium.txt</code>, so the regex should match the fixed prefix/suffix and leave the feature part variable for extraction. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step2_allchr_.*[.]txt$'</code>; <code>--pattern='step2_chr1_.*[.]txt$'</code>; do not write <code>--pattern=step2_allchr_g_Bifidobacterium.txt</code> if you want all features</td></tr>
     <tr><td><code>--metaDir</code></td><td><code>character</code></td><td><code>""</code></td><td>Output directory for meta-analysis tables</td><td><code>--metaDir=example/output/meta</code></td></tr>
     <tr><td><code>--metaPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>Filename prefix for meta-analysis outputs</td><td><code>--metaPrefix=step3_meta_</code></td></tr>
@@ -530,7 +530,7 @@ chr1:14985097:C:T	1	14985097	-0.0257207814851513	0.0927341291837284	0.7815033330
   <h3>Step3: multiple Step2 folders to meta-analysis tables</h3>
   <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code> for local pixi runs or <code>example/input/study_dirs_docker.txt</code> for Docker runs, plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
-    --studyFile=example/input/study_dirs.txt \
+    --studyDirFile=example/input/study_dirs.txt \
     --pattern='step2_allchr_.*[.]txt$' \
     --metaDir=example/output/meta \
     --metaPrefix=step3_meta_</code></pre>
@@ -538,7 +538,7 @@ chr1:14985097:C:T	1	14985097	-0.0257207814851513	0.0927341291837284	0.7815033330
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step3_meta.R \
-    --studyFile=/work/example/input/study_dirs_docker.txt \
+    --studyDirFile=/work/example/input/study_dirs_docker.txt \
     --pattern='step2_allchr_.*[.]txt$' \
     --metaDir=/work/example/output/meta \
     --metaPrefix=step3_meta_</code></pre>

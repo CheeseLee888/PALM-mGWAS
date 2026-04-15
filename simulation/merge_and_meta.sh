@@ -82,7 +82,7 @@ done
 echo "merge_and_vis: running meta-analysis"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step3_meta.R \
-  --studyFile="${STUDY_FILE}" \
+  --studyDirFile="${STUDY_FILE}" \
   --pattern='step2_allchr_.*\.txt$' \
   --metaDir="${META_DIR}" \
   --metaPrefix="${META_PREFIX}"

@@ -6,8 +6,8 @@ suppressPackageStartupMessages({
 })
 
 option_list <- list(
-  make_option("--studyFile", type="character", default="",
-              help="TSV: each line 'studyID<TAB>dir'"),
+  make_option("--studyDirFile", type="character", default="",
+              help="txt: each line 'studyID<TAB>dir'"),
   make_option("--pattern", type="character", default="",
               help="Regex pattern for input step2 filenames [default %default]"),
   make_option("--metaDir", type="character", default="",
@@ -18,14 +18,14 @@ option_list <- list(
 
 opt <- parse_args(OptionParser(option_list = option_list))
 
-if (!nzchar(opt$studyFile) || !file.exists(opt$studyFile))
-  stop("Missing/invalid --studyFile")
+if (!nzchar(opt$studyDirFile) || !file.exists(opt$studyDirFile))
+  stop("Missing/invalid --studyDirFile")
 if (!nzchar(opt$metaDir))
   stop("Missing --metaDir")
 
-# read studyFile (studyID \t dir)
-sd <- read.table(opt$studyFile, header = FALSE, sep = "", stringsAsFactors = FALSE)
-if (ncol(sd) < 2) stop("studyFile must have >=2 columns: studyID and dir")
+# read studyDirFile (studyID \t dir)
+sd <- read.table(opt$studyDirFile, header = FALSE, sep = "", stringsAsFactors = FALSE)
+if (ncol(sd) < 2) stop("studyDirFile must have >=2 columns: studyID and dir")
 study_dirs <- setNames(as.character(sd[[2]]), as.character(sd[[1]]))
 
 dir.create(opt$metaDir, recursive=TRUE, showWarnings=FALSE)
