@@ -1,3 +1,0 @@
-SNP	CHR	POS	meta_pval	pheno
-chr1:14678191:A:C	1	14678191	1.40609746068776e-12	g_Bifidobacterium
-chr3:69617754:T:G	3	69617754	7.9564366206597e-10	g_Bilophila
