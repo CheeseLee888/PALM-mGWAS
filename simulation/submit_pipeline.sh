@@ -12,24 +12,24 @@ CHROMS="${CHROMS:-1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}"
 
 cd "${SIMU_ROOT}"
 
-echo "submit_all: simulation root = ${SIMU_ROOT}"
-echo "submit_all: study = ${STUDY}"
-echo "submit_all: feature block = ${FEATURE_BLOCK}"
-echo "submit_all: chrom list = ${CHROMS}"
+echo "submit_pipeline: simulation root = ${SIMU_ROOT}"
+echo "submit_pipeline: study = ${STUDY}"
+echo "submit_pipeline: feature block = ${FEATURE_BLOCK}"
+echo "submit_pipeline: chrom list = ${CHROMS}"
 
 jid0=$(sbatch --parsable \
   --export=ALL,SIMU_ROOT=${SIMU_ROOT},STUDY=${STUDY} \
-  step0_simu.sbatch)
-echo "submit_all: submitted Step0 job ${jid0}"
+  step0_align_inputs.sbatch)
+echo "submit_pipeline: submitted Step0 job ${jid0}"
 
 jid1=$(sbatch --parsable \
   --dependency=afterok:${jid0} \
   --export=ALL,SIMU_ROOT=${SIMU_ROOT},STUDY=${STUDY} \
-  step1_simu.sbatch)
-echo "submit_all: submitted Step1 job ${jid1}"
+  step1_fit_null_model.sbatch)
+echo "submit_pipeline: submitted Step1 job ${jid1}"
 
 jid2=$(sbatch --parsable \
   --dependency=afterok:${jid1} \
   --export=ALL,SIMU_ROOT=${SIMU_ROOT},STUDY=${STUDY},FEATURE_BLOCK=${FEATURE_BLOCK} \
-  submit_step2_bridge.sbatch)
-echo "submit_all: submitted Step2 bridge job ${jid2}"
+  submit_step2_array.sbatch)
+echo "submit_pipeline: submitted Step2 bridge job ${jid2}"

@@ -10,12 +10,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="${WORK:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
 SIMU_ROOT="${SIMU_ROOT:-${SCRIPT_DIR}}"
 SIF="${SIF:-${SIMU_ROOT}/PALMmGWAS.sif}"
-META_DIR="${META_DIR:-/mnt/scratch/group/ztang2/pli297/testsimu/output/meta}"
-PLOT_DIR="${PLOT_DIR:-/mnt/scratch/group/ztang2/pli297/testsimu/output/plot}"
+META_DIR="${META_DIR:-/mnt/scratch/group/ztang2/pli297/simulation/output/meta}"
+PLOT_DIR="${PLOT_DIR:-/mnt/scratch/group/ztang2/pli297/simulation/output/plot}"
 VIS_PATTERN="${VIS_PATTERN:-step3_meta_.*\\.txt$}"
 PHENO="${PHENO:-g_Acinetobacter}"
 SNP="${SNP:-chr4:1682869:G:C}"
-PCUT1="${PCUT1:-1e-20}"
+PCUT1="${PCUT1:-5e-8}"
 PCUT2="${PCUT2:-5e-8}"
 SHOW_META="${SHOW_META:-TRUE}"
 SHOW_HET="${SHOW_HET:-TRUE}"
@@ -30,11 +30,11 @@ META_DIR="$(mkdir -p "${META_DIR}" && cd "${META_DIR}" && pwd)"
 PLOT_DIR="$(mkdir -p "${PLOT_DIR}" && cd "${PLOT_DIR}" && pwd)"
 
 if [[ ! -d "${META_DIR}" ]]; then
-  echo "vis: missing meta directory ${META_DIR}" >&2
+  echo "visualize_meta_results: missing meta directory ${META_DIR}" >&2
   exit 1
 fi
 if [[ ! -f "${SIF}" ]]; then
-  echo "vis: missing sif image ${SIF}" >&2
+  echo "visualize_meta_results: missing sif image ${SIF}" >&2
   exit 1
 fi
 
@@ -42,20 +42,20 @@ META_FILE_COUNT=$(
   find "${META_DIR}" -maxdepth 1 -type f | grep -E "/$(printf '%s' "${VIS_PATTERN}")" | wc -l | tr -d ' '
 )
 if [[ "${META_FILE_COUNT}" -eq 0 ]]; then
-  echo "vis: no meta result files found in ${META_DIR} matching ${VIS_PATTERN}" >&2
+  echo "visualize_meta_results: no meta result files found in ${META_DIR} matching ${VIS_PATTERN}" >&2
   exit 1
 fi
 
-echo "vis: work = ${WORK}"
-echo "vis: simulation root = ${SIMU_ROOT}"
-echo "vis: sif = ${SIF}"
-echo "vis: meta dir = ${META_DIR}"
-echo "vis: plot dir = ${PLOT_DIR}"
-echo "vis: pattern = ${VIS_PATTERN}"
-echo "vis: pheno = ${PHENO}"
-echo "vis: snp = ${SNP}"
+echo "visualize_meta_results: work = ${WORK}"
+echo "visualize_meta_results: simulation root = ${SIMU_ROOT}"
+echo "visualize_meta_results: sif = ${SIF}"
+echo "visualize_meta_results: meta dir = ${META_DIR}"
+echo "visualize_meta_results: plot dir = ${PLOT_DIR}"
+echo "visualize_meta_results: pattern = ${VIS_PATTERN}"
+echo "visualize_meta_results: pheno = ${PHENO}"
+echo "visualize_meta_results: snp = ${SNP}"
 
-echo "vis: running visualization mode 1 (pheno + snp)"
+echo "visualize_meta_results: running visualization mode 1 (pheno + snp)"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   Visualization.R \
   --metaDir="${META_DIR}" \
@@ -68,7 +68,7 @@ apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-echo "vis: running visualization mode 2 (pheno only)"
+echo "visualize_meta_results: running visualization mode 2 (pheno only)"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   Visualization.R \
   --metaDir="${META_DIR}" \
@@ -79,7 +79,7 @@ apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-echo "vis: running visualization mode 3 (snp only)"
+echo "visualize_meta_results: running visualization mode 3 (snp only)"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   Visualization.R \
   --metaDir="${META_DIR}" \
@@ -92,7 +92,7 @@ apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-echo "vis: running visualization mode 4 (combined)"
+echo "visualize_meta_results: running visualization mode 4 (combined)"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   Visualization.R \
   --metaDir="${META_DIR}" \
@@ -103,4 +103,4 @@ apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-echo "vis: finished"
+echo "visualize_meta_results: finished"

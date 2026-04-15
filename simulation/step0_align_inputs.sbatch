@@ -7,7 +7,7 @@
 #SBATCH --error=logs/simu_step0_%j.err
 #
 # Usage:
-#   sbatch --export=ALL,ENV_FILE=/path/to/your.env simulation/step0_simu.sbatch
+#   sbatch --export=ALL,ENV_FILE=/path/to/your.env simulation/step0_align_inputs.sbatch
 #
 # Simulation root layout:
 #   /mnt/scratch/group/ztang2/pli297/simulation/
@@ -55,17 +55,17 @@ COV_ALIGNED_FILE="${INPUT_DIR}/cov_aligned.txt"
 mkdir -p "${SIMU_ROOT}/logs" "${OUTPUT_DIR}"
 
 if [[ ! -f "${ABD_FILE}" || ! -f "${COV_FILE}" || ! -f "${GENO_PREFIX}.bed" || ! -f "${GENO_PREFIX}.bim" || ! -f "${GENO_PREFIX}.fam" ]]; then
-  echo "Missing simulation input files. Run simulation/generate_input_simu.sbatch first." >&2
+  echo "Missing simulation input files. Run Rscript simulation/generate_simulation_data.R first." >&2
   exit 1
 fi
 
-echo "step0_simu: SIMU_ROOT=${SIMU_ROOT}"
-echo "step0_simu: SIF=${SIF}"
-echo "step0_simu: STUDY=${STUDY}"
-echo "step0_simu: running Step0 alignment"
-echo "step0_simu: covarColList=${COVAR_COL_LIST}"
-echo "step0_simu: depthCol=${DEPTH_COL}, depth.filter=${DEPTH_FILTER}"
-echo "step0_simu: outputSeqDepthFile=${OUTPUT_SEQDEPTH_FILE}"
+echo "step0_align_inputs: SIMU_ROOT=${SIMU_ROOT}"
+echo "step0_align_inputs: SIF=${SIF}"
+echo "step0_align_inputs: STUDY=${STUDY}"
+echo "step0_align_inputs: running Step0 alignment"
+echo "step0_align_inputs: covarColList=${COVAR_COL_LIST}"
+echo "step0_align_inputs: depthCol=${DEPTH_COL}, depth.filter=${DEPTH_FILTER}"
+echo "step0_align_inputs: outputSeqDepthFile=${OUTPUT_SEQDEPTH_FILE}"
 
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step0_checkInput.R \
@@ -79,7 +79,7 @@ apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   --genoFile="${GENO_PREFIX}" \
   --outputSeqDepthFile="${OUTPUT_SEQDEPTH_FILE}"
 
-echo "step0_simu: finished"
-echo "step0_simu: aligned outputs"
+echo "step0_align_inputs: finished"
+echo "step0_align_inputs: aligned outputs"
 echo "  ${ABD_ALIGNED_FILE}"
 echo "  ${COV_ALIGNED_FILE}"

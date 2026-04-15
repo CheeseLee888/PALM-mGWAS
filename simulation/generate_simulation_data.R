@@ -70,7 +70,8 @@ study_cfg <- list(
     age_sd = 12,
     sex_prob = 0.48,
     pc_scale = 1.00,
-    genetic_beta = c(1.8, 1.0, 0.8),
+    genetic_beta = c(0.78, 0.44, 0.36),
+    signal_genetic = 0.58,
     signal_intercept = 6.2,
     signal_age = 0.20,
     signal_sex = 0.15,
@@ -85,7 +86,8 @@ study_cfg <- list(
     age_sd = 11,
     sex_prob = 0.44,
     pc_scale = 1.15,
-    genetic_beta = c(1.6, 0.9, 0.7),
+    genetic_beta = c(0.70, 0.40, 0.32),
+    signal_genetic = 0.54,
     signal_intercept = 6.0,
     signal_age = 0.16,
     signal_sex = 0.12,
@@ -100,7 +102,8 @@ study_cfg <- list(
     age_sd = 13,
     sex_prob = 0.51,
     pc_scale = 0.90,
-    genetic_beta = c(2.0, 1.1, 0.9),
+    genetic_beta = c(0.86, 0.48, 0.40),
+    signal_genetic = 0.60,
     signal_intercept = 6.3,
     signal_age = 0.22,
     signal_sex = 0.18,
@@ -199,7 +202,12 @@ for (study_name in names(study_cfg)) {
     geno[, causal_snps, drop = FALSE] %*% cfg$genetic_beta
   ))
 
-  target_mu <- exp(cfg$signal_intercept + 1.35 * genetic_score + cfg$signal_age * age_z + cfg$signal_sex * sex_centered)
+  target_mu <- exp(
+    cfg$signal_intercept +
+      cfg$signal_genetic * genetic_score +
+      cfg$signal_age * age_z +
+      cfg$signal_sex * sex_centered
+  )
   target_counts <- rnbinom(cfg$sample_n, mu = target_mu, size = 18)
   if ("g_Acinetobacter" %in% colnames(abd_mat)) {
     abd_mat[, "g_Acinetobacter"] <- as.integer(target_counts)

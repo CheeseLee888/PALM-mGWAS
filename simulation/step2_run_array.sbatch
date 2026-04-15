@@ -14,7 +14,7 @@
 #        writeLines(colnames(modglmm[[1]]$Y_I), "simulation/output/study1/feature_list.txt")
 #      '
 #   3. Set FEATURE_BLOCK and ARRAY_RANGE, then submit:
-#      sbatch --array=1-ARRAY_RANGE --export=ALL,ENV_FILE=/path/to/your.env simulation/step2_simu_array.sbatch
+#      sbatch --array=1-ARRAY_RANGE --export=ALL,ENV_FILE=/path/to/your.env simulation/step2_run_array.sbatch
 #
 # Simulation root layout:
 #   /mnt/scratch/group/ztang2/pli297/simulation/
@@ -121,12 +121,12 @@ fi
 
 STEP2_PREFIX="${OUTPUT_DIR}/step2_chr${CHROM}"
 
-echo "step2_simu_array: task=${TASK_ID}/${TOTAL_TASKS}"
-echo "step2_simu_array: SIMU_ROOT=${SIMU_ROOT}"
-echo "step2_simu_array: SIF=${SIF}"
-echo "step2_simu_array: chrom=${CHROM}, block=${BLOCK_INDEX}+1/${N_BLOCK}, feature lines=${START_LINE}-${END_LINE}"
-echo "step2_simu_array: outputPrefix=${STEP2_PREFIX}"
-echo "step2_simu_array: featureColList=${FEATURES}"
+echo "step2_run_array: task=${TASK_ID}/${TOTAL_TASKS}"
+echo "step2_run_array: SIMU_ROOT=${SIMU_ROOT}"
+echo "step2_run_array: SIF=${SIF}"
+echo "step2_run_array: chrom=${CHROM}, block=${BLOCK_INDEX}+1/${N_BLOCK}, feature lines=${START_LINE}-${END_LINE}"
+echo "step2_run_array: outputPrefix=${STEP2_PREFIX}"
+echo "step2_run_array: featureColList=${FEATURES}"
 
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step2_summary.R \

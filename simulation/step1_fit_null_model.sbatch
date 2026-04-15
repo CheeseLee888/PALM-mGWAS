@@ -7,7 +7,7 @@
 #SBATCH --error=logs/simu_step1_%j.err
 #
 # Usage:
-#   sbatch --export=ALL,ENV_FILE=/path/to/your.env simulation/step1_simu.sbatch
+#   sbatch --export=ALL,ENV_FILE=/path/to/your.env simulation/step1_fit_null_model.sbatch
 #
 # Simulation root layout:
 #   /mnt/scratch/group/ztang2/pli297/simulation/
@@ -53,16 +53,16 @@ FEATURE_LIST_FILE="${OUTPUT_DIR}/feature_list.txt"
 mkdir -p "${SIMU_ROOT}/logs" "${OUTPUT_DIR}"
 
 if [[ ! -f "${ABD_ALIGNED_FILE}" || ! -f "${COV_ALIGNED_FILE}" ]]; then
-  echo "Missing Step0-aligned input files. Run simulation/step0_simu.sbatch first." >&2
+  echo "Missing Step0-aligned input files. Run simulation/step0_align_inputs.sbatch first." >&2
   exit 1
 fi
 
-echo "step1_simu: SIMU_ROOT=${SIMU_ROOT}"
-echo "step1_simu: SIF=${SIF}"
-echo "step1_simu: STUDY=${STUDY}"
-echo "step1_simu: covarColList=${COVAR_COL_LIST}"
-echo "step1_simu: depthCol=${DEPTH_COL}, prev.filter=${PREV_FILTER}"
-echo "step1_simu: outputFeatureFile=${OUTPUT_FEATURE_FILE}"
+echo "step1_fit_null_model: SIMU_ROOT=${SIMU_ROOT}"
+echo "step1_fit_null_model: SIF=${SIF}"
+echo "step1_fit_null_model: STUDY=${STUDY}"
+echo "step1_fit_null_model: covarColList=${COVAR_COL_LIST}"
+echo "step1_fit_null_model: depthCol=${DEPTH_COL}, prev.filter=${PREV_FILTER}"
+echo "step1_fit_null_model: outputFeatureFile=${OUTPUT_FEATURE_FILE}"
 
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step1_null.R \
@@ -75,7 +75,7 @@ apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   --outputFeatureListFile="${FEATURE_LIST_FILE}" \
   --NULLmodelFile="${NULLMODEL_FILE}"
 
-echo "step1_simu: finished"
-echo "step1_simu: outputs"
+echo "step1_fit_null_model: finished"
+echo "step1_fit_null_model: outputs"
 echo "  ${NULLMODEL_FILE}"
 echo "  ${FEATURE_LIST_FILE}"

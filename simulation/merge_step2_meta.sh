@@ -24,14 +24,14 @@ mkdir -p "${SIMU_ROOT}/logs" "${PLOT_DIR}" "${META_DIR}"
 
 IFS=',' read -r -a STUDY_LIST <<< "${STUDIES_CSV}"
 if [[ "${#STUDY_LIST[@]}" -eq 0 ]]; then
-  echo "merge_and_vis: no studies resolved from STUDIES/STUDY" >&2
+  echo "merge_step2_meta: no studies resolved from STUDIES/STUDY" >&2
   exit 1
 fi
 
-echo "merge_and_vis: simulation root = ${SIMU_ROOT}"
-echo "merge_and_vis: studies = ${STUDIES_CSV}"
-echo "merge_and_vis: meta dir = ${META_DIR}"
-echo "merge_and_vis: plot dir = ${PLOT_DIR}"
+echo "merge_step2_meta: simulation root = ${SIMU_ROOT}"
+echo "merge_step2_meta: studies = ${STUDIES_CSV}"
+echo "merge_step2_meta: meta dir = ${META_DIR}"
+echo "merge_step2_meta: plot dir = ${PLOT_DIR}"
 
 STUDY_FILE="${META_DIR}/study_dirs.tsv"
 : > "${STUDY_FILE}"
@@ -39,17 +39,17 @@ STUDY_FILE="${META_DIR}/study_dirs.tsv"
 for study_name in "${STUDY_LIST[@]}"; do
   OUTPUT_DIR="${SIMU_ROOT}/output/${study_name}"
   if [[ ! -d "${OUTPUT_DIR}" ]]; then
-    echo "merge_and_vis: missing output directory ${OUTPUT_DIR}" >&2
+    echo "merge_step2_meta: missing output directory ${OUTPUT_DIR}" >&2
     exit 1
   fi
 
   mapfile -t STEP2_FILES < <(find "${OUTPUT_DIR}" -maxdepth 1 -type f -name 'step2_chr*_*.txt' | sort -V)
   if [[ "${#STEP2_FILES[@]}" -eq 0 ]]; then
-    echo "merge_and_vis: no per-chromosome Step2 files found in ${OUTPUT_DIR}" >&2
+    echo "merge_step2_meta: no per-chromosome Step2 files found in ${OUTPUT_DIR}" >&2
     exit 1
   fi
 
-  echo "merge_and_vis: ${study_name} found ${#STEP2_FILES[@]} per-chromosome Step2 file(s)"
+  echo "merge_step2_meta: ${study_name} found ${#STEP2_FILES[@]} per-chromosome Step2 file(s)"
 
   mapfile -t PHENOS < <(
     printf '%s\n' "${STEP2_FILES[@]}" |
@@ -59,7 +59,7 @@ for study_name in "${STUDY_LIST[@]}"; do
   )
 
   if [[ "${#PHENOS[@]}" -eq 0 ]]; then
-    echo "merge_and_vis: could not resolve phenotype names from Step2 filenames in ${OUTPUT_DIR}" >&2
+    echo "merge_step2_meta: could not resolve phenotype names from Step2 filenames in ${OUTPUT_DIR}" >&2
     exit 1
   fi
 
@@ -73,17 +73,17 @@ for study_name in "${STUDY_LIST[@]}"; do
     fi
 
     awk 'FNR == 1 && NR != 1 { next } { print }' "${pheno_files[@]}" > "${out_file}"
-    echo "merge_and_vis: ${study_name} merged ${#pheno_files[@]} chromosome file(s) -> ${out_file}"
+    echo "merge_step2_meta: ${study_name} merged ${#pheno_files[@]} chromosome file(s) -> ${out_file}"
   done
 
   printf '%s\t%s\n' "${study_name}" "${OUTPUT_DIR}" >> "${STUDY_FILE}"
 done
 
-echo "merge_and_vis: running meta-analysis"
+echo "merge_step2_meta: running meta-analysis"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step3_meta.R \
   --studyDirFile="${STUDY_FILE}" \
   --pattern='step2_allchr_.*\.txt$' \
   --metaDir="${META_DIR}" \
   --metaPrefix="${META_PREFIX}"
-echo "merge_and_vis: finished merge + meta"
+echo "merge_step2_meta: finished merge + meta"
