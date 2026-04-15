@@ -6,7 +6,7 @@
 \usepackage{lmodern}
 \usepackage{hyperref}
 \usepackage{graphicx}
-\graphicspath{{example/output/plot/}{../example/output/plot/}}
+\graphicspath{{ref/}{docs/ref/}{../docs/ref/}{example/output/plot/}{../example/output/plot/}}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{longtable}
@@ -90,14 +90,15 @@ The visualization module summarizes meta-analysis results in forms suitable for 
 
 \begin{figure*}[t]
 \centering
-\begin{minipage}[t]{0.38\textwidth}
+\begin{minipage}[c]{0.38\textwidth}
+\vspace{0pt}
 \centering
 \resizebox{0.92\linewidth}{!}{%
 \begin{tikzpicture}[
   x=1cm,
   y=1cm,
   >=Latex,
-  font=\sffamily,
+  font=\sffamily\large,
   outer/.style={draw=gray!55, rounded corners=18pt, line width=1pt},
   inputbox/.style={draw=none, fill=cyan!35, rounded corners=1pt, minimum height=0.75cm, align=center},
   stepbox/.style={draw=none, fill=orange!35, rounded corners=1pt, minimum height=0.75cm, align=center},
@@ -106,76 +107,78 @@ The visualization module summarizes meta-analysis results in forms suitable for 
   arr/.style={-Latex, line width=0.9pt}
 ]
   \draw[outer] (0.2,0.2) rectangle (12.2,14.3);
-  \node[font=\sffamily\bfseries\Large] at (6.2,14.7) {Analysis workflow};
+  \node[font=\sffamily\bfseries\LARGE] at (6.2,14.7) {Analysis workflow};
 
-  \node[inputbox, minimum width=4.0cm] (abd) at (2.7,13.2) {Feature abundance};
-  \node[inputbox, minimum width=2.9cm] (cov) at (6.3,13.2) {Covariate};
-  \node[inputbox, minimum width=3.0cm] (geno) at (9.4,13.2) {SNP genotypes\\(in\\plink/vcf/bgen)};
+  \node[inputbox, font=\sffamily\large, minimum width=4.0cm] (abd) at (2.7,13.2) {Feature abundance};
+  \node[inputbox, font=\sffamily\large, minimum width=2.9cm] (cov) at (6.3,13.2) {Covariate};
+  \node[inputbox, font=\sffamily\large, minimum width=3.0cm] (geno) at (9.4,13.2) {SNP genotypes\\(in\\plink/vcf/bgen)};
 
-  \node[stepbox, minimum width=9.8cm] (step0) at (6.2,11.9) {Step 0: ID matching, sample QC, missing check};
+  \node[stepbox, font=\sffamily\large, minimum width=9.8cm] (step0) at (6.2,11.9) {Step 0: ID matching, sample QC, missing check};
   \draw[arr] (abd.south) -- (abd.south |- step0.north);
   \draw[arr] (cov.south) -- (cov.south |- step0.north);
   \draw[arr] (geno.south) -- (geno.south |- step0.north);
 
-  \node[inputbox, minimum width=3.6cm] (abd2) at (2.9,10.3) {Abundance aligned};
-  \node[inputbox, minimum width=3.6cm] (cov2) at (6.3,10.3) {Covariate\\aligned};
+  \node[inputbox, font=\sffamily\large, minimum width=3.6cm] (abd2) at (2.9,10.3) {Abundance aligned};
+  \node[inputbox, font=\sffamily\large, minimum width=3.6cm] (cov2) at (6.3,10.3) {Covariate\\aligned};
   \draw[arr] (step0.south -| abd2.north) -- (abd2.north);
   \draw[arr] (step0.south -| cov2.north) -- (cov2.north);
 
-  \node[stepbox, minimum width=8.5cm] (step1) at (6.2,8.9) {Step 1: Fit the null quasi-Poisson model};
+  \node[stepbox, font=\sffamily\large, minimum width=8.5cm] (step1) at (6.2,8.9) {Step 1: Fit the null quasi-Poisson model};
   \draw[arr] (abd2.south) -- (abd2.south |- step1.north);
   \draw[arr] (cov2.south) -- (cov2.south |- step1.north);
 
-  \node[auxbox, minimum width=2.7cm] (nullobj) at (6.2,7.5) {Null model object};
+  \node[auxbox, font=\sffamily\large, minimum width=2.7cm] (nullobj) at (6.2,7.5) {Null model object};
   \draw[arr] (step1.south) -- (nullobj.north);
 
-  \node[stepbox, minimum width=10.8cm] (step2) at (6.2,6.1) {Step 2: Construct AA-level summary statistics};
+  \node[stepbox, font=\sffamily\large, minimum width=10.8cm] (step2) at (6.2,6.1) {Step 2: Construct AA-level summary statistics};
   \draw[arr] (nullobj.south) -- (step2.north);
   \draw[arr] (geno.east) -- ++(0.95,0) |- (step2.east);
 
-  \node[auxbox, minimum width=4.0cm] (sumstat) at (6.2,4.35) {Summary statistics\\(effect estimate,\\standard error)};
+  \node[auxbox, font=\sffamily\large, minimum width=4.0cm] (sumstat) at (6.2,4.35) {Summary statistics\\(effect estimate,\\standard error)};
   \draw[arr] (step2.south) -- (sumstat.north);
 
-  \node[stepbox, minimum width=5.4cm] (step3) at (6.2,2.6) {Step 3: Perform cross-\\study meta-analysis};
+  \node[stepbox, font=\sffamily\large, minimum width=5.4cm] (step3) at (6.2,2.6) {Step 3: Perform cross-\\study meta-analysis};
   \draw[arr] (sumstat.south) -- (step3.north);
 
-  \node[outputbox, minimum width=6.6cm] (pvals) at (6.2,0.95) {Feature--SNP association test\\pvals};
+  \node[outputbox, font=\sffamily\large, minimum width=6.6cm] (pvals) at (6.2,0.95) {Feature--SNP association test\\pvals};
   \draw[arr] (step3.south) -- (pvals.north);
   \draw[arr] (step2.east) -- ++(0.95,0) |- (pvals.east);
 \end{tikzpicture}
 }
 \end{minipage}\hfill
-\begin{minipage}[t]{0.58\textwidth}
+\begin{minipage}[c]{0.58\textwidth}
+\vspace{0pt}
 \centering
 {\sffamily\bfseries\normalsize Reporting and visualization\par}
 \vspace{0.25em}
-\includegraphics[width=0.90\textwidth]{manhattan_g_Peptoniphilus_unclassified.png}
+\includegraphics[width=0.90\textwidth]{manhattan_g_Acinetobacter.png}
 
 \vspace{0.35em}
 \begin{minipage}[t]{0.41\textwidth}
 \centering
-\includegraphics[width=\textwidth]{manhattan_g_Peptoniphilus_unclassified_qq.png}
+\includegraphics[width=\textwidth]{manhattan_g_Acinetobacter_qq.png}
 \end{minipage}\hfill
 \begin{minipage}[t]{0.49\textwidth}
 \centering
-\includegraphics[width=\textwidth]{forest_chr1_14678191_A_C_g_Bifidobacterium.png}
+\includegraphics[width=\textwidth]{forest_g_Acinetobacter_chr4_1682869_G_C.png}
 \end{minipage}
 
 \vspace{0.35em}
 \centering
 \tiny
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{>{\ttfamily}p{2.2cm} >{\raggedleft\arraybackslash}p{0.85cm} >{\raggedleft\arraybackslash}p{0.75cm} >{\raggedright\arraybackslash}p{2.1cm}}
+\setlength{\tabcolsep}{2pt}
+\resizebox{0.98\linewidth}{!}{%
+\begin{tabular}{>{\ttfamily}p{2.20cm} >{\raggedleft\arraybackslash}p{1.45cm} >{\raggedleft\arraybackslash}p{0.60cm} >{\raggedright\arraybackslash}p{2.15cm}}
 \toprule
 SNP & pval & est & feature \\
 \midrule
-\texttt{chr1:14678191:A:C} & $5.43 \times 10^{-30}$ & -1.052 & g\_Bifidobacterium \\
-\texttt{chr3:69617754:T:G} & $5.36 \times 10^{-20}$ & -0.552 & g\_Bilophila \\
-\texttt{chr9:37013405:C:T} & $5.77 \times 10^{-19}$ & -0.387 & g\_Lachnospiraceae\_NK4A136\_group \\
-\texttt{chr5:76998986:C:A} & $1.13 \times 10^{-14}$ & -0.309 & g\_Lactococcus \\
-\texttt{chr4:134350906:C:T} & $4.91 \times 10^{-13}$ & 0.221 & g\_Phascolarctobacterium \\
+\texttt{chr4:1682869:G:C} & \mbox{$9.38\times10^{-92}$} & 0.844 & g\_Acinetobacter \\
+\texttt{chr7:81941667:G:C} & \mbox{$1.57\times10^{-32}$} & 0.529 & g\_Acinetobacter \\
+\texttt{chr3:68821275:C:T} & \mbox{$1.95\times10^{-32}$} & 0.646 & g\_Acinetobacter \\
+\texttt{chr15:54854424:C:T} & \mbox{$1.54\times10^{-8}$} & 0.239 & f\_Bifidobacteriaceae \\
 \bottomrule
 \end{tabular}
+}
 \end{minipage}
 \caption{End-to-end analysis and reporting workflow of \software. Left: the PALM-based analysis pipeline is drawn directly in \LaTeX{} to summarize preprocessing, null-model fitting, AA-level summary-statistic construction, and cross-study meta-analysis. Right: representative reporting outputs generated from the current example dataset, including a feature-level Manhattan plot, the corresponding QQ plot, a selected-SNP forest plot, and the filtered combined-hit summary table.}
 \label{fig:workflowviz}
