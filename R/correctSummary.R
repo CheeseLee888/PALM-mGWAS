@@ -9,26 +9,19 @@
 #'
 #' @param inputPrefix Step2 file prefix. Files are expected at
 #'   `<inputPrefix>_<feature>.txt`.
-#' @param correct Correction method. Only `"median"` is supported for the
-#'   split Step2.2 workflow.
 #' @param outputPrefix Output prefix for corrected files. Defaults to
 #'   `inputPrefix`, which overwrites the original Step2 files.
 #' @param NULLmodelFile Optional Step1 NULL-model `.rda` file containing
 #'   `modglmm`. When provided, the function mirrors the PALM behavior of forcing
-#'   `correct = NULL` if any study has `abd = TRUE`.
+#'   correction to be skipped if any study has `abd = TRUE`.
 #'
 #' @return Invisibly returns the corrected file paths.
 #' @export
 correctSummary <- function(inputPrefix,
-                           correct = "median",
                            outputPrefix = inputPrefix,
                            NULLmodelFile = NULL) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
-  }
-
-  if (!identical(correct, "median")) {
-    stop("Only correct='median' is supported in Step2.2.")
   }
 
   if (missing(inputPrefix) || !nzchar(inputPrefix)) {

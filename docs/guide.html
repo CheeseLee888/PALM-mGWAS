@@ -118,7 +118,8 @@ docker run --rm --platform=linux/amd64 \
   <div class="steps">
     <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> optionally filters low-depth samples, checks IID consistency across abundance, covariates, and genotype input, reorders tables to match genotype sample order, and can write sequencing-depth summaries.</div>
     <div class="card"><strong>Step1 Null</strong><br><code>step1_null.R</code> fits the PALM null model from the Step0-aligned abundance and covariate tables and can write feature summaries.</div>
-    <div class="card"><strong>Step2.1 Summary</strong><br><code>step2_1_summary.R</code> reads genotype input, runs PALM score tests with <code>correct=NULL</code>, and can write SNP summaries alongside per-feature estimates.</div>
+    <div class="card"><strong>Step2.1 Summary</strong><br><code>step2_1_summary.R</code> reads genotype input, runs PALM score tests without compositional correction, and writes one association file per feature.</div>
+    <div class="card"><strong>Step2.2 Correction</strong><br><code>step2_2_correct.R</code> reads the completed Step2.1 per-feature files for one prefix and applies median-based compositional correction across features for each SNP.</div>
     <div class="card"><strong>Step3 Meta</strong><br><code>step3_meta.R</code> meta-analyzes multiple studies and adds <code>meta_*</code> columns.</div>
     <div class="card"><strong>Visualization</strong><br><code>Visualization.R</code> generates Manhattan and forest plots.</div>
   </div>
@@ -218,6 +219,7 @@ docker run --rm --platform=linux/amd64 \
   </table>
 
   <h2 id="step2">Step2: Per-study Summary</h2>
+  <h3>Step2.1: null model + genotype to per-feature association files</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_1_summary.R \
     --genoFile=${genoFile} \
     --NULLmodelFile=${NULLmodelFile} \
@@ -242,19 +244,19 @@ docker run --rm --platform=linux/amd64 \
     --outputSnpFile=${outputSnpFile} \
     --useCluster=${useCluster}</code></pre>
   <ul>
-    <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>. Step2 accepts a PLINK prefix or <code>.vcf/.vcf.gz/.vcf.bgz</code>.</li>
+    <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>. Step2.1 accepts a PLINK prefix or <code>.vcf/.vcf.gz/.vcf.bgz</code>.</li>
     <li><strong>Outputs:</strong> one per-feature <code>.txt</code> file with columns <code>SNP, CHR, POS, est, stderr, pval</code>.</li>
     <li><strong>SNP format:</strong> dots are replaced by colons, e.g., <code>chr1:12345:REF:ALT</code>.</li>
     <li><strong>Temporary conversion:</strong> VCF input is read directly.</li>
-    <li><strong>VCF import:</strong> Step2 auto-detects <code>DS</code> or <code>GT</code> from the VCF FORMAT field and prefers <code>DS</code> when present.</li>
+    <li><strong>VCF import:</strong> Step2.1 auto-detects <code>DS</code> or <code>GT</code> from the VCF FORMAT field and prefers <code>DS</code> when present.</li>
     <li><strong>Chrom filter:</strong> current CLI default is empty string; use <code>--chrom=1</code> to restrict, otherwise leave empty to keep all chromosomes.</li>
     <li><strong>Feature subset:</strong> pass <code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code> to test only those modeled features from the Step1 null model; <code>NULL</code> keeps all features.</li>
-    <li><strong>Parallelization pattern:</strong> the software exposes <code>--chrom</code> and <code>--featureColList</code> so users can decompose Step2 into independent jobs. In other words, <code>chrom x feature</code> parallelism is achieved by scheduler-level job submission, not by internal multithreading within one Step2 process.</li>
+    <li><strong>Parallelization pattern:</strong> the software exposes <code>--chrom</code> and <code>--featureColList</code> so users can decompose Step2.1 into independent jobs. In other words, <code>chrom x feature</code> parallelism is achieved by scheduler-level job submission, not by internal multithreading within one Step2.1 process.</li>
     <li><strong>MAF filter:</strong> default is <code>--minMAF=0.05</code>; use another threshold as needed, and <code>0</code> disables this filter.</li>
     <li><strong>MAC filter:</strong> default is <code>--minMAC=5</code>; use <code>0</code> to disable minor-allele-count filtering.</li>
-    <li><strong>Optional info output:</strong> set <code>--outputSnpFile</code> to write <code>SNPInfo</code>. Behavior definition: <code>SNPInfo</code> is computed from the Step2 genotype matrix after NULL-model sample alignment and optional chromosome filtering, but before <code>minMAF</code>/<code>minMAC</code> remove SNPs.</li>
+    <li><strong>Optional info output:</strong> set <code>--outputSnpFile</code> to write <code>SNPInfo</code>. Behavior definition: <code>SNPInfo</code> is computed from the Step2.1 genotype matrix after NULL-model sample alignment and optional chromosome filtering, but before <code>minMAF</code>/<code>minMAC</code> remove SNPs.</li>
     <li><strong>Clustering:</strong> <code>useCluster</code> defaults to <code>FALSE</code>. When set to <code>TRUE</code>, FID from the PLINK <code>.fam</code> file is passed to PALM; this is only supported for native PLINK input, and all-zero FIDs still disable clustering.</li>
-    <li><strong>Compositional correction:</strong> Step2.1 always runs with <code>correct=NULL</code>. If you want median-based correction, run Step2.2 after all Step2.1 feature files are available.</li>
+    <li><strong>Compositional correction:</strong> Step2.1 does not perform compositional correction. If you want correction, run Step2.2 after all Step2.1 feature files are available. Step2.2 currently supports only median-based correction.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
@@ -265,8 +267,34 @@ docker run --rm --platform=linux/amd64 \
     <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated feature IDs to keep from the Step1 null model</td><td><code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code>; <code>--featureColList=NULL</code></td></tr>
     <tr><td><code>--minMAF</code></td><td><code>double</code></td><td><code>0.05</code></td><td>Optional minimum minor allele frequency threshold for SNP filtering</td><td><code>--minMAF=0.05</code>; <code>--minMAF=0</code></td></tr>
     <tr><td><code>--minMAC</code></td><td><code>integer</code></td><td><code>5</code></td><td>Optional minimum minor allele count threshold for SNP filtering</td><td><code>--minMAC=5</code>; <code>--minMAC=0</code></td></tr>
-    <tr><td><code>--outputSnpFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for Step2 SNP summary before minMAF/minMAC filtering</td><td><code>--outputSnpFile=example/output/study1/info_snp.txt</code>; <code>--outputSnpFile=NULL</code></td></tr>
+    <tr><td><code>--outputSnpFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for Step2.1 SNP summary before minMAF/minMAC filtering</td><td><code>--outputSnpFile=example/output/study1/info_snp.txt</code>; <code>--outputSnpFile=NULL</code></td></tr>
     <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether to use FID-based clustering from the PLINK <code>.fam</code> file; only supported for native PLINK input</td><td><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></td></tr>
+  </table>
+
+  <h3>Step2.2: median compositional correction on completed Step2.1 files</h3>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_2_correct.R \
+    --inputPrefix=${step2InputPrefix} \
+    --outputPrefix=${step2OutputPrefix} \
+    --NULLmodelFile=${NULLmodelFile}</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  step2_2_correct.R \
+    --inputPrefix=/work/${step2InputPrefix} \
+    --outputPrefix=${step2OutputPrefix} \
+    --NULLmodelFile=/work/${NULLmodelFile}</code></pre>
+  <ul>
+    <li><strong>Inputs:</strong> the full set of Step2.1 files matching one prefix such as <code>step2_allchr_*.txt</code>. Step2.2 scans the directory from <code>--inputPrefix</code> and extracts feature names from the filenames.</li>
+    <li><strong>Why separate:</strong> compositional correction is applied across features for each SNP, so Step2.2 must wait until all Step2.1 feature files for that prefix are available.</li>
+    <li><strong>Correction method:</strong> Step2.2 currently supports only median-based correction.</li>
+    <li><strong>Output behavior:</strong> set <code>--outputPrefix=NULL</code> to overwrite Step2.1 files in place, or provide another prefix to write corrected copies elsewhere.</li>
+    <li><strong>NULL model use:</strong> <code>--NULLmodelFile</code> is used only to mirror PALM's safeguard that skips correction when any study has <code>abd = TRUE</code>.</li>
+  </ul>
+  <table>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
+    <tr><td><code>--inputPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>Step2.1 file prefix used to discover all feature files for correction</td><td><code>--inputPrefix=example/output/study1/step2_allchr</code></td></tr>
+    <tr><td><code>--outputPrefix</code></td><td><code>character</code></td><td><code>"NULL"</code> (normalized to input prefix)</td><td>Output prefix for corrected Step2.2 files; use <code>NULL</code> to overwrite Step2.1 outputs in place</td><td><code>--outputPrefix=example/output/study1/step2_corrected_allchr</code>; <code>--outputPrefix=NULL</code></td></tr>
+    <tr><td><code>--NULLmodelFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional Step1 null model used to preserve PALM's high-abundance safeguard before correction</td><td><code>--NULLmodelFile=example/output/study1/step1_allpheno.rda</code>; <code>--NULLmodelFile=NULL</code></td></tr>
   </table>
 
   <h2 id="step3">Step3: Meta Analysis</h2>
@@ -487,7 +515,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --NULLmodelFile=example/output/study1/step1_allpheno.rda</code></pre>
   <p><strong>Output:</strong> <code>example/output/study1/step1_allpheno.rda</code>, which is then passed into Step2 as <code>--NULLmodelFile</code>. If requested, Step1 also writes <code>example/output/study1/info_feature.txt</code>.</p>
 
-  <h3>Step2: null model + genotype to per-feature association files</h3>
+  <h3>Step2.1: null model + genotype to per-feature association files</h3>
   <p><strong>Input:</strong> genotype input passed through <code>--genoFile</code> and null model <code>example/output/study1/step1_allpheno.rda</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_1_summary.R \
     --genoFile=example/input/study1/geno \
@@ -510,17 +538,32 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --minMAC=5 \
     --outputSnpFile=NULL \
     --useCluster=FALSE</code></pre>
-  <p><strong>Output:</strong> one file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on. If requested, Step2 also writes <code>example/output/study1/info_snp.txt</code>.</p>
-  <p><strong>Current example files:</strong> in this repository the Step2 outputs use real feature names, for example <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
+  <p><strong>Output:</strong> one file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on. If requested, Step2.1 also writes <code>example/output/study1/info_snp.txt</code>.</p>
+  <p><strong>Current example files:</strong> in this repository the Step2.1 outputs use real feature names, for example <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
 
-  <h3>Example Output: Step2 per-feature summary</h3>
+  <h3>Step2.2: apply median correction to the completed Step2.1 files</h3>
+  <p><strong>Input:</strong> the full set of Step2.1 files for one prefix, for example <code>example/output/study1/step2_allchr_*.txt</code>.</p>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_2_correct.R \
+    --inputPrefix=example/output/study1/step2_allchr \
+    --outputPrefix=NULL \
+    --NULLmodelFile=example/output/study1/step1_allpheno.rda</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  step2_2_correct.R \
+    --inputPrefix=/work/example/output/study1/step2_allchr \
+    --outputPrefix=NULL \
+    --NULLmodelFile=/work/example/output/study1/step1_allpheno.rda</code></pre>
+  <p><strong>Output:</strong> corrected per-feature files with the same columns <code>SNP, CHR, POS, est, stderr, pval</code>. With <code>--outputPrefix=NULL</code>, the corrected values replace the Step2.1 files in place.</p>
+
+  <h3>Example Output: Step2.1/Step2.2 per-feature summary</h3>
   <pre><code class="language-tsv"># file: example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt
 SNP	CHR	POS	est	stderr	pval
 chr1:1837340:C:T	1	1837340	0.0474191553950809	0.0774090197587034	0.540154614991417
 chr1:2261200:G:C	1	2261200	0.00910291825612166	0.0603368037873752	0.880079512475897
 chr1:14678191:A:C	1	14678191	0.0520991490461496	0.0469469273278635	0.26710863943579
 chr1:14985097:C:T	1	14985097	-0.0257207814851513	0.0927341291837284	0.781503333099081</code></pre>
-  <p>Each Step2 file corresponds to one feature. Here, <code>g_Peptoniphilus_unclassified</code> has one file containing association statistics for all tested SNPs.</p>
+  <p>Each Step2 file corresponds to one feature. Here, <code>g_Peptoniphilus_unclassified</code> has one file containing association statistics for all tested SNPs. Step2.2 preserves the same file layout and updates the <code>est</code>, <code>stderr</code>, and <code>pval</code> columns after median correction.</p>
 
   <h3>Step3: multiple Step2 folders to meta-analysis tables</h3>
   <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code> for local pixi runs or <code>example/input/study_dirs_docker.txt</code> for Docker runs, plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>.</p>

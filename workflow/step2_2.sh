@@ -10,6 +10,5 @@ echo "Start: Perform step2.2 compositional correction."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_2_correct.R \
     --inputPrefix=${step2InputPrefix} \
     --outputPrefix=${step2OutputPrefix:-NULL} \
-    --NULLmodelFile=${NULLmodelFile:-NULL} \
-    --correct=${correct:-median}
+    --NULLmodelFile=${NULLmodelFile:-NULL}
 echo "Finish: Perform step2.2 compositional correction."
