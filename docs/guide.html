@@ -118,7 +118,7 @@ docker run --rm --platform=linux/amd64 \
   <div class="steps">
     <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> optionally filters low-depth samples, checks IID consistency across abundance, covariates, and genotype input, reorders tables to match genotype sample order, and can write sequencing-depth summaries.</div>
     <div class="card"><strong>Step1 Null</strong><br><code>step1_null.R</code> fits the PALM null model from the Step0-aligned abundance and covariate tables and can write feature summaries.</div>
-    <div class="card"><strong>Step2 Summary</strong><br><code>step2_summary.R</code> reads genotype input, runs PALM score tests, and can write SNP summaries alongside per-feature estimates.</div>
+    <div class="card"><strong>Step2.1 Summary</strong><br><code>step2_1_summary.R</code> reads genotype input, runs PALM score tests with <code>correct=NULL</code>, and can write SNP summaries alongside per-feature estimates.</div>
     <div class="card"><strong>Step3 Meta</strong><br><code>step3_meta.R</code> meta-analyzes multiple studies and adds <code>meta_*</code> columns.</div>
     <div class="card"><strong>Visualization</strong><br><code>Visualization.R</code> generates Manhattan and forest plots.</div>
   </div>
@@ -218,7 +218,7 @@ docker run --rm --platform=linux/amd64 \
   </table>
 
   <h2 id="step2">Step2: Per-study Summary</h2>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_summary.R \
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_1_summary.R \
     --genoFile=${genoFile} \
     --NULLmodelFile=${NULLmodelFile} \
     --PALMOutputFile=${palm1_step2_prefix} \
@@ -227,12 +227,11 @@ docker run --rm --platform=linux/amd64 \
     --minMAF=${minMAF} \
     --minMAC=${minMAC} \
     --outputSnpFile=${outputSnpFile} \
-    --correct=${correct} \
     --useCluster=${useCluster}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
-  step2_summary.R \
+  step2_1_summary.R \
     --genoFile=/work/${genoFile} \
     --NULLmodelFile=/work/${NULLmodelFile} \
     --PALMOutputFile=/work/${palm1_step2_prefix} \
@@ -241,7 +240,6 @@ docker run --rm --platform=linux/amd64 \
     --minMAF=${minMAF} \
     --minMAC=${minMAC} \
     --outputSnpFile=${outputSnpFile} \
-    --correct=${correct} \
     --useCluster=${useCluster}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>. Step2 accepts a PLINK prefix or <code>.vcf/.vcf.gz/.vcf.bgz</code>.</li>
@@ -256,7 +254,7 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>MAC filter:</strong> default is <code>--minMAC=5</code>; use <code>0</code> to disable minor-allele-count filtering.</li>
     <li><strong>Optional info output:</strong> set <code>--outputSnpFile</code> to write <code>SNPInfo</code>. Behavior definition: <code>SNPInfo</code> is computed from the Step2 genotype matrix after NULL-model sample alignment and optional chromosome filtering, but before <code>minMAF</code>/<code>minMAC</code> remove SNPs.</li>
     <li><strong>Clustering:</strong> <code>useCluster</code> defaults to <code>FALSE</code>. When set to <code>TRUE</code>, FID from the PLINK <code>.fam</code> file is passed to PALM; this is only supported for native PLINK input, and all-zero FIDs still disable clustering.</li>
-    <li><strong>correct:</strong> forwarded to <code>PALM::palm.get.summary()</code>. Use <code>median</code> for median-based compositional correction, <code>tune</code> for a data-driven tuned correction, or <code>NULL</code> / empty string to disable compositional correction and keep abundance-level summary statistics.</li>
+    <li><strong>Compositional correction:</strong> Step2.1 always runs with <code>correct=NULL</code>. If you want median-based correction, run Step2.2 after all Step2.1 feature files are available.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
@@ -268,7 +266,6 @@ docker run --rm --platform=linux/amd64 \
     <tr><td><code>--minMAF</code></td><td><code>double</code></td><td><code>0.05</code></td><td>Optional minimum minor allele frequency threshold for SNP filtering</td><td><code>--minMAF=0.05</code>; <code>--minMAF=0</code></td></tr>
     <tr><td><code>--minMAC</code></td><td><code>integer</code></td><td><code>5</code></td><td>Optional minimum minor allele count threshold for SNP filtering</td><td><code>--minMAC=5</code>; <code>--minMAC=0</code></td></tr>
     <tr><td><code>--outputSnpFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for Step2 SNP summary before minMAF/minMAC filtering</td><td><code>--outputSnpFile=example/output/study1/info_snp.txt</code>; <code>--outputSnpFile=NULL</code></td></tr>
-    <tr><td><code>--correct</code></td><td><code>character</code></td><td><code>"NULL"</code> (normalized to <code>NULL</code>)</td><td>Compositional effect correction method. <code>median</code> uses the median of estimates, <code>tune</code> uses a data-driven tuned value, and <code>NULL</code> / empty string disables compositional correction. A practical rule is <code>median</code> for sparse signals (&lt;= 20% differential AA features) and <code>tune</code> for moderately dense signals (&gt; 20% and &lt;= 50%). Both correction methods assume differential AA features are &lt;= 50%.</td><td><code>--correct=median</code>; <code>--correct=tune</code>; <code>--correct=NULL</code>; <code>--correct=</code></td></tr>
     <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether to use FID-based clustering from the PLINK <code>.fam</code> file; only supported for native PLINK input</td><td><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></td></tr>
   </table>
 
@@ -492,7 +489,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
 
   <h3>Step2: null model + genotype to per-feature association files</h3>
   <p><strong>Input:</strong> genotype input passed through <code>--genoFile</code> and null model <code>example/output/study1/step1_allpheno.rda</code>.</p>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_summary.R \
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_1_summary.R \
     --genoFile=example/input/study1/geno \
     --NULLmodelFile=example/output/study1/step1_allpheno.rda \
     --PALMOutputFile=example/output/study1/step2_allchr \
@@ -500,12 +497,11 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --minMAF=0.05 \
     --minMAC=5 \
     --outputSnpFile=NULL \
-    --correct=NULL \
     --useCluster=FALSE</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
-  step2_summary.R \
+  step2_1_summary.R \
     --genoFile=/work/example/input/study1/geno \
     --NULLmodelFile=/work/example/output/study1/step1_allpheno.rda \
     --PALMOutputFile=/work/example/output/study1/step2_allchr \
@@ -513,7 +509,6 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --minMAF=0.05 \
     --minMAC=5 \
     --outputSnpFile=NULL \
-    --correct=NULL \
     --useCluster=FALSE</code></pre>
   <p><strong>Output:</strong> one file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on. If requested, Step2 also writes <code>example/output/study1/info_snp.txt</code>.</p>
   <p><strong>Current example files:</strong> in this repository the Step2 outputs use real feature names, for example <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>

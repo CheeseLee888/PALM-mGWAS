@@ -150,7 +150,7 @@ fi
 echo "step2_run_array: outputPrefix=${STEP2_PREFIX}"
 
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
-  step2_summary.R \
+  step2_1_summary.R \
   --genoFile="${GENO_PREFIX}" \
   --NULLmodelFile="${NULLMODEL_FILE}" \
   --PALMOutputFile="${STEP2_PREFIX}" \
@@ -159,5 +159,4 @@ apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   --minMAF="${MIN_MAF}" \
   --minMAC="${MIN_MAC}" \
   --outputSnpFile=NULL \
-  --correct="${CORRECT}" \
   --useCluster="${USE_CLUSTER}"
