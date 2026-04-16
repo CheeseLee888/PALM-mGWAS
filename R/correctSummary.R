@@ -4,8 +4,8 @@
 #' Reads per-feature Step2 result files produced by [getSummary()] or
 #' `extdata/step2_1_summary.R`, then applies the compositional correction logic
 #' from `thirdParty/palm.get.summary.R` across features for each SNP. This is
-#' intended for a post-processing "Step2.2" stage after all feature-level Step2
-#' jobs have completed.
+#' intended for a post-processing "Step2.3" stage after the Step2.2
+#' chromosome-merge step and after all feature-level Step2 jobs have completed.
 #'
 #' @param inputPrefix Step2 file prefix. Files are expected at
 #'   `<inputPrefix>_<feature>.txt`.
