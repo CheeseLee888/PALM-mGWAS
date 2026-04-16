@@ -1,6 +1,6 @@
 # Simulation Dataset
 
-This directory provides a reproducible multi-study simulation intended to show a larger sample size than `example/`, give users a more realistic sense of `step2` runtime and memory usage, and provide compatible inputs for later meta-analysis testing.
+This directory provides a reproducible multi-study simulation intended to show a larger sample size than `example/`, give users a more realistic sense of `step2.1` runtime and memory usage, and provide compatible inputs for later meta-analysis testing.
 
 The working directory is:
 
@@ -27,15 +27,15 @@ Core design:
 
 ## Validation Status
 
-The simulation workflow has been run successfully through `Step0 -> Step2` on the cluster layout described below.
+The simulation workflow has been run successfully through `Step0 -> Step2.2` on the cluster layout described below.
 
-In particular, `step2` has been verified under Slurm with a `chrom x feature block` decomposition:
+In particular, `step2.1` has been verified under Slurm with a `chrom x feature block` decomposition:
 
 - chromosome subsetting is controlled by `--chrom`
 - feature subsetting is controlled by `--featureColList`
 - parallelism is handled at the scheduler level by submitting multiple jobs, rather than inside one R process
 
-This means the current implementation supports user-managed `chrom x feature` parallel execution for `step2`.
+This means the current implementation supports user-managed `chrom x feature` parallel execution for `step2.1`, followed by a separate merged `step2.2` correction stage.
 
 ## Slurm submission order
 
@@ -57,7 +57,7 @@ cd /mnt/scratch/group/ztang2/pli297/simulation
 bash submit_pipeline.sh
 ```
 
-This submits `Step0 -> Step1 -> Step2`.
+This submits `Step0 -> Step1 -> Step2.1`.
 
 If you want one command that submits the full workflow from `Step0` through visualization, run:
 
@@ -72,21 +72,24 @@ This submits:
 - `step1_fit_null_model.sbatch`
 - `submit_step2_array.sbatch`
 - `merge_step2_outputs.sh`
+- `run_step2_2_correction.sbatch`
 - `run_step3_meta.sh` as a feature-level array
 - `visualize_meta_results.sh`
 
-After all Step2 array jobs finish, run:
+After all Step2.1 array jobs finish, run:
 
 ```bash
 cd /mnt/scratch/group/ztang2/pli297/simulation
 sbatch merge_step2_outputs.sh
+sbatch run_step2_2_correction.sbatch
 sbatch submit_step3_meta_array.sbatch
 bash visualize_meta_results.sh
 ```
 
-This now performs three stages across three commands:
+This now performs four stages across four commands:
 
-- merge per-chromosome Step2 outputs into per-phenotype `step2_allchr_*` files within each study
+- merge per-chromosome Step2.1 outputs into per-phenotype `step2_allchr_*` files within each study
+- run Step2.2 median correction on the merged per-feature files within each study
 - run Step3 meta-analysis across studies as one array task per feature
 - run the same four visualization modes used in the main workflow on the meta-analysis results
 
@@ -134,7 +137,7 @@ That directory is expected to contain at least `generate_simulation_data.R`, `in
 
 Default simulation parameters are written directly inside the sbatch scripts. If needed, you can override them at submit time with `sbatch --export=...`.
 
-Then compute the Step2 array size and submit the chromosome x feature-block jobs:
+Then compute the Step2.1 array size and submit the chromosome x feature-block jobs:
 
 ```bash
 FEATURE_BLOCK=10
@@ -150,9 +153,9 @@ sbatch \
   step2_run_array.sbatch
 ```
 
-`step1_fit_null_model.sbatch` writes `output/<study>/feature_list.txt` automatically for the selected study, so Step2 can use it directly.
+`step1_fit_null_model.sbatch` writes `output/<study>/feature_list.txt` automatically for the selected study, so Step2.1 can use it directly.
 
-`submit_pipeline.sh` submits the analysis stages through Step2. The merge/meta stage and the visualization stage are intentionally run later as separate manual commands after Step2 finishes.
+`submit_pipeline.sh` submits the analysis stages through Step2.1. The merge/Step2.2/meta stage and the visualization stage are intentionally run later as separate manual commands after Step2.1 finishes.
 
 ## Main outputs
 
@@ -162,13 +165,13 @@ sbatch \
 - `output/study1/info_feature.txt`
 - `output/plot/manhattan_g_Acinetobacter.png`
 
-## Slurm array for Step2
+## Slurm array for Step2.1
 
-If you want to parallelize simulated `step2` runs across both chromosome and feature subsets, run `Step0` and `Step1` once first, then submit `step2_run_array.sbatch`.
+If you want to parallelize simulated `step2.1` runs across both chromosome and feature subsets, run `Step0` and `Step1` once first, then submit `step2_run_array.sbatch`.
 
-This has already been validated in the simulation workflow: `step2` array jobs were launched across multiple chromosomes and feature blocks, and the expected per-chromosome outputs were produced.
+This has already been validated in the simulation workflow: `step2.1` array jobs were launched across multiple chromosomes and feature blocks, and the expected per-chromosome outputs were produced.
 
-After the array completes, the simulation workflow merges files sharing the same phenotype across chromosomes. For example:
+After the Step2.1 array completes, the simulation workflow merges files sharing the same phenotype across chromosomes. For example:
 
 - `step2_chr1_g_Acinetobacter.txt`
 - `step2_chr2_g_Acinetobacter.txt`
@@ -178,7 +181,7 @@ are merged into:
 
 - `step2_allchr_g_Acinetobacter.txt`
 
-The meta-analysis step reads the merged `step2_allchr_*.txt` files and writes `step3_meta_*.txt` through a feature-level array. The visualization step reads those meta files.
+After merge, Step2.2 updates the merged `step2_allchr_*.txt` files in place using median correction. The meta-analysis step then reads those corrected files and writes `step3_meta_*.txt` through a feature-level array. The visualization step reads those meta files.
 
 Choose a feature block size, for example `10` features per task:
 

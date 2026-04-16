@@ -25,7 +25,7 @@ fi
 
 echo "submit_all: simulation root = ${SIMU_ROOT}"
 echo "submit_all: studies = ${STUDIES}"
-echo "submit_all: step2 mode = ${STEP2_MODE}"
+echo "submit_all: step2.1 mode = ${STEP2_MODE}"
 echo "submit_all: chrom list = ${CHROMS}"
 
 step2_submit_jids=()
@@ -45,7 +45,7 @@ for study in "${STUDY_LIST[@]}"; do
     --dependency=afterok:${jid1} \
     --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDY=${study},STEP2_MODE=${STEP2_MODE},CHROMS=${CHROMS},STEP2_JID_FILE=${STEP2_JID_DIR}/${study}.jid \
     submit_step2_array.sbatch)
-  echo "submit_all: ${study} Step2 submit job ${jid2}"
+  echo "submit_all: ${study} Step2.1 submit job ${jid2}"
 
   step2_submit_jids+=("${jid2}")
 done
@@ -55,4 +55,4 @@ jid_post=$(sbatch --parsable \
   --dependency=afterok:${step2_submit_dep} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDIES=${STUDIES},META_DIR=${META_DIR},FEATURE_LIST_FILE=${FEATURE_LIST_FILE},STEP2_JID_DIR=${STEP2_JID_DIR} \
   submit_post_step2_pipeline.sbatch)
-echo "submit_all: post-Step2 submitter job ${jid_post}"
+echo "submit_all: post-Step2.1 submitter job ${jid_post}"

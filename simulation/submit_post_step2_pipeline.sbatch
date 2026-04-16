@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=simu_post_step2
+#SBATCH --job-name=simu_post_step2_1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=2G
 #SBATCH --time=00:30:00
-#SBATCH --output=logs/simu_post_step2_%A_%a.out
-#SBATCH --error=logs/simu_post_step2_%A_%a.err
+#SBATCH --output=logs/simu_post_step2_1_%A_%a.out
+#SBATCH --error=logs/simu_post_step2_1_%A_%a.err
 
 set -euo pipefail
 
@@ -32,25 +32,31 @@ step2_array_jids=()
 for study in "${STUDY_LIST[@]}"; do
   jid_file="${STEP2_JID_DIR}/${study}.jid"
   if [[ ! -f "${jid_file}" ]]; then
-    echo "submit_post_step2_pipeline: missing Step2 jid file ${jid_file}" >&2
+    echo "submit_post_step2_pipeline: missing Step2.1 jid file ${jid_file}" >&2
     exit 1
   fi
   jid=$(tr -d '[:space:]' < "${jid_file}")
   if [[ -z "${jid}" ]]; then
-    echo "submit_post_step2_pipeline: empty Step2 jid in ${jid_file}" >&2
+    echo "submit_post_step2_pipeline: empty Step2.1 jid in ${jid_file}" >&2
     exit 1
   fi
   step2_array_jids+=("${jid}")
 done
 
 step2_dep=$(IFS=:; echo "${step2_array_jids[*]}")
-echo "submit_post_step2_pipeline: Step2 array dependencies = ${step2_dep}"
+echo "submit_post_step2_pipeline: Step2.1 array dependencies = ${step2_dep}"
 
 jid_merge=$(sbatch --parsable \
   --dependency=afterok:${step2_dep} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDIES=${STUDIES},META_DIR=${META_DIR} \
   merge_step2_outputs.sh)
-echo "submit_post_step2_pipeline: merge job ${jid_merge}"
+echo "submit_post_step2_pipeline: Step2.1 merge job ${jid_merge}"
+
+jid_corr=$(sbatch --parsable \
+  --dependency=afterok:${jid_merge} \
+  --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDIES=${STUDIES} \
+  run_step2_2_correction.sbatch)
+echo "submit_post_step2_pipeline: Step2.2 correction job ${jid_corr}"
 
 if [[ ! -f "${FEATURE_LIST_FILE}" ]]; then
   echo "submit_post_step2_pipeline: missing feature list ${FEATURE_LIST_FILE}" >&2
@@ -64,7 +70,7 @@ if [[ "${n_feature}" -lt 1 ]]; then
 fi
 
 jid_meta=$(sbatch --parsable \
-  --dependency=afterok:${jid_merge} \
+  --dependency=afterok:${jid_corr} \
   --array=1-${n_feature} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},META_DIR=${META_DIR},FEATURE_LIST_FILE=${FEATURE_LIST_FILE} \
   run_step3_meta.sh)

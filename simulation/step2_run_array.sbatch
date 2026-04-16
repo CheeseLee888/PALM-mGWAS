@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=simu_step2
+#SBATCH --job-name=simu_step2_1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=12:00:00
-#SBATCH --output=logs/simu_step2_%A_%a.out
-#SBATCH --error=logs/simu_step2_%A_%a.err
+#SBATCH --output=logs/simu_step2_1_%A_%a.out
+#SBATCH --error=logs/simu_step2_1_%A_%a.err
 #
 # Usage:
 #   1. Run simulation/generate_simulation_data.R, Step0, and Step1 once first.
@@ -13,7 +13,7 @@
 #        load("simulation/output/study1/step1_allpheno.rda");
 #        writeLines(colnames(modglmm[[1]]$Y_I), "simulation/output/study1/feature_list.txt")
 #      '
-#   3. Set STEP2_MODE and ARRAY_RANGE, then submit:
+#   3. Set STEP2_MODE and ARRAY_RANGE, then submit Step2.1:
 #      sbatch --array=1-ARRAY_RANGE --export=ALL,ENV_FILE=/path/to/your.env simulation/step2_run_array.sbatch
 #
 # Simulation root layout:
@@ -32,7 +32,6 @@
 #   CHROMS=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22
 #   MIN_MAF=0.05
 #   MIN_MAC=5
-#   CORRECT=NULL
 #   USE_CLUSTER=FALSE
 
 set -euo pipefail
@@ -51,7 +50,6 @@ STEP2_MODE="${STEP2_MODE:-feature_chrom}"
 CHROMS_CSV="${CHROMS:-1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}"
 MIN_MAF="${MIN_MAF:-0.05}"
 MIN_MAC="${MIN_MAC:-5}"
-CORRECT="${CORRECT:-NULL}"
 USE_CLUSTER="${USE_CLUSTER:-FALSE}"
 
 INPUT_DIR="${SIMU_ROOT}/input/${STUDY}"
@@ -137,17 +135,17 @@ if [[ -z "${FEATURE}" ]]; then
   exit 1
 fi
 
-echo "step2_run_array: task=${TASK_ID}/${TOTAL_TASKS}"
-echo "step2_run_array: SIMU_ROOT=${SIMU_ROOT}"
-echo "step2_run_array: SIF=${SIF}"
-echo "step2_run_array: step2 mode=${STEP2_MODE}"
-echo "step2_run_array: feature=${FEATURE}"
+echo "step2_1_run_array: task=${TASK_ID}/${TOTAL_TASKS}"
+echo "step2_1_run_array: SIMU_ROOT=${SIMU_ROOT}"
+echo "step2_1_run_array: SIF=${SIF}"
+echo "step2_1_run_array: step2.1 mode=${STEP2_MODE}"
+echo "step2_1_run_array: feature=${FEATURE}"
 if [[ "${STEP2_MODE}" == "feature_allchr" ]]; then
-  echo "step2_run_array: running all chromosomes"
+  echo "step2_1_run_array: running all chromosomes"
 else
-  echo "step2_run_array: chrom=${CHROM}"
+  echo "step2_1_run_array: chrom=${CHROM}"
 fi
-echo "step2_run_array: outputPrefix=${STEP2_PREFIX}"
+echo "step2_1_run_array: outputPrefix=${STEP2_PREFIX}"
 
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step2_1_summary.R \
