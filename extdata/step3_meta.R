@@ -10,6 +10,8 @@ option_list <- list(
               help="txt: each line 'studyID<TAB>dir'"),
   make_option("--pattern", type="character", default="",
               help="Regex pattern for input step2 filenames [default %default]"),
+  make_option("--features", type="character", default="",
+              help="Optional comma-separated feature name(s) to meta-analyze [default all matched features]"),
   make_option("--metaDir", type="character", default="",
               help="Output directory for meta files"),
   make_option("--metaPrefix", type="character", default="",
@@ -30,10 +32,20 @@ study_dirs <- setNames(as.character(sd[[2]]), as.character(sd[[1]]))
 
 dir.create(opt$metaDir, recursive=TRUE, showWarnings=FALSE)
 
+feature_subset <- NULL
+if (nzchar(opt$features)) {
+  feature_subset <- strsplit(opt$features, ",", fixed = TRUE)[[1]]
+  feature_subset <- trimws(feature_subset)
+  feature_subset <- feature_subset[nzchar(feature_subset)]
+  if (length(feature_subset) == 0L) {
+    feature_subset <- NULL
+  }
+}
+
 metaSummary(
   study_dirs = study_dirs,
   pattern    = opt$pattern,
-  features   = NULL,
+  features   = feature_subset,
   out_dir    = opt$metaDir,
   out_prefix = opt$metaPrefix,
   keep_het   = TRUE

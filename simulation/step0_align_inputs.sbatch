@@ -3,8 +3,8 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=02:00:00
-#SBATCH --output=logs/simu_step0_%j.out
-#SBATCH --error=logs/simu_step0_%j.err
+#SBATCH --output=logs/simu_step0_%A_%a.out
+#SBATCH --error=logs/simu_step0_%A_%a.err
 #
 # Usage:
 #   sbatch --export=ALL,ENV_FILE=/path/to/your.env simulation/step0_align_inputs.sbatch

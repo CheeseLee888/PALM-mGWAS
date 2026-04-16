@@ -13,7 +13,7 @@
 #        load("simulation/output/study1/step1_allpheno.rda");
 #        writeLines(colnames(modglmm[[1]]$Y_I), "simulation/output/study1/feature_list.txt")
 #      '
-#   3. Set FEATURE_BLOCK and ARRAY_RANGE, then submit:
+#   3. Set STEP2_MODE and ARRAY_RANGE, then submit:
 #      sbatch --array=1-ARRAY_RANGE --export=ALL,ENV_FILE=/path/to/your.env simulation/step2_run_array.sbatch
 #
 # Simulation root layout:
@@ -28,7 +28,7 @@
 #   SIMU_ROOT=/path/to/simulation
 #   SIF=/path/to/PALMmGWAS.sif
 #   STUDY=study1
-#   FEATURE_BLOCK=10
+#   STEP2_MODE=feature_chrom or feature_allchr
 #   CHROMS=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22
 #   MIN_MAF=0.05
 #   MIN_MAC=5
@@ -47,7 +47,7 @@ SIF="${SIF:-${SIMU_ROOT}/PALMmGWAS.sif}"
 cd "${SIMU_ROOT}"
 
 STUDY="${STUDY:-study1}"
-FEATURE_BLOCK="${FEATURE_BLOCK:-10}"
+STEP2_MODE="${STEP2_MODE:-feature_chrom}"
 CHROMS_CSV="${CHROMS:-1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}"
 MIN_MAF="${MIN_MAF:-0.05}"
 MIN_MAC="${MIN_MAC:-5}"
@@ -71,8 +71,10 @@ if [[ ! -f "${FEATURE_FILE}" ]]; then
   echo "Create it first from Step1 null model." >&2
   exit 1
 fi
-if ! [[ "${FEATURE_BLOCK}" =~ ^[1-9][0-9]*$ ]]; then
-  echo "FEATURE_BLOCK must be a positive integer. Current value: ${FEATURE_BLOCK}" >&2
+
+N_FEATURE=$(wc -l < "${FEATURE_FILE}")
+if [[ "${N_FEATURE}" -lt 1 ]]; then
+  echo "Feature list is empty: ${FEATURE_FILE}" >&2
   exit 1
 fi
 
@@ -83,14 +85,18 @@ if [[ "${N_CHROM}" -lt 1 ]]; then
   exit 1
 fi
 
-N_FEATURE=$(wc -l < "${FEATURE_FILE}")
-if [[ "${N_FEATURE}" -lt 1 ]]; then
-  echo "Feature list is empty: ${FEATURE_FILE}" >&2
-  exit 1
-fi
-
-N_BLOCK=$(( (N_FEATURE + FEATURE_BLOCK - 1) / FEATURE_BLOCK ))
-TOTAL_TASKS=$(( N_CHROM * N_BLOCK ))
+case "${STEP2_MODE}" in
+  feature_allchr)
+    TOTAL_TASKS=${N_FEATURE}
+    ;;
+  feature_chrom)
+    TOTAL_TASKS=$(( N_FEATURE * N_CHROM ))
+    ;;
+  *)
+    echo "Invalid STEP2_MODE=${STEP2_MODE}. Use feature_allchr or feature_chrom." >&2
+    exit 1
+    ;;
+esac
 
 TASK_ID="${SLURM_ARRAY_TASK_ID:?SLURM_ARRAY_TASK_ID is required}"
 if ! [[ "${TASK_ID}" =~ ^[1-9][0-9]*$ ]]; then
@@ -103,38 +109,53 @@ if (( TASK_ID > TOTAL_TASKS )); then
 fi
 
 ZERO_BASED=$(( TASK_ID - 1 ))
-CHROM_INDEX=$(( ZERO_BASED / N_BLOCK ))
-BLOCK_INDEX=$(( ZERO_BASED % N_BLOCK ))
 
-CHROM="${CHROM_LIST[$CHROM_INDEX]}"
-START_LINE=$(( BLOCK_INDEX * FEATURE_BLOCK + 1 ))
-END_LINE=$(( START_LINE + FEATURE_BLOCK - 1 ))
-if (( END_LINE > N_FEATURE )); then
-  END_LINE=${N_FEATURE}
+if [[ "${STEP2_MODE}" == "feature_allchr" ]]; then
+  FEATURE_LINE=${TASK_ID}
+  FEATURE=$(sed -n "${FEATURE_LINE}p" "${FEATURE_FILE}")
+  if [[ -z "${FEATURE}" ]]; then
+    echo "Resolved feature is empty for task ${TASK_ID}." >&2
+    exit 1
+  fi
+  STEP2_PREFIX="${OUTPUT_DIR}/step2_allchr"
+  CHROM_ARG="NULL"
+else
+  FEATURE_INDEX=$(( ZERO_BASED / N_CHROM + 1 ))
+  CHROM_INDEX=$(( ZERO_BASED % N_CHROM ))
+  FEATURE=$(sed -n "${FEATURE_INDEX}p" "${FEATURE_FILE}")
+  CHROM="${CHROM_LIST[$CHROM_INDEX]}"
+  if [[ -z "${FEATURE}" ]]; then
+    echo "Resolved feature is empty for task ${TASK_ID}." >&2
+    exit 1
+  fi
+  STEP2_PREFIX="${OUTPUT_DIR}/step2_chr${CHROM}"
+  CHROM_ARG="${CHROM}"
 fi
 
-FEATURES=$(sed -n "${START_LINE},${END_LINE}p" "${FEATURE_FILE}" | paste -sd, -)
-if [[ -z "${FEATURES}" ]]; then
-  echo "Resolved feature block is empty for task ${TASK_ID}." >&2
+if [[ -z "${FEATURE}" ]]; then
+  echo "Resolved feature is empty for task ${TASK_ID}." >&2
   exit 1
 fi
-
-STEP2_PREFIX="${OUTPUT_DIR}/step2_chr${CHROM}"
 
 echo "step2_run_array: task=${TASK_ID}/${TOTAL_TASKS}"
 echo "step2_run_array: SIMU_ROOT=${SIMU_ROOT}"
 echo "step2_run_array: SIF=${SIF}"
-echo "step2_run_array: chrom=${CHROM}, block=${BLOCK_INDEX}+1/${N_BLOCK}, feature lines=${START_LINE}-${END_LINE}"
+echo "step2_run_array: step2 mode=${STEP2_MODE}"
+echo "step2_run_array: feature=${FEATURE}"
+if [[ "${STEP2_MODE}" == "feature_allchr" ]]; then
+  echo "step2_run_array: running all chromosomes"
+else
+  echo "step2_run_array: chrom=${CHROM}"
+fi
 echo "step2_run_array: outputPrefix=${STEP2_PREFIX}"
-echo "step2_run_array: featureColList=${FEATURES}"
 
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step2_summary.R \
   --genoFile="${GENO_PREFIX}" \
   --NULLmodelFile="${NULLMODEL_FILE}" \
   --PALMOutputFile="${STEP2_PREFIX}" \
-  --chrom="${CHROM}" \
-  --featureColList="${FEATURES}" \
+  --chrom="${CHROM_ARG}" \
+  --featureColList="${FEATURE}" \
   --minMAF="${MIN_MAF}" \
   --minMAC="${MIN_MAC}" \
   --outputSnpFile=NULL \

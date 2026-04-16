@@ -63,11 +63,12 @@ After all Step2 array jobs finish, run:
 
 ```bash
 cd /mnt/scratch/group/ztang2/pli297/simulation
-bash merge_step2_meta.sh
+sbatch merge_step2_outputs.sbatch
+sbatch run_step3_meta.sbatch
 bash visualize_meta_results.sh
 ```
 
-This now performs three stages across two commands:
+This now performs three stages across three commands:
 
 - merge per-chromosome Step2 outputs into per-phenotype `step2_allchr_*` files within each study
 - run Step3 meta-analysis across studies
@@ -78,14 +79,22 @@ This now performs three stages across two commands:
 - SNP-only forest across phenotypes
 - combined overview across phenotypes
 
-By default, `merge_step2_meta.sh` uses `study1,study2,study3`. If needed, you can restrict it to one study or a subset:
+By default, `merge_step2_outputs.sh`, `run_step3_meta.sh`, and `merge_step2_meta.sh` use `study1,study2,study3`. If needed, you can restrict the merge stage to one study or a subset:
 
 ```bash
-STUDY=study2 bash merge_step2_meta.sh
-STUDIES=study1,study3 bash merge_step2_meta.sh
+STUDY=study2 bash merge_step2_outputs.sh
+STUDIES=study1,study3 bash merge_step2_outputs.sh
 ```
 
-`visualize_meta_results.sh` reads the meta-analysis results from `/Volumes/ztang2/pli297/simulation/output/meta` by default and writes plots to `/Volumes/ztang2/pli297/simulation/output` by default:
+Submit the split merge and meta steps as Slurm jobs so runtime and memory are recorded separately:
+
+```bash
+sbatch merge_step2_outputs.sbatch
+sbatch --export=ALL,STUDY=study2 merge_step2_outputs.sbatch
+sbatch run_step3_meta.sbatch
+```
+
+`visualize_meta_results.sh` reads the meta-analysis results from `/mnt/scratch/group/ztang2/pli297/simulation/output/meta` by default and writes plots to `/mnt/scratch/group/ztang2/pli297/simulation/output` by default:
 
 ```bash
 PHENO=g_Acinetobacter SNP=chr4:1682869:G:C bash visualize_meta_results.sh

@@ -3,8 +3,8 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=04:00:00
-#SBATCH --output=logs/simu_step1_%j.out
-#SBATCH --error=logs/simu_step1_%j.err
+#SBATCH --output=logs/simu_step1_%A_%a.out
+#SBATCH --error=logs/simu_step1_%A_%a.err
 #
 # Usage:
 #   sbatch --export=ALL,ENV_FILE=/path/to/your.env simulation/step1_fit_null_model.sbatch
