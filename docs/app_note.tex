@@ -68,22 +68,7 @@ Microbiome genome-wide association studies analyze host genetic effects on micro
 \software\ can be run locally with a \texttt{pixi}-managed environment or through containerized execution on HPC systems. The workflow is distributed as modular shell wrappers for direct execution or scheduler submission. Each stage produces explicit on-disk outputs, allowing per-step inspection and profiling.
 
 \subsection{Performance}
-Step2 performance was evaluated on three cohorts using 8 CPUs per task, 64 GB requested memory, and \texttt{minMAF=0.1}. Association testing was parallelized by chromosome as a 22-task Slurm array, with one task assigned to each autosome. Runtime and peak memory were recorded for all 22 tasks in each cohort. Cohort sizes, taxon counts, variant counts, and the resulting runtime and memory summaries are shown in Table~\ref{tab:perf}.
-
-\begin{table*}[t]
-\centering
-\caption{Observed \texttt{step2} performance of \software\ across three cohorts. Runtime and memory are summarized across 22 completed array tasks per cohort.}
-\label{tab:perf}
-\begin{tabular}{>{\raggedright\arraybackslash}p{1.8cm} >{\raggedright\arraybackslash}p{1.3cm} >{\raggedright\arraybackslash}p{1.4cm} >{\raggedright\arraybackslash}p{1.8cm} >{\raggedright\arraybackslash}p{1.8cm} >{\raggedright\arraybackslash}p{1.9cm} >{\raggedright\arraybackslash}p{1.8cm} >{\raggedright\arraybackslash}p{1.6cm}}
-\toprule
-Dataset & Samples & Taxa & Variants & Median elapsed & Max elapsed & Median MaxRSS & Max MaxRSS \\
-\midrule
-INSPIRE & 503 & 139 & 6\,174\,920 & 01:24:23 & 03:15:40 & 33.33 GB & 38.54 GB \\
-URECA & 99 & 188 & 7\,896\,716 & 00:41:12 & 01:43:46 & 9.82 GB & 11.29 GB \\
-WISC & 88 & 139 & 5\,758\,326 & 00:25:17 & 01:00:56 & 6.50 GB & 7.35 GB \\
-\bottomrule
-\end{tabular}
-\end{table*}
+Performance was characterized using the simulation workflow in \texttt{simulation/}, which generates three studies with 430--610 samples, 89--92 features, 212,389--219,975 SNPs across 22 chromosomes, and 7 covariates per study. Under this configuration, \texttt{step1} completes in about 5 seconds with 4 CPUs. When \texttt{step2} is parallelized so that each job handles one feature on one chromosome, each job completes in about 20 seconds with 8 CPUs. In \texttt{step3}, when each job handles one feature, each job completes in about 10 seconds with 4 CPUs.
 
 \subsection{Visualization outputs}
 The visualization module summarizes meta-analysis results in forms suitable for downstream reporting. For a selected taxon, \software\ generates a Manhattan plot together with the corresponding QQ plot. For a selected SNP, the workflow renders one forest plot per retained taxon, with each plot reporting cohort-specific effect estimates together with the combined meta-analysis estimate. At the global level, the package also produces a combined significant-hit summary that reports the top associated taxon for each lead SNP passing the requested threshold.
