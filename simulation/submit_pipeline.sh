@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # One-command Slurm submission for simulation analysis only:
-# Step0 -> Step1 -> Step2 array.
-# Step2 is submitted by a lightweight bridge job after Step1 finishes.
+# Step0 -> Step1 -> Step2.1 array.
+# Step2.1 is submitted by a lightweight bridge job after Step1 finishes.
 
 if [[ -n "${ENV_FILE:-}" ]]; then
   # shellcheck disable=SC1090
@@ -19,7 +19,7 @@ cd "${SIMU_ROOT}"
 
 echo "submit_pipeline: simulation root = ${SIMU_ROOT}"
 echo "submit_pipeline: study = ${STUDY}"
-echo "submit_pipeline: step2 mode = ${STEP2_MODE}"
+echo "submit_pipeline: step2.1 mode = ${STEP2_MODE}"
 echo "submit_pipeline: chrom list = ${CHROMS}"
 
 jid0=$(sbatch --parsable \
@@ -37,4 +37,4 @@ jid2=$(sbatch --parsable \
   --dependency=afterok:${jid1} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDY=${STUDY},STEP2_MODE=${STEP2_MODE} \
   submit_step2_array.sbatch)
-echo "submit_pipeline: submitted Step2 bridge job ${jid2}"
+echo "submit_pipeline: submitted Step2.1 bridge job ${jid2}"

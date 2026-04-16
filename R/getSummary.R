@@ -44,7 +44,7 @@ getSummary <- function(genoFile,
                        minMAF = 0.05,
                        minMAC = 5,
                        outputSnpFile = NULL,
-                       correct = "NULL",
+                       correct = NULL,
                        useCluster = FALSE) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")

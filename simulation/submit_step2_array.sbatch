@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=simu_step2_submit
+#SBATCH --job-name=simu_step2_1_submit
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=2G
 #SBATCH --time=00:30:00
-#SBATCH --output=logs/simu_step2_submit_%A_%a.out
-#SBATCH --error=logs/simu_step2_submit_%A_%a.err
+#SBATCH --output=logs/simu_step2_1_submit_%A_%a.out
+#SBATCH --error=logs/simu_step2_1_submit_%A_%a.err
 
 set -euo pipefail
 
@@ -45,7 +45,7 @@ esac
 
 echo "submit_step2_array: simulation root = ${SIMU_ROOT}"
 echo "submit_step2_array: study = ${STUDY}"
-echo "submit_step2_array: step2 mode = ${STEP2_MODE}"
+echo "submit_step2_array: step2.1 mode = ${STEP2_MODE}"
 echo "submit_step2_array: n_feature = ${N_FEATURE}"
 if [[ "${STEP2_MODE}" == "feature_allchr" ]]; then
   echo "submit_step2_array: one array task per feature across all chromosomes"
@@ -60,9 +60,9 @@ jid=$(sbatch --parsable \
   --array=1-${TOTAL_TASKS} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDY=${STUDY},STEP2_MODE=${STEP2_MODE},CHROMS=${CHROMS} \
   step2_run_array.sbatch)
-echo "submit_step2_array: submitted Step2 array job ${jid} with 1-${TOTAL_TASKS}"
+echo "submit_step2_array: submitted Step2.1 array job ${jid} with 1-${TOTAL_TASKS}"
 if [[ -n "${STEP2_JID_FILE}" ]]; then
   mkdir -p "$(dirname "${STEP2_JID_FILE}")"
   printf '%s\n' "${jid}" > "${STEP2_JID_FILE}"
-  echo "submit_step2_array: wrote Step2 array job id to ${STEP2_JID_FILE}"
+  echo "submit_step2_array: wrote Step2.1 array job id to ${STEP2_JID_FILE}"
 fi

@@ -48,15 +48,15 @@ for study_name in "${STUDY_LIST[@]}"; do
 
   mapfile -t STEP2_ALLCHR_FILES < <(find "${OUTPUT_DIR}" -maxdepth 1 -type f -name 'step2_allchr_*.txt' | sort -V)
   if [[ "${#STEP2_ALLCHR_FILES[@]}" -gt 0 ]]; then
-    echo "merge_step2_outputs: ${study_name} found ${#STEP2_ALLCHR_FILES[@]} all-chromosome Step2 file(s)"
+    echo "merge_step2_outputs: ${study_name} found ${#STEP2_ALLCHR_FILES[@]} all-chromosome Step2.1 file(s)"
   else
     mapfile -t STEP2_FILES < <(find "${OUTPUT_DIR}" -maxdepth 1 -type f -name 'step2_chr*_*.txt' | sort -V)
     if [[ "${#STEP2_FILES[@]}" -eq 0 ]]; then
-      echo "merge_step2_outputs: no Step2 files found in ${OUTPUT_DIR}" >&2
+      echo "merge_step2_outputs: no Step2.1 files found in ${OUTPUT_DIR}" >&2
       exit 1
     fi
 
-    echo "merge_step2_outputs: ${study_name} found ${#STEP2_FILES[@]} per-chromosome Step2 file(s)"
+    echo "merge_step2_outputs: ${study_name} found ${#STEP2_FILES[@]} per-chromosome Step2.1 file(s)"
 
     mapfile -t PHENOS < <(
       printf '%s\n' "${STEP2_FILES[@]}" |
@@ -66,7 +66,7 @@ for study_name in "${STUDY_LIST[@]}"; do
     )
 
     if [[ "${#PHENOS[@]}" -eq 0 ]]; then
-      echo "merge_step2_outputs: could not resolve phenotype names from Step2 filenames in ${OUTPUT_DIR}" >&2
+      echo "merge_step2_outputs: could not resolve phenotype names from Step2.1 filenames in ${OUTPUT_DIR}" >&2
       exit 1
     fi
 
