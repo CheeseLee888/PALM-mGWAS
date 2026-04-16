@@ -17,6 +17,7 @@ SIMU_ROOT="${SIMU_ROOT:-/mnt/scratch/group/ztang2/pli297/simulation}"
 STUDY="${STUDY:-study1}"
 STEP2_MODE="${STEP2_MODE:-feature_chrom}"
 CHROMS="${CHROMS:-1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}"
+STEP2_JID_FILE="${STEP2_JID_FILE:-}"
 
 cd "${SIMU_ROOT}"
 
@@ -57,6 +58,11 @@ echo "submit_step2_array: total tasks = ${TOTAL_TASKS}"
 
 jid=$(sbatch --parsable \
   --array=1-${TOTAL_TASKS} \
-  --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDY=${STUDY},STEP2_MODE=${STEP2_MODE} \
+  --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDY=${STUDY},STEP2_MODE=${STEP2_MODE},CHROMS=${CHROMS} \
   step2_run_array.sbatch)
 echo "submit_step2_array: submitted Step2 array job ${jid} with 1-${TOTAL_TASKS}"
+if [[ -n "${STEP2_JID_FILE}" ]]; then
+  mkdir -p "$(dirname "${STEP2_JID_FILE}")"
+  printf '%s\n' "${jid}" > "${STEP2_JID_FILE}"
+  echo "submit_step2_array: wrote Step2 array job id to ${STEP2_JID_FILE}"
+fi

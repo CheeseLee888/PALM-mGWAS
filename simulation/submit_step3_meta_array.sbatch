@@ -22,7 +22,7 @@ mkdir -p "${SIMU_ROOT}/logs" "${META_DIR}"
 
 if [[ ! -f "${META_DIR}/study_dirs.tsv" ]]; then
   echo "submit_step3_meta_array: missing ${META_DIR}/study_dirs.tsv" >&2
-  echo "submit_step3_meta_array: run merge_step2_outputs.sbatch first." >&2
+  echo "submit_step3_meta_array: run merge_step2_outputs.sh first." >&2
   exit 1
 fi
 
@@ -46,5 +46,5 @@ echo "submit_step3_meta_array: total features = ${N_FEATURE}"
 jid=$(sbatch --parsable \
   --array=1-${N_FEATURE} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},META_DIR=${META_DIR},FEATURE_LIST_FILE=${FEATURE_LIST_FILE} \
-  run_step3_meta.sbatch)
+  run_step3_meta.sh)
 echo "submit_step3_meta_array: submitted Step3 meta array job ${jid} with 1-${N_FEATURE}"

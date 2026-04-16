@@ -59,19 +59,35 @@ bash submit_pipeline.sh
 
 This submits `Step0 -> Step1 -> Step2`.
 
+If you want one command that submits the full workflow from `Step0` through visualization, run:
+
+```bash
+cd /mnt/scratch/group/ztang2/pli297/simulation
+bash submit_all.sh
+```
+
+This submits:
+
+- `step0_align_inputs.sbatch`
+- `step1_fit_null_model.sbatch`
+- `submit_step2_array.sbatch`
+- `merge_step2_outputs.sh`
+- `run_step3_meta.sh` as a feature-level array
+- `visualize_meta_results.sh`
+
 After all Step2 array jobs finish, run:
 
 ```bash
 cd /mnt/scratch/group/ztang2/pli297/simulation
-sbatch merge_step2_outputs.sbatch
-sbatch run_step3_meta.sbatch
+sbatch merge_step2_outputs.sh
+sbatch submit_step3_meta_array.sbatch
 bash visualize_meta_results.sh
 ```
 
 This now performs three stages across three commands:
 
 - merge per-chromosome Step2 outputs into per-phenotype `step2_allchr_*` files within each study
-- run Step3 meta-analysis across studies
+- run Step3 meta-analysis across studies as one array task per feature
 - run the same four visualization modes used in the main workflow on the meta-analysis results
 
 - phenotype + SNP forest
@@ -79,7 +95,7 @@ This now performs three stages across three commands:
 - SNP-only forest across phenotypes
 - combined overview across phenotypes
 
-By default, `merge_step2_outputs.sh`, `run_step3_meta.sh`, and `merge_step2_meta.sh` use `study1,study2,study3`. If needed, you can restrict the merge stage to one study or a subset:
+By default, `merge_step2_outputs.sh` uses `study1,study2,study3`. If needed, you can restrict the merge stage to one study or a subset:
 
 ```bash
 STUDY=study2 bash merge_step2_outputs.sh
@@ -89,9 +105,9 @@ STUDIES=study1,study3 bash merge_step2_outputs.sh
 Submit the split merge and meta steps as Slurm jobs so runtime and memory are recorded separately:
 
 ```bash
-sbatch merge_step2_outputs.sbatch
-sbatch --export=ALL,STUDY=study2 merge_step2_outputs.sbatch
-sbatch run_step3_meta.sbatch
+sbatch merge_step2_outputs.sh
+sbatch --export=ALL,STUDY=study2 merge_step2_outputs.sh
+sbatch submit_step3_meta_array.sbatch
 ```
 
 `visualize_meta_results.sh` reads the meta-analysis results from `/mnt/scratch/group/ztang2/pli297/simulation/output/meta` by default and writes plots to `/mnt/scratch/group/ztang2/pli297/simulation/output` by default:
@@ -162,7 +178,7 @@ are merged into:
 
 - `step2_allchr_g_Acinetobacter.txt`
 
-The meta-analysis step then reads the merged `step2_allchr_*.txt` files and writes `step3_meta_*.txt`. The visualization step reads those meta files.
+The meta-analysis step reads the merged `step2_allchr_*.txt` files and writes `step3_meta_*.txt` through a feature-level array. The visualization step reads those meta files.
 
 Choose a feature block size, for example `10` features per task:
 
@@ -197,6 +213,6 @@ This script uses 1-based array indexing:
 
 ## Note
 
-The input generator now creates three related studies for later meta-analysis work. The current Slurm analysis scripts still default to `study1`, so if you want to run `study2` or `study3`, override `STUDY` at submit time or edit the default inside the sbatch files. By contrast, `merge_step2_meta.sh` defaults to combining all three studies for meta-analysis unless you restrict `STUDY` or `STUDIES`.
+The input generator now creates three related studies for later meta-analysis work. The current Slurm analysis scripts still default to `study1`, so if you want to run `study2` or `study3`, override `STUDY` at submit time or edit the default inside the sbatch files. By contrast, `merge_step2_outputs.sh` defaults to combining all three studies for later meta-analysis unless you restrict `STUDY` or `STUDIES`.
 
 The simulation working directory keeps the lightweight metadata under `provided/`. Users regenerate `input/` and `output/` locally by running the scripts above.

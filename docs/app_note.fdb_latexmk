@@ -1,9 +1,9 @@
 # Fdb version 4
-["pdflatex"] 1776266276.98652 "/Users/peterli/Desktop/PALM-mGWAS/docs/app_note.tex" "app_note.pdf" "app_note" 1776266277.66927 0
-  "../simulation/output/plot/forest_g_Acinetobacter_chr4_1682869_G_C.png" 1776189613.61885 157341 b66633b76f34a14be3c1328840537451 ""
-  "../simulation/output/plot/manhattan_g_Acinetobacter.png" 1776189613.63656 385091 f8854cef4947d49e1a0081b8170c0c6f ""
-  "../simulation/output/plot/manhattan_g_Acinetobacter_qq.png" 1776189614.01777 74406 6e706346ad973896e580c7c25c105aa5 ""
-  "/Users/peterli/Desktop/PALM-mGWAS/docs/app_note.tex" 1776266276.76752 14421 ad634f17c8a5219257c098f894714991 ""
+["pdflatex"] 1776356450.7468 "/Users/peterli/Desktop/PALM-mGWAS/docs/app_note.tex" "app_note.pdf" "app_note" 1776356451.68146 0
+  "../simulation/output/plot/forest_g_Acinetobacter_chr4_1682869_G_C.png" 1776355599.0513 147478 fd3e85b8fac2e843d233c2dcbc426ee7 ""
+  "../simulation/output/plot/manhattan_g_Acinetobacter.png" 1776355599.0616 332470 ed650da412e0d3a0d247105fd618559b ""
+  "../simulation/output/plot/manhattan_g_Acinetobacter_qq.png" 1776355599.07637 81146 3645dca46ca291fa1d752472f18e342f ""
+  "/Users/peterli/Desktop/PALM-mGWAS/docs/app_note.tex" 1776356450.45863 14350 b6d2d004b039b84304788a01530c7091 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc" 1254269338 2375 baa924870cfb487815765f9094cf3728 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc" 1202520719 2405 5dcf2c1b967ee25cc46c58cd52244aed ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc" 1202520719 2840 216e6e45ad352e2456e1149f28885bee ""
@@ -204,9 +204,9 @@
   "/usr/local/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1732923847.03093 5467645 128b85b7cde5f5edc5cb7f1dd7ff8736 ""
   "/usr/local/texlive/2024/texmf-var/web2c/pdftex/pdflatex.fmt" 1732923794 8221429 88d4a188c065932c053ad68f12eaf871 ""
   "/usr/local/texlive/2024/texmf.cnf" 1710266656 577 e590dabc9e28c5b61546e15f63eebcdf ""
-  "app_note.aux" 1776266277.57236 2856 25c711f122e2a8c122e838cd301d5717 "pdflatex"
-  "app_note.out" 1776266277.57276 1090 7bd74423062eb38890f60efa62ee1a51 "pdflatex"
-  "app_note.tex" 1776266276.76752 14421 ad634f17c8a5219257c098f894714991 ""
+  "app_note.aux" 1776356451.54593 2856 25c711f122e2a8c122e838cd301d5717 "pdflatex"
+  "app_note.out" 1776356451.54656 1090 7bd74423062eb38890f60efa62ee1a51 "pdflatex"
+  "app_note.tex" 1776356450.45863 14350 b6d2d004b039b84304788a01530c7091 ""
   (generated)
   "app_note.aux"
   "app_note.log"

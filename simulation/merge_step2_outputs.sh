@@ -1,4 +1,11 @@
 #!/bin/bash
+#SBATCH --job-name=simu_merge_step2
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=8G
+#SBATCH --time=02:00:00
+#SBATCH --output=logs/simu_merge_step2_%A_%a.out
+#SBATCH --error=logs/simu_merge_step2_%A_%a.err
+
 set -euo pipefail
 
 if [[ -n "${ENV_FILE:-}" ]]; then
