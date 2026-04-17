@@ -48,8 +48,8 @@ for study_name in "${STUDY_LIST[@]}"; do
 
   apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
     step2_2_merge.R \
-    --inputPrefix="${OUTPUT_DIR}/step2_chr1" \
-    --outputPrefix="${OUTPUT_DIR}/step2_allchr"
+    --inputPrefix="${OUTPUT_DIR}/step2" \
+    --outputPrefix="${OUTPUT_DIR}/step2"
 
   printf '%s\t%s\n' "${study_name}" "${OUTPUT_DIR}" >> "${STUDY_FILE}"
 done

@@ -120,7 +120,8 @@ docker run --rm --platform=linux/amd64 \
     <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> optionally filters low-depth samples, checks IID consistency across abundance, covariates, and genotype input, reorders tables to match genotype sample order, and can write sequencing-depth summaries.</div>
     <div class="card"><strong>Step1 Null</strong><br><code>step1_null.R</code> fits the PALM null model from the Step0-aligned abundance and covariate tables and can write feature summaries.</div>
     <div class="card"><strong>Step2.1 Summary</strong><br><code>step2_1_summary.R</code> reads genotype input, runs PALM score tests without compositional correction, and writes one association file per feature.</div>
-    <div class="card"><strong>Step2.2 Merge + Step2.3 Correction</strong><br><code>workflow/step2_2.sh</code> merges per-chromosome Step2.1 outputs into per-feature all-chromosome files, then <code>step2_3_correct.R</code> applies median-based compositional correction across features for each SNP.</div>
+    <div class="card"><strong>Step2.2 Merge</strong><br><code>step2_2_merge.R</code> merges per-chromosome Step2.1 outputs into per-feature all-chromosome files so later stages read one file per feature.</div>
+    <div class="card"><strong>Step2.3 Correction</strong><br><code>step2_3_correct.R</code> reads merged Step2.2 per-feature files and applies median-based compositional correction across features for each SNP.</div>
     <div class="card"><strong>Step3 Meta</strong><br><code>step3_meta.R</code> meta-analyzes multiple studies and adds <code>meta_*</code> columns.</div>
     <div class="card"><strong>Visualization</strong><br><code>Visualization.R</code> generates Manhattan and forest plots.</div>
   </div>
@@ -270,6 +271,29 @@ docker run --rm --platform=linux/amd64 \
     <tr><td><code>--minMAC</code></td><td><code>integer</code></td><td><code>5</code></td><td>Optional minimum minor allele count threshold for SNP filtering</td><td><code>--minMAC=5</code>; <code>--minMAC=0</code></td></tr>
     <tr><td><code>--outputSnpFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for Step2.1 SNP summary before minMAF/minMAC filtering</td><td><code>--outputSnpFile=example/output/study1/info_snp.txt</code>; <code>--outputSnpFile=NULL</code></td></tr>
     <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether to use FID-based clustering from the PLINK <code>.fam</code> file; only supported for native PLINK input</td><td><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></td></tr>
+  </table>
+
+  <h3>Step2.2: merge per-chromosome Step2.1 files into per-feature all-chromosome files</h3>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_2_merge.R \
+    --inputPrefix=${step2MergeInputPrefix} \
+    --outputPrefix=${step2MergeOutputPrefix}</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  step2_2_merge.R \
+    --inputPrefix=/work/${step2MergeInputPrefix} \
+    --outputPrefix=/work/${step2MergeOutputPrefix}</code></pre>
+  <ul>
+    <li><strong>Inputs:</strong> the shared Step2 base prefix for one study, for example <code>step2</code>. Under the naming convention here, the script discovers files named <code>step2_chr1_*.txt</code> through <code>step2_chr22_*.txt</code>, or leaves existing <code>step2_allchr_*.txt</code> files in place.</li>
+    <li><strong>Purpose:</strong> Step2.2 groups files by feature name and concatenates all chromosome shards into one <code>step2_allchr_*.txt</code> file per feature.</li>
+    <li><strong>Ordering:</strong> chromosome files are merged in numeric order, so <code>chr2</code> comes before <code>chr11</code>.</li>
+    <li><strong>Header handling:</strong> the merged file keeps the first header row and drops repeated headers from later chromosome files.</li>
+    <li><strong>Output behavior:</strong> if merged Step2.2 files already exist under the output prefix, the script leaves them in place.</li>
+  </ul>
+  <table>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
+    <tr><td><code>--inputPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 prefix used to discover <code>chr1..chr22</code> or <code>allchr</code> files for one study</td><td><code>--inputPrefix=example/output/study1/step2</code></td></tr>
+    <tr><td><code>--outputPrefix</code></td><td><code>character</code></td><td><code>"NULL"</code> (auto-derived)</td><td>Base output prefix for merged Step2.2 files; the script writes merged files as <code>&lt;outputPrefix&gt;_allchr_*.txt</code></td><td><code>--outputPrefix=example/output/study1/step2</code>; <code>--outputPrefix=NULL</code></td></tr>
   </table>
 
   <h3>Step2.3: median compositional correction on merged Step2.2 files</h3>
@@ -541,6 +565,19 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --useCluster=FALSE</code></pre>
   <p><strong>Output:</strong> one file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on. If requested, Step2.1 also writes <code>example/output/study1/info_snp.txt</code>.</p>
   <p><strong>Current example files:</strong> in this repository the Step2.1 outputs use real feature names, for example <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
+
+  <h3>Step2.2: merge the chromosome-split Step2.1 files</h3>
+  <p><strong>Input:</strong> the shared Step2 base prefix for one feature namespace, for example <code>example/output/study1/step2</code>. The merge step then discovers <code>step2_chr1_*.txt</code> through <code>step2_chr22_*.txt</code> automatically.</p>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_2_merge.R \
+    --inputPrefix=example/output/study1/step2 \
+    --outputPrefix=example/output/study1/step2</code></pre>
+  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palm-mgwas:latest \
+  step2_2_merge.R \
+    --inputPrefix=/work/example/output/study1/step2 \
+    --outputPrefix=/work/example/output/study1/step2</code></pre>
+  <p><strong>Output:</strong> one merged file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>. The merged file preserves one header row and concatenates chromosome shards in numeric chromosome order.</p>
 
   <h3>Step2.3: apply median correction to the merged Step2.2 files</h3>
   <p><strong>Input:</strong> the full set of merged Step2.2 files for one prefix, for example <code>example/output/study1/step2_allchr_*.txt</code>.</p>
