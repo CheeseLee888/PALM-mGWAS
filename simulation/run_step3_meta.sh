@@ -26,7 +26,7 @@ mkdir -p "${SIMU_ROOT}/logs" "${META_DIR}"
 
 if [[ ! -f "${STUDY_FILE}" ]]; then
   echo "run_step3_meta: missing study dir file ${STUDY_FILE}" >&2
-  echo "run_step3_meta: run merge_step2_outputs.sh first." >&2
+  echo "run_step3_meta: run Step2.2 merge first." >&2
   exit 1
 fi
 

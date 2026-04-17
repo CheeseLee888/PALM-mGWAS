@@ -29,12 +29,12 @@ mkdir -p "${SIMU_ROOT}/logs" "${META_DIR}"
 
 IFS=',' read -r -a STUDY_LIST <<< "${STUDIES_CSV}"
 if [[ "${#STUDY_LIST[@]}" -eq 0 ]]; then
-  echo "run_step2_2_merge: no studies resolved from STUDIES/STUDY" >&2
+  echo "run_step2_2: no studies resolved from STUDIES/STUDY" >&2
   exit 1
 fi
 
-echo "run_step2_2_merge: simulation root = ${SIMU_ROOT}"
-echo "run_step2_2_merge: studies = ${STUDIES_CSV}"
+echo "run_step2_2: simulation root = ${SIMU_ROOT}"
+echo "run_step2_2: studies = ${STUDIES_CSV}"
 
 STUDY_FILE="${META_DIR}/study_dirs.tsv"
 : > "${STUDY_FILE}"
@@ -42,7 +42,7 @@ STUDY_FILE="${META_DIR}/study_dirs.tsv"
 for study_name in "${STUDY_LIST[@]}"; do
   OUTPUT_DIR="${SIMU_ROOT}/output/${study_name}"
   if [[ ! -d "${OUTPUT_DIR}" ]]; then
-    echo "run_step2_2_merge: missing output directory ${OUTPUT_DIR}" >&2
+    echo "run_step2_2: missing output directory ${OUTPUT_DIR}" >&2
     exit 1
   fi
 
@@ -54,4 +54,4 @@ for study_name in "${STUDY_LIST[@]}"; do
   printf '%s\t%s\n' "${study_name}" "${OUTPUT_DIR}" >> "${STUDY_FILE}"
 done
 
-echo "run_step2_2_merge: wrote ${STUDY_FILE}"
+echo "run_step2_2: wrote ${STUDY_FILE}"

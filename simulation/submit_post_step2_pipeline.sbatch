@@ -49,7 +49,7 @@ echo "submit_post_step2_pipeline: Step2.1 array dependencies = ${step2_dep}"
 jid_merge=$(sbatch --parsable \
   --dependency=afterok:${step2_dep} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDIES=${STUDIES},META_DIR=${META_DIR} \
-  run_step2_2_merge.sbatch)
+  run_step2_2.sbatch)
 echo "submit_post_step2_pipeline: Step2.2 merge job ${jid_merge}"
 
 jid_corr=$(sbatch --parsable \

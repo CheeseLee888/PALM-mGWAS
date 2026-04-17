@@ -71,7 +71,7 @@ This submits:
 - `step0_align_inputs.sbatch`
 - `step1_fit_null_model.sbatch`
 - `submit_step2_array.sbatch`
-- `run_step2_2_merge.sbatch`
+- `run_step2_2.sbatch`
 - `run_step2_3_correction.sbatch`
 - `run_step3_meta.sh` as a feature-level array
 - `visualize_meta_results.sh`
@@ -80,7 +80,7 @@ After all Step2.1 array jobs finish, run:
 
 ```bash
 cd /mnt/scratch/group/ztang2/pli297/simulation
-sbatch run_step2_2_merge.sbatch
+sbatch run_step2_2.sbatch
 sbatch run_step2_3_correction.sbatch
 sbatch submit_step3_meta_array.sbatch
 bash visualize_meta_results.sh
@@ -98,18 +98,18 @@ This now performs four stages across four commands:
 - SNP-only forest across phenotypes
 - combined overview across phenotypes
 
-By default, `run_step2_2_merge.sbatch` uses `study1,study2,study3`. If needed, you can restrict the merge stage to one study or a subset:
+By default, `run_step2_2.sbatch` uses `study1,study2,study3`. If needed, you can restrict the Step2.2 stage to one study or a subset:
 
 ```bash
-STUDY=study2 bash run_step2_2_merge.sbatch
-STUDIES=study1,study3 bash run_step2_2_merge.sbatch
+STUDY=study2 bash run_step2_2.sbatch
+STUDIES=study1,study3 bash run_step2_2.sbatch
 ```
 
 Submit the split merge and meta steps as Slurm jobs so runtime and memory are recorded separately:
 
 ```bash
-sbatch run_step2_2_merge.sbatch
-sbatch --export=ALL,STUDY=study2 run_step2_2_merge.sbatch
+sbatch run_step2_2.sbatch
+sbatch --export=ALL,STUDY=study2 run_step2_2.sbatch
 sbatch submit_step3_meta_array.sbatch
 ```
 
@@ -216,6 +216,6 @@ This script uses 1-based array indexing:
 
 ## Note
 
-The input generator now creates three related studies for later meta-analysis work. The current Slurm analysis scripts still default to `study1`, so if you want to run `study2` or `study3`, override `STUDY` at submit time or edit the default inside the sbatch files. By contrast, `run_step2_2_merge.sbatch` defaults to combining all three studies for later meta-analysis unless you restrict `STUDY` or `STUDIES`.
+The input generator now creates three related studies for later meta-analysis work. The current Slurm analysis scripts still default to `study1`, so if you want to run `study2` or `study3`, override `STUDY` at submit time or edit the default inside the sbatch files. By contrast, `run_step2_2.sbatch` defaults to combining all three studies for later meta-analysis unless you restrict `STUDY` or `STUDIES`.
 
 The simulation working directory keeps the lightweight metadata under `provided/`. Users regenerate `input/` and `output/` locally by running the scripts above.
