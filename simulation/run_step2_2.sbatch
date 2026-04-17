@@ -21,41 +21,37 @@ elif [[ -n "${STUDY:-}" ]]; then
 else
   STUDIES_CSV="study1,study2,study3"
 fi
+META_DIR="${META_DIR:-/mnt/scratch/group/ztang2/pli297/simulation/output/meta}"
 SIF="${SIF:-${SIMU_ROOT}/PALMmGWAS.sif}"
 
 cd "${SIMU_ROOT}"
-mkdir -p "${SIMU_ROOT}/logs"
+mkdir -p "${SIMU_ROOT}/logs" "${META_DIR}"
 
 IFS=',' read -r -a STUDY_LIST <<< "${STUDIES_CSV}"
 if [[ "${#STUDY_LIST[@]}" -eq 0 ]]; then
-  echo "run_step2_2_correction: no studies resolved from STUDIES/STUDY" >&2
+  echo "run_step2_2: no studies resolved from STUDIES/STUDY" >&2
   exit 1
 fi
 
-echo "run_step2_2_correction: simulation root = ${SIMU_ROOT}"
-echo "run_step2_2_correction: studies = ${STUDIES_CSV}"
+echo "run_step2_2: simulation root = ${SIMU_ROOT}"
+echo "run_step2_2: studies = ${STUDIES_CSV}"
+
+STUDY_FILE="${META_DIR}/study_dirs.tsv"
+: > "${STUDY_FILE}"
 
 for study_name in "${STUDY_LIST[@]}"; do
   OUTPUT_DIR="${SIMU_ROOT}/output/${study_name}"
-  NULLMODEL_FILE="${OUTPUT_DIR}/step1_allpheno.rda"
-  INPUT_PREFIX="${OUTPUT_DIR}/step2_allchr"
-
-  if [[ ! -f "${NULLMODEL_FILE}" ]]; then
-    echo "run_step2_2_correction: missing null model ${NULLMODEL_FILE}" >&2
+  if [[ ! -d "${OUTPUT_DIR}" ]]; then
+    echo "run_step2_2: missing output directory ${OUTPUT_DIR}" >&2
     exit 1
   fi
-  if ! find "${OUTPUT_DIR}" -maxdepth 1 -type f -name 'step2_allchr_*.txt' | grep -q .; then
-    echo "run_step2_2_correction: no merged Step2.1 files found in ${OUTPUT_DIR}" >&2
-    exit 1
-  fi
-
-  echo "run_step2_2_correction: study=${study_name}"
-  echo "run_step2_2_correction: inputPrefix=${INPUT_PREFIX}"
 
   apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
-    step2_2_correct.R \
-    --inputPrefix="${INPUT_PREFIX}" \
-    --outputPrefix=NULL \
-    --NULLmodelFile="${NULLMODEL_FILE}"
+    step2_2_merge.R \
+    --inputPrefix="${OUTPUT_DIR}/step2" \
+    --outputPrefix="${OUTPUT_DIR}/step2"
+
+  printf '%s\t%s\n' "${study_name}" "${OUTPUT_DIR}" >> "${STUDY_FILE}"
 done
 
+echo "run_step2_2: wrote ${STUDY_FILE}"

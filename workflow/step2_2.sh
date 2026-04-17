@@ -1,14 +1,25 @@
 #!/usr/bin/env bash
-set -eo pipefail
+set -euo pipefail
 source "$WORK/config.sh"
 
 
 ################################# workflow below (do not modify) #################################
 
-# step2.2: compositional correction on completed step2 outputs
-echo "Start: Perform step2.2 compositional correction."
-pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_2_correct.R \
-    --inputPrefix=${step2InputPrefix} \
-    --outputPrefix=${step2OutputPrefix:-NULL} \
-    --NULLmodelFile=${NULLmodelFile:-NULL}
-echo "Finish: Perform step2.2 compositional correction."
+# step2.2: merge per-chromosome Step2.1 outputs into per-feature all-chromosome files
+input_prefix="${step2MergeInputPrefix:-NULL}"
+output_prefix="${step2MergeOutputPrefix:-${step2InputPrefix:-NULL}}"
+
+if [[ -z "${input_prefix}" || "${input_prefix}" == "NULL" ]]; then
+  if [[ "${palm1_step2_prefix}" =~ ^(.*)_(chr([1-9]|1[0-9]|2[0-2])|allchr)$ ]]; then
+    input_prefix="${BASH_REMATCH[1]}"
+  else
+    input_prefix="${palm1_step2_prefix}"
+  fi
+fi
+
+echo "Start: Perform step2.2 merge."
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_2_merge.R \
+    --inputPrefix=${input_prefix} \
+    --outputPrefix=${output_prefix}
+
+echo "Finish: Perform step2.2 merge."

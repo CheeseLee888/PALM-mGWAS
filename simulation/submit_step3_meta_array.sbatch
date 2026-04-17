@@ -22,7 +22,7 @@ mkdir -p "${SIMU_ROOT}/logs" "${META_DIR}"
 
 if [[ ! -f "${META_DIR}/study_dirs.tsv" ]]; then
   echo "submit_step3_meta_array: missing ${META_DIR}/study_dirs.tsv" >&2
-  echo "submit_step3_meta_array: run merge_step2_outputs.sh first." >&2
+  echo "submit_step3_meta_array: run Step2.2 merge first." >&2
   exit 1
 fi
 

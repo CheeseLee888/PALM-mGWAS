@@ -49,14 +49,14 @@ echo "submit_post_step2_pipeline: Step2.1 array dependencies = ${step2_dep}"
 jid_merge=$(sbatch --parsable \
   --dependency=afterok:${step2_dep} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDIES=${STUDIES},META_DIR=${META_DIR} \
-  merge_step2_outputs.sh)
-echo "submit_post_step2_pipeline: Step2.1 merge job ${jid_merge}"
+  run_step2_2.sbatch)
+echo "submit_post_step2_pipeline: Step2.2 merge job ${jid_merge}"
 
 jid_corr=$(sbatch --parsable \
   --dependency=afterok:${jid_merge} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDIES=${STUDIES} \
-  run_step2_2_correction.sbatch)
-echo "submit_post_step2_pipeline: Step2.2 correction job ${jid_corr}"
+  run_step2_3_correction.sbatch)
+echo "submit_post_step2_pipeline: Step2.3 correction job ${jid_corr}"
 
 if [[ ! -f "${FEATURE_LIST_FILE}" ]]; then
   echo "submit_post_step2_pipeline: missing feature list ${FEATURE_LIST_FILE}" >&2
