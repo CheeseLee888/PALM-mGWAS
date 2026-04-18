@@ -8,7 +8,7 @@
 #' chromosome-merge step and after all feature-level Step2 jobs have completed.
 #'
 #' @param inputPrefix Step2 file prefix. Files are expected at
-#'   `<inputPrefix>_<feature>.txt`.
+#'   `<inputPrefix>_<feature>.txt`. An optional trailing underscore is ignored.
 #' @param overwriteOutput Logical; if `TRUE` overwrite the original Step2 files.
 #'   If `FALSE`, keep the originals and write new files with suffix
 #'   `"_corrected"`.
@@ -33,7 +33,7 @@ correctSummary <- function(inputPrefix,
   }
 
   step2_dir <- dirname(inputPrefix)
-  step2_base <- basename(inputPrefix)
+  step2_base <- sub("_+$", "", basename(inputPrefix))
   pattern <- paste0("^", escape_regex(step2_base), "_.*[.]txt$")
   files <- list.files(step2_dir, pattern = pattern, full.names = TRUE)
   files <- files[!grepl("_corrected[.]txt$", basename(files))]

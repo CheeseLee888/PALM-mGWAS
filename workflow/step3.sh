@@ -10,6 +10,5 @@ echo "Start: Performe meta analysis."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step3_meta.R \
     --studyDirFile=${studyDirFile} \
     --pattern=${pattern} \
-    --metaDir=${metaDir} \
     --metaPrefix=${metaPrefix}
 echo "Finish: Performe meta analysis."

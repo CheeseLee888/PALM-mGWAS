@@ -6,11 +6,11 @@
 #' removed automatically.
 #'
 #' @param inputPrefix Base Step2 prefix. Under the current naming convention,
-#'   Step2.1 outputs are expected at `<inputPrefix>_chr1_<feature>.txt` through
+#'   an optional trailing underscore is ignored. Step2.1 outputs are expected at `<inputPrefix>_chr1_<feature>.txt` through
 #'   `<inputPrefix>_chr22_<feature>.txt`, or already-merged files at
 #'   `<inputPrefix>_allchr_<feature>.txt`.
 #' @param outputPrefix Base output prefix for merged files. When `NULL`, the
-#'   function derives the base prefix from `inputPrefix`, then writes merged
+#'   function derives the base prefix from `inputPrefix`, normalizes a trailing underscore when present, then writes merged
 #'   files to `<outputPrefix>_allchr_<feature>.txt`.
 #'
 #' @return Invisibly returns the merged file paths.
@@ -22,6 +22,7 @@ mergeSummary <- function(inputPrefix, outputPrefix = NULL) {
 
   normalize_step2_base <- function(prefix) {
     base <- basename(prefix)
+    base <- sub("_+$", "", base)
     sub("^(.*)_(chr([1-9]|1[0-9]|2[0-2])|allchr)$", "\\1", base)
   }
 

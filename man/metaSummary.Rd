@@ -9,7 +9,7 @@ metaSummary(
   pattern,
   features = NULL,
   out_dir = NULL,
-  out_prefix = "meta_step2_allchr_",
+  out_prefix = "meta_step2_allchr",
   out_suffix = ".txt",
   keep_het = TRUE,
   meta.method = NULL
@@ -25,7 +25,7 @@ The phenotype/feature name is extracted from the first wildcard capture.}
 
 \item{out_dir}{If not NULL, write per-feature meta files to this directory.}
 
-\item{out_prefix}{Output meta file prefix, e.g. "meta_step2_allchr_"}
+\item{out_prefix}{Output meta file prefix, e.g. "meta_step2_allchr". A trailing underscore is ignored.}
 
 \item{out_suffix}{Output file suffix, default ".txt"}
 

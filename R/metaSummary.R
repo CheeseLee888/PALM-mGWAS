@@ -5,7 +5,7 @@
 #'   The phenotype/feature name is extracted from the first wildcard capture.
 #' @param features Optional feature names (without prefix/suffix). If NULL, infer from first study dir.
 #' @param out_dir If not NULL, write per-feature meta files to this directory.
-#' @param out_prefix Output meta file prefix, e.g. "meta_step2_allchr_"
+#' @param out_prefix Output meta file prefix, e.g. "meta_step2_allchr". A trailing underscore is ignored.
 #' @param out_suffix Output file suffix, default ".txt"
 #' @param keep_het If TRUE and multi-study, keep pval.het column; if FALSE, drop it to match 6-column step2 format exactly.
 #' @param meta.method (deprecated) no longer used; meta-analysis now uses fixed-effect inverse-variance weighting.
@@ -17,7 +17,7 @@ metaSummary <- function(study_dirs,
                         pattern,
                         features = NULL,
                         out_dir = NULL,
-                        out_prefix = "meta_step2_allchr_",
+                        out_prefix = "meta_step2_allchr",
                         out_suffix = ".txt",
                         keep_het = TRUE,
                         meta.method = NULL) {
@@ -52,6 +52,7 @@ metaSummary <- function(study_dirs,
   if (!is.null(out_dir)) {
     dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   }
+  out_prefix <- sub("_+$", "", out_prefix)
 
   # high-level run context (output directory printed near end)
   message("metaSummary: meta method = ", meta.method)
@@ -348,7 +349,12 @@ metaSummary <- function(study_dirs,
 
     # write to disk if requested
     if (!is.null(out_dir) && !is.null(out)) {
-      out_path <- file.path(out_dir, paste0(out_prefix, feat, out_suffix))
+      out_name <- if (nzchar(out_prefix)) {
+        paste0(out_prefix, "_", feat, out_suffix)
+      } else {
+        paste0(feat, out_suffix)
+      }
+      out_path <- file.path(out_dir, out_name)
       write.table(out,
         file = out_path, sep = "\t",
         quote = FALSE, row.names = FALSE, col.names = TRUE

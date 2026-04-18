@@ -26,7 +26,7 @@ treated as a PLINK prefix without extension.}
 The function reads `${NULLObjPrefix}.rda`.}
 
 \item{SummaryPrefix}{Base prefix for Step2 summary result files. The
-function writes one file per feature as
+function normalizes a trailing underscore when present, then writes one file per feature as
 `<SummaryPrefix>_chr<chrom>_<feature>.txt` when `chrom` is set, or
 `<SummaryPrefix>_allchr_<feature>.txt` when `chrom` is `NULL`.}
 
