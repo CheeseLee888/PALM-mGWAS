@@ -7,7 +7,7 @@
 #SBATCH --error=logs/simu_step0_%A_%a.err
 #
 # Usage:
-#   sbatch --export=ALL,ENV_FILE=/path/to/your.env simulation/step0_align_inputs.sbatch
+#   sbatch --export=ALL,ENV_FILE=/path/to/your.env simulation/run/step0.sbatch
 #
 # Simulation root layout:
 #   /mnt/scratch/group/ztang2/pli297/simulation/
@@ -32,8 +32,9 @@ if [[ -n "${ENV_FILE:-}" ]]; then
   # shellcheck disable=SC1090
   source "${ENV_FILE}"
 fi
-DEFAULT_SIMU_ROOT="/mnt/scratch/group/ztang2/pli297/simulation"
-SIMU_ROOT="${SIMU_ROOT:-${PWD:-${DEFAULT_SIMU_ROOT}}}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_SIMU_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SIMU_ROOT="${SIMU_ROOT:-${DEFAULT_SIMU_ROOT}}"
 SIF="${SIF:-${SIMU_ROOT}/PALMmGWAS.sif}"
 cd "${SIMU_ROOT}"
 

@@ -42,12 +42,12 @@
     <a href="#step1" class="sub">Step1 Null</a>
     <a href="#step2" class="sub">Step2 Summary</a>
     <a href="#step3" class="sub">Step3 Meta</a>
-    <a href="#viz" class="sub">Visualization</a>
+    <a href="#viz" class="sub">Step4</a>
     <a href="#exampledata">Example Data</a>
   </div>
   <div class="content">
   <h1>PALM-mGWAS Usage Guide</h1>
-  <p>This page explains how to run the PALM-mGWAS R package: key functions, required inputs, outputs, and visualization workflows.</p>
+  <p>This page explains how to run the PALM-mGWAS R package: key functions, required inputs, outputs, and the Step0-Step4 workflow.</p>
 
   <h2 id="env">Environment & Dependencies</h2>
   <p>Set up the runtime environment before installing or running any PALM-mGWAS command. The package depends on compiled R libraries, so the most reliable workflow is to keep <code>R</code>, <code>PALM</code>, and all supporting packages inside one isolated environment instead of mixing system-level and project-level installs.</p>
@@ -114,7 +114,7 @@ docker run --rm --platform=linux/amd64 \
   <p>This published Docker image already contains pixi, <code>abess</code>, PALM, <code>PALMmGWAS</code>, and PLINK1.9, so Docker users do not need to repeat the local source installation steps from Option A. Mount your working directory to <code>/work</code> and call the installed wrapper scripts directly.</p>
 
   <h2 id="workflow">Workflow</h2>
-  <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Step0</code> to <code>Visualization</code>.</p>
+  <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Step0</code> to <code>Step4</code>.</p>
   <p>If you use the shell wrappers under <code>workflow/</code>, start from <code>workflow/config.example.sh</code> and save your project-specific values as <code>config.sh</code>.</p>
   <div class="steps">
     <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> optionally filters low-depth samples, checks IID consistency across abundance, covariates, and genotype input, reorders tables to match genotype sample order, and can write sequencing-depth summaries.</div>
@@ -123,7 +123,7 @@ docker run --rm --platform=linux/amd64 \
     <div class="card"><strong>Step2.2 Merge</strong><br><code>step2_2_merge.R</code> merges per-chromosome Step2.1 outputs into per-feature all-chromosome files so later stages read one file per feature.</div>
     <div class="card"><strong>Step2.3 Correction</strong><br><code>step2_3_correct.R</code> reads merged Step2.2 per-feature files and applies median-based compositional correction across features for each SNP.</div>
     <div class="card"><strong>Step3 Meta</strong><br><code>step3_meta.R</code> meta-analyzes multiple studies and adds <code>meta_*</code> columns.</div>
-    <div class="card"><strong>Visualization</strong><br><code>Visualization.R</code> generates Manhattan and forest plots.</div>
+    <div class="card"><strong>Step4 Visualization</strong><br><code>step4_visualization.R</code> generates Manhattan and forest plots.</div>
   </div>
   <ul>
     <li><strong>Genotype input used by Step0 / Step2:</strong> set <code>genoFile</code> once, as a PLINK prefix such as <code>example/input/study1/geno</code> or a VCF path such as <code>example/input/study1_vcf/geno.vcf.gz</code>.</li>
@@ -353,26 +353,26 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     <tr><td><strong><code>--metaPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Full output prefix for meta-analysis tables, including directory and filename prefix; do not add a trailing underscore</td><td><code>--metaPrefix=example/output/meta/step3_meta</code></td></tr>
   </table>
 
-  <h2 id="viz">Visualization</h2>
+  <h2 id="viz">Step4: Visualization</h2>
   <pre><code class="language-bash"># case 1: combined Manhattan across features
-pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
+pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=${metaDir} \
-    --pattern='${visPattern}' \
+    --pattern='${step4Pattern}' \
     --plotDir=${plotDir} \
     --pCut=${pCut}
 
 # case 2: one feature
-pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
+pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=${metaDir} \
-    --pattern='${visPattern}' \
+    --pattern='${step4Pattern}' \
     --plotDir=${plotDir} \
     --pheno=${pheno} \
     --plotMinP=${plotMinP:-NA}
 
 # case 3: one SNP across features
-pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
+pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=${metaDir} \
-    --pattern='${visPattern}' \
+    --pattern='${step4Pattern}' \
     --plotDir=${plotDir} \
     --snp=${snp} \
     --pCut=${pCut} \
@@ -380,9 +380,9 @@ pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
     --showHet=${showHet:-TRUE}
 
 # case 4: one feature-SNP pair
-pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
+pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=${metaDir} \
-    --pattern='${visPattern}' \
+    --pattern='${step4Pattern}' \
     --plotDir=${plotDir} \
     --pheno=${pheno} \
     --snp=${snp} \
@@ -392,9 +392,9 @@ pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
 docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
-  Visualization.R \
+  step4_visualization.R \
     --metaDir=${metaDir} \
-    --pattern='${visPattern}' \
+    --pattern='${step4Pattern}' \
     --plotDir=${plotDir} \
     --pCut=${pCut}</code></pre>
   <ul>
@@ -403,7 +403,7 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Case 2:</strong> <code>--pheno</code> only gives a feature-specific Manhattan plot and QQ plot.</li>
     <li><strong>Case 3:</strong> <code>--snp</code> only writes one forest plot per feature containing that SNP; here <code>pCut</code> is used to keep only features with <code>p &lt;= pCut</code>, and <code>NA</code> disables that filtering. Each figure now includes study-level columns such as effect, standard error, weight, and effect with 95% confidence interval.</li>
     <li><strong>Case 4:</strong> both <code>--pheno</code> and <code>--snp</code> give a forest plot for one feature-SNP pair across studies.</li>
-    <li><strong>Single-study visualization:</strong> you can run visualization directly after Step2 by pointing <code>metaDir</code> to one study's Step2 output folder and setting <code>pattern</code> to match those files; in that case the plots summarize a single study rather than a meta-analysis.</li>
+    <li><strong>Single-study Step4:</strong> you can run Step4 directly after Step2 by pointing <code>metaDir</code> to one study's Step2 output folder and setting <code>pattern</code> to match those files; in that case the plots summarize a single study rather than a meta-analysis.</li>
     <li><strong>Outputs:</strong> plots saved to <code>--plotDir</code>; if <code>--PlotOutputFile</code> is not provided, the script auto-generates a file name based on mode, feature, and SNP.</li>
     <li><strong>Input scope:</strong> <code>--metaDir</code> can point to Step3 outputs or any directory of Step2/Step3-like files matching <code>--pattern</code>. In normal use, <code>pattern</code> should match all feature files in that directory, so the later logic can decide what to show based on whether <code>--pheno</code> and <code>--snp</code> are specified. Example: in <code>example/output/meta</code>, <code>step3_meta_.*[.]txt$</code> matches <code>step3_meta_g_Bifidobacterium.txt</code> and <code>step3_meta_g_Peptoniphilus_unclassified.txt</code>. In a single-study Step2 folder, <code>step2_allchr_.*[.]txt$</code> matches files such as <code>step2_allchr_g_Bifidobacterium.txt</code>. By contrast, <code>step3_meta_g_Bifidobacterium[.]txt$</code> matches only one feature file, so it is too narrow if you want the script to discover all available features first.</li>
     <li><strong>Validation rules:</strong> <code>pCut</code> is only accepted in case 1 and case 3; <code>showMeta</code> and <code>showHet</code> require <code>--snp</code>; <code>plotMinP</code> only affects Manhattan plots.</li>
@@ -627,11 +627,11 @@ chr1:2261200:G:C	1	2261200	-0.00263712209195503	0.0276773131927774	0.92409163339
 chr1:14678191:A:C	1	14678191	0.0579555175251001	0.0252011515059977	0.0214642561449021	0.768292996767528	0.0520991490461496	0.0469469273278635	0.0652203271020655	0.0306527036163064	-0.0317896728497866	0.132983391488595</code></pre>
   <p>The meta file keeps the combined estimate in <code>meta_*</code> columns and also carries study-specific estimates, which is why the downstream forest plots can show both overall and per-study effects.</p>
 
-  <h3>Visualization: meta tables to figures</h3>
-  <p><strong>Input:</strong> meta result files in <code>example/output/meta</code>. The example below shows all four visualization modes separately.</p>
+  <h3>Step4: meta tables to figures</h3>
+  <p><strong>Input:</strong> meta result files in <code>example/output/meta</code>. The example below shows all four Step4 plotting modes separately.</p>
 
-  <h3>Visualization case 1: no <code>--pheno</code>, no <code>--snp</code></h3>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
+  <h3>Step4 case 1: no <code>--pheno</code>, no <code>--snp</code></h3>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=example/output/meta \
     --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
@@ -639,7 +639,7 @@ chr1:14678191:A:C	1	14678191	0.0579555175251001	0.0252011515059977	0.02146425614
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
-  Visualization.R \
+  step4_visualization.R \
     --metaDir=/work/example/output/meta \
     --pattern='step3_meta_.*[.]txt$' \
     --plotDir=/work/example/output/plot \
@@ -659,8 +659,8 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
     </figure>
   </div>
 
-  <h3>Visualization case 2: <code>--pheno</code> only</h3>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
+  <h3>Step4 case 2: <code>--pheno</code> only</h3>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=example/output/meta \
     --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
@@ -668,7 +668,7 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
-  Visualization.R \
+  step4_visualization.R \
     --metaDir=example/output/meta \
     --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
@@ -687,8 +687,8 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
     </figure>
   </div>
 
-  <h3>Visualization case 3: <code>--snp</code> only</h3>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
+  <h3>Step4 case 3: <code>--snp</code> only</h3>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=example/output/meta \
     --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
@@ -697,7 +697,7 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
-  Visualization.R \
+  step4_visualization.R \
     --metaDir=example/output/meta \
     --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
@@ -717,8 +717,8 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
     </figure>
   </div>
 
-  <h3>Visualization case 4: both <code>--pheno</code> and <code>--snp</code></h3>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/Visualization.R \
+  <h3>Step4 case 4: both <code>--pheno</code> and <code>--snp</code></h3>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=example/output/meta \
     --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
@@ -727,7 +727,7 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
-  Visualization.R \
+  step4_visualization.R \
     --metaDir=example/output/meta \
     --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \

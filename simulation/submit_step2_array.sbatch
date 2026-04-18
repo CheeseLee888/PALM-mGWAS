@@ -13,7 +13,9 @@ if [[ -n "${ENV_FILE:-}" ]]; then
   source "${ENV_FILE}"
 fi
 
-SIMU_ROOT="${SIMU_ROOT:-/mnt/scratch/group/ztang2/pli297/simulation}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_SIMU_ROOT="${SCRIPT_DIR}"
+SIMU_ROOT="${SIMU_ROOT:-${DEFAULT_SIMU_ROOT}}"
 STUDY="${STUDY:-study1}"
 STEP2_MODE="${STEP2_MODE:-feature_chrom}"
 CHROMS="${CHROMS:-1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}"
@@ -59,7 +61,7 @@ echo "submit_step2_array: total tasks = ${TOTAL_TASKS}"
 jid=$(sbatch --parsable \
   --array=1-${TOTAL_TASKS} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDY=${STUDY},STEP2_MODE=${STEP2_MODE},CHROMS=${CHROMS} \
-  step2_run_array.sbatch)
+  run/step2_1.sbatch)
 echo "submit_step2_array: submitted Step2.1 array job ${jid} with 1-${TOTAL_TASKS}"
 if [[ -n "${STEP2_JID_FILE}" ]]; then
   mkdir -p "$(dirname "${STEP2_JID_FILE}")"

@@ -6,7 +6,9 @@ if [[ -n "${ENV_FILE:-}" ]]; then
   source "${ENV_FILE}"
 fi
 
-SIMU_ROOT="${SIMU_ROOT:-/mnt/scratch/group/ztang2/pli297/simulation}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_SIMU_ROOT="${SCRIPT_DIR}"
+SIMU_ROOT="${SIMU_ROOT:-${DEFAULT_SIMU_ROOT}}"
 STUDIES="${STUDIES:-study1,study2,study3}"
 STEP2_MODE="${STEP2_MODE:-feature_chrom}"
 CHROMS="${CHROMS:-1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}"
@@ -32,13 +34,13 @@ step2_submit_jids=()
 for study in "${STUDY_LIST[@]}"; do
   jid0=$(sbatch --parsable \
     --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDY=${study} \
-    step0_align_inputs.sbatch)
+    run/step0.sbatch)
   echo "submit_all: ${study} Step0 job ${jid0}"
 
   jid1=$(sbatch --parsable \
     --dependency=afterok:${jid0} \
     --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDY=${study} \
-    step1_fit_null_model.sbatch)
+    run/step1.sbatch)
   echo "submit_all: ${study} Step1 job ${jid1}"
 
   jid2=$(sbatch --parsable \

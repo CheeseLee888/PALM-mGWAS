@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=simu_vis
+#SBATCH --job-name=simu_step4
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=8G
 #SBATCH --time=02:00:00
-#SBATCH --output=logs/simu_vis_%A_%a.out
-#SBATCH --error=logs/simu_vis_%A_%a.err
+#SBATCH --output=logs/simu_step4_%A_%a.out
+#SBATCH --error=logs/simu_step4_%A_%a.err
 
 set -euo pipefail
 
@@ -14,12 +14,13 @@ if [[ -n "${ENV_FILE:-}" ]]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORK="${WORK:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
-SIMU_ROOT="${SIMU_ROOT:-${SCRIPT_DIR}}"
+DEFAULT_SIMU_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+WORK="${WORK:-$(cd "${DEFAULT_SIMU_ROOT}/.." && pwd)}"
+SIMU_ROOT="${SIMU_ROOT:-${DEFAULT_SIMU_ROOT}}"
 SIF="${SIF:-${SIMU_ROOT}/PALMmGWAS.sif}"
 META_DIR="${META_DIR:-/mnt/scratch/group/ztang2/pli297/simulation/output/meta}"
 PLOT_DIR="${PLOT_DIR:-/mnt/scratch/group/ztang2/pli297/simulation/output/plot}"
-VIS_PATTERN="${VIS_PATTERN:-step3_meta_.*\\.txt$}"
+STEP4_PATTERN="${STEP4_PATTERN:-${VIS_PATTERN:-step3_meta_.*\\.txt$}}"
 PHENO="${PHENO:-g_Acinetobacter}"
 SNP="${SNP:-chr4:1682869:G:C}"
 PCUT1="${PCUT1:-5e-8}"
@@ -37,36 +38,36 @@ META_DIR="$(mkdir -p "${META_DIR}" && cd "${META_DIR}" && pwd)"
 PLOT_DIR="$(mkdir -p "${PLOT_DIR}" && cd "${PLOT_DIR}" && pwd)"
 
 if [[ ! -d "${META_DIR}" ]]; then
-  echo "visualize_meta_results: missing meta directory ${META_DIR}" >&2
+  echo "step4: missing meta directory ${META_DIR}" >&2
   exit 1
 fi
 if [[ ! -f "${SIF}" ]]; then
-  echo "visualize_meta_results: missing sif image ${SIF}" >&2
+  echo "step4: missing sif image ${SIF}" >&2
   exit 1
 fi
 
 META_FILE_COUNT=$(
-  find "${META_DIR}" -maxdepth 1 -type f | grep -E "/$(printf '%s' "${VIS_PATTERN}")" | wc -l | tr -d ' '
+  find "${META_DIR}" -maxdepth 1 -type f | grep -E "/$(printf '%s' "${STEP4_PATTERN}")" | wc -l | tr -d ' '
 )
 if [[ "${META_FILE_COUNT}" -eq 0 ]]; then
-  echo "visualize_meta_results: no meta result files found in ${META_DIR} matching ${VIS_PATTERN}" >&2
+  echo "step4: no meta result files found in ${META_DIR} matching ${STEP4_PATTERN}" >&2
   exit 1
 fi
 
-echo "visualize_meta_results: work = ${WORK}"
-echo "visualize_meta_results: simulation root = ${SIMU_ROOT}"
-echo "visualize_meta_results: sif = ${SIF}"
-echo "visualize_meta_results: meta dir = ${META_DIR}"
-echo "visualize_meta_results: plot dir = ${PLOT_DIR}"
-echo "visualize_meta_results: pattern = ${VIS_PATTERN}"
-echo "visualize_meta_results: pheno = ${PHENO}"
-echo "visualize_meta_results: snp = ${SNP}"
+echo "step4: work = ${WORK}"
+echo "step4: simulation root = ${SIMU_ROOT}"
+echo "step4: sif = ${SIF}"
+echo "step4: meta dir = ${META_DIR}"
+echo "step4: plot dir = ${PLOT_DIR}"
+echo "step4: pattern = ${STEP4_PATTERN}"
+echo "step4: pheno = ${PHENO}"
+echo "step4: snp = ${SNP}"
 
-echo "visualize_meta_results: running visualization mode 1 (pheno + snp)"
+echo "step4: running visualization mode 1 (pheno + snp)"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
-  Visualization.R \
+  step4_visualization.R \
   --metaDir="${META_DIR}" \
-  --pattern="${VIS_PATTERN}" \
+  --pattern="${STEP4_PATTERN}" \
   --plotDir="${PLOT_DIR}" \
   --pheno="${PHENO}" \
   --snp="${SNP}" \
@@ -75,22 +76,22 @@ apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-echo "visualize_meta_results: running visualization mode 2 (pheno only)"
+echo "step4: running visualization mode 2 (pheno only)"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
-  Visualization.R \
+  step4_visualization.R \
   --metaDir="${META_DIR}" \
-  --pattern="${VIS_PATTERN}" \
+  --pattern="${STEP4_PATTERN}" \
   --plotDir="${PLOT_DIR}" \
   --pheno="${PHENO}" \
   --plotMinP="${PLOT_MIN_P}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-echo "visualize_meta_results: running visualization mode 3 (snp only)"
+echo "step4: running visualization mode 3 (snp only)"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
-  Visualization.R \
+  step4_visualization.R \
   --metaDir="${META_DIR}" \
-  --pattern="${VIS_PATTERN}" \
+  --pattern="${STEP4_PATTERN}" \
   --plotDir="${PLOT_DIR}" \
   --snp="${SNP}" \
   --pCut="${PCUT1}" \
@@ -99,15 +100,15 @@ apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-echo "visualize_meta_results: running visualization mode 4 (combined)"
+echo "step4: running visualization mode 4 (combined)"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
-  Visualization.R \
+  step4_visualization.R \
   --metaDir="${META_DIR}" \
-  --pattern="${VIS_PATTERN}" \
+  --pattern="${STEP4_PATTERN}" \
   --plotDir="${PLOT_DIR}" \
   --pCut="${PCUT2}" \
   --plotMinP="${PLOT_MIN_P}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-echo "visualize_meta_results: finished"
+echo "step4: finished"

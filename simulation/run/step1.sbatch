@@ -7,7 +7,7 @@
 #SBATCH --error=logs/simu_step1_%A_%a.err
 #
 # Usage:
-#   sbatch --export=ALL,ENV_FILE=/path/to/your.env simulation/step1_fit_null_model.sbatch
+#   sbatch --export=ALL,ENV_FILE=/path/to/your.env simulation/run/step1.sbatch
 #
 # Simulation root layout:
 #   /mnt/scratch/group/ztang2/pli297/simulation/
@@ -31,8 +31,9 @@ if [[ -n "${ENV_FILE:-}" ]]; then
   # shellcheck disable=SC1090
   source "${ENV_FILE}"
 fi
-DEFAULT_SIMU_ROOT="/mnt/scratch/group/ztang2/pli297/simulation"
-SIMU_ROOT="${SIMU_ROOT:-${PWD:-${DEFAULT_SIMU_ROOT}}}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_SIMU_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SIMU_ROOT="${SIMU_ROOT:-${DEFAULT_SIMU_ROOT}}"
 SIF="${SIF:-${SIMU_ROOT}/PALMmGWAS.sif}"
 cd "${SIMU_ROOT}"
 
@@ -53,7 +54,7 @@ FEATURE_LIST_FILE="${OUTPUT_DIR}/feature_list.txt"
 mkdir -p "${SIMU_ROOT}/logs" "${OUTPUT_DIR}"
 
 if [[ ! -f "${ABD_ALIGNED_FILE}" || ! -f "${COV_ALIGNED_FILE}" ]]; then
-  echo "Missing Step0-aligned input files. Run simulation/step0_align_inputs.sbatch first." >&2
+  echo "Missing Step0-aligned input files. Run simulation/run/step0.sbatch first." >&2
   exit 1
 fi
 

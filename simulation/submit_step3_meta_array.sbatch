@@ -13,7 +13,9 @@ if [[ -n "${ENV_FILE:-}" ]]; then
   source "${ENV_FILE}"
 fi
 
-SIMU_ROOT="${SIMU_ROOT:-/mnt/scratch/group/ztang2/pli297/simulation}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_SIMU_ROOT="${SCRIPT_DIR}"
+SIMU_ROOT="${SIMU_ROOT:-${DEFAULT_SIMU_ROOT}}"
 META_DIR="${META_DIR:-/mnt/scratch/group/ztang2/pli297/simulation/output/meta}"
 FEATURE_LIST_FILE="${FEATURE_LIST_FILE:-${SIMU_ROOT}/output/study1/feature_list.txt}"
 
@@ -28,7 +30,7 @@ fi
 
 if [[ ! -f "${FEATURE_LIST_FILE}" ]]; then
   echo "submit_step3_meta_array: missing feature list ${FEATURE_LIST_FILE}" >&2
-  echo "submit_step3_meta_array: run step1_fit_null_model.sbatch first." >&2
+  echo "submit_step3_meta_array: run run/step1.sbatch first." >&2
   exit 1
 fi
 
@@ -46,5 +48,5 @@ echo "submit_step3_meta_array: total features = ${N_FEATURE}"
 jid=$(sbatch --parsable \
   --array=1-${N_FEATURE} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},META_DIR=${META_DIR},FEATURE_LIST_FILE=${FEATURE_LIST_FILE} \
-  run_step3_meta.sh)
+  run/step3.sbatch)
 echo "submit_step3_meta_array: submitted Step3 meta array job ${jid} with 1-${N_FEATURE}"

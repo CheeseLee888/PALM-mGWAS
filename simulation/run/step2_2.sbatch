@@ -13,7 +13,9 @@ if [[ -n "${ENV_FILE:-}" ]]; then
   source "${ENV_FILE}"
 fi
 
-SIMU_ROOT="${SIMU_ROOT:-/mnt/scratch/group/ztang2/pli297/simulation}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_SIMU_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SIMU_ROOT="${SIMU_ROOT:-${DEFAULT_SIMU_ROOT}}"
 if [[ -n "${STUDIES:-}" ]]; then
   STUDIES_CSV="${STUDIES}"
 elif [[ -n "${STUDY:-}" ]]; then

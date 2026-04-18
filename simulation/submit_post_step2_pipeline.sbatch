@@ -13,7 +13,9 @@ if [[ -n "${ENV_FILE:-}" ]]; then
   source "${ENV_FILE}"
 fi
 
-SIMU_ROOT="${SIMU_ROOT:-/mnt/scratch/group/ztang2/pli297/simulation}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_SIMU_ROOT="${SCRIPT_DIR}"
+SIMU_ROOT="${SIMU_ROOT:-${DEFAULT_SIMU_ROOT}}"
 STUDIES="${STUDIES:-study1,study2,study3}"
 META_DIR="${META_DIR:-${SIMU_ROOT}/output/meta}"
 FEATURE_LIST_FILE="${FEATURE_LIST_FILE:-${SIMU_ROOT}/output/study1/feature_list.txt}"
@@ -50,13 +52,13 @@ echo "submit_post_step2_pipeline: Step2.1 array dependencies = ${step2_dep}"
 jid_merge=$(sbatch --parsable \
   --dependency=afterok:${step2_dep} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDIES=${STUDIES},META_DIR=${META_DIR} \
-  run_step2_2.sbatch)
+  run/step2_2.sbatch)
 echo "submit_post_step2_pipeline: Step2.2 merge job ${jid_merge}"
 
 jid_corr=$(sbatch --parsable \
   --dependency=afterok:${jid_merge} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDIES=${STUDIES},OVERWRITE_OUTPUT=${OVERWRITE_OUTPUT} \
-  run_step2_3_correction.sbatch)
+  run/step2_3.sbatch)
 echo "submit_post_step2_pipeline: Step2.3 correction job ${jid_corr}"
 
 if [[ ! -f "${FEATURE_LIST_FILE}" ]]; then
@@ -74,11 +76,11 @@ jid_meta=$(sbatch --parsable \
   --dependency=afterok:${jid_corr} \
   --array=1-${n_feature} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},META_DIR=${META_DIR},FEATURE_LIST_FILE=${FEATURE_LIST_FILE} \
-  run_step3_meta.sh)
+  run/step3.sbatch)
 echo "submit_post_step2_pipeline: step3 meta array job ${jid_meta} with 1-${n_feature}"
 
-jid_vis=$(sbatch --parsable \
+jid_step4=$(sbatch --parsable \
   --dependency=afterok:${jid_meta} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},META_DIR=${META_DIR} \
-  visualize_meta_results.sh)
-echo "submit_post_step2_pipeline: visualization job ${jid_vis}"
+  run/step4.sbatch)
+echo "submit_post_step2_pipeline: Step4 job ${jid_step4}"
