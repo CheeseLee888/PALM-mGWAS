@@ -17,13 +17,14 @@
 #'   computed from row sums of `abdFile`.
 #' @param prev.filter Passed to `PALM::palm.null.model()`; features with
 #'   prevalence less than or equal to this threshold are removed. Defaults to `0.1`.
-#' @param outputFeatureFile Optional output path for feature prevalence and
+#' @param FeatureInfoFile Optional output path for feature prevalence and
 #'   average proportion computed from the Step1 abundance input before
 #'   prevalence filtering. Use `NULL` (default) to skip writing this file.
-#' @param outputFeatureListFile Optional output path for the modeled feature IDs
+#' @param FeatureNameListFile Optional output path for the modeled feature IDs
 #'   retained in the fitted Step1 null model after prevalence filtering. Use
 #'   `NULL` (default) to skip writing this file.
-#' @param NULLmodelFile Full output path for the saved `.rda` file.
+#' @param NULLObjPrefix Output prefix for the saved null model object. The
+#'   function writes `${NULLObjPrefix}.rda`.
 #'
 #' @return Invisibly returns the fitted PALM null model object.
 #' @export
@@ -33,9 +34,9 @@ fitNULL <- function(abdFile,
                     covarColList = NULL,
                     depthCol = NULL,
                     prev.filter = 0.1,
-                    outputFeatureFile = NULL,
-                    outputFeatureListFile = NULL,
-                    NULLmodelFile) {
+                    FeatureInfoFile = NULL,
+                    FeatureNameListFile = NULL,
+                    NULLObjPrefix) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
   }
@@ -52,12 +53,15 @@ fitNULL <- function(abdFile,
   if (is.null(covFile) && !is.null(depthCol)) {
     stop("'depthCol' requires a non-NULL 'covFile'.")
   }
-  if (missing(NULLmodelFile) || !nzchar(NULLmodelFile)) {
-    stop("'NULLmodelFile' must be provided.")
+  if (missing(NULLObjPrefix) || !nzchar(NULLObjPrefix)) {
+    stop("'NULLObjPrefix' must be provided.")
   }
-  if (!grepl("\\.rda$", NULLmodelFile, ignore.case = TRUE)) {
-    stop("'NULLmodelFile' must include the .rda suffix.")
+  null_model_file <- NULLObjPrefix
+  if (grepl("\\.rda$", null_model_file, ignore.case = TRUE)) {
+    null_model_file <- sub("\\.rda$", "", null_model_file, ignore.case = TRUE)
+    message("NULLObjPrefix should not include .rda; normalizing to prefix: ", null_model_file)
   }
+  null_model_file <- paste0(null_model_file, ".rda")
 
   normalize_col_list <- function(x, arg_name) {
     if (is.null(x)) {
@@ -92,23 +96,23 @@ fitNULL <- function(abdFile,
   message(
     "Input abundance matrix: ", nrow(abd), " samples x ", ncol(abd), " features."
   )
-  if (!is.null(outputFeatureFile) && nzchar(outputFeatureFile)) {
+  if (!is.null(FeatureInfoFile) && nzchar(FeatureInfoFile)) {
     message(
       "Generating FeatureInfo from the Step1 input abundance matrix before prev.filter. ",
-      "Output path: ", outputFeatureFile
+      "Output path: ", FeatureInfoFile
     )
     feature_stats <- feature_info_from_matrix(abd, feature_ids = colnames(abd))
-    dir.create(dirname(outputFeatureFile), recursive = TRUE, showWarnings = FALSE)
+    dir.create(dirname(FeatureInfoFile), recursive = TRUE, showWarnings = FALSE)
     data.table::fwrite(
       feature_stats,
-      file = outputFeatureFile,
+      file = FeatureInfoFile,
       sep = "\t",
       quote = FALSE,
       na = "NA"
     )
-    message("FeatureInfo finished: ", nrow(feature_stats), " feature(s) written to ", outputFeatureFile)
+    message("FeatureInfo finished: ", nrow(feature_stats), " feature(s) written to ", FeatureInfoFile)
   } else {
-    message("FeatureInfo skipped: outputFeatureFile is NULL.")
+    message("FeatureInfo skipped: FeatureInfoFile is NULL.")
   }
 
   cov <- NULL
@@ -176,23 +180,23 @@ fitNULL <- function(abdFile,
     )
   }
 
-  dir.create(dirname(NULLmodelFile), recursive = TRUE, showWarnings = FALSE)
-  save(modglmm, file = NULLmodelFile)
-  message("Done. PALM null model saved to ", NULLmodelFile)
+  dir.create(dirname(null_model_file), recursive = TRUE, showWarnings = FALSE)
+  save(modglmm, file = null_model_file)
+  message("Done. PALM null model saved to ", null_model_file)
 
-  if (!is.null(outputFeatureListFile) && nzchar(outputFeatureListFile)) {
+  if (!is.null(FeatureNameListFile) && nzchar(FeatureNameListFile)) {
     feature_ids <- unique(unlist(lapply(modglmm, function(x) colnames(x$Y_I)), use.names = FALSE))
     if (!length(feature_ids)) {
-      stop("No modeled features found in fitted null model; cannot write outputFeatureListFile.")
+      stop("No modeled features found in fitted null model; cannot write FeatureNameListFile.")
     }
-    dir.create(dirname(outputFeatureListFile), recursive = TRUE, showWarnings = FALSE)
-    writeLines(feature_ids, outputFeatureListFile, useBytes = TRUE)
+    dir.create(dirname(FeatureNameListFile), recursive = TRUE, showWarnings = FALSE)
+    writeLines(feature_ids, FeatureNameListFile, useBytes = TRUE)
     message(
       "FeatureList finished: ", length(feature_ids),
-      " feature(s) written to ", outputFeatureListFile
+      " feature(s) written to ", FeatureNameListFile
     )
   } else {
-    message("FeatureList skipped: outputFeatureListFile is NULL.")
+    message("FeatureList skipped: FeatureNameListFile is NULL.")
   }
   invisible(modglmm)
 }

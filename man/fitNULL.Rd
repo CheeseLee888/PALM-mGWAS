@@ -11,8 +11,9 @@ fitNULL(
   covarColList = NULL,
   depthCol = NULL,
   prev.filter = 0.1,
-  outputFeatureFile = NULL,
-  NULLmodelFile
+  FeatureInfoFile = NULL,
+  FeatureNameListFile = NULL,
+  NULLObjPrefix
 )
 }
 \arguments{
@@ -36,11 +37,16 @@ computed from row sums of `abdFile`.}
 \item{prev.filter}{Passed to `PALM::palm.null.model()`; features with
 prevalence less than or equal to this threshold are removed. Defaults to `0.1`.}
 
-\item{outputFeatureFile}{Optional output path for feature prevalence and
+\item{FeatureInfoFile}{Optional output path for feature prevalence and
 average proportion computed from the Step1 abundance input before
 prevalence filtering. Use `NULL` (default) to skip writing this file.}
 
-\item{NULLmodelFile}{Full output path for the saved `.rda` file.}
+\item{FeatureNameListFile}{Optional output path for the modeled feature IDs
+retained in the fitted Step1 null model after prevalence filtering. Use
+`NULL` (default) to skip writing this file.}
+
+\item{NULLObjPrefix}{Output prefix for the saved null model object. The
+function writes `${NULLObjPrefix}.rda`.}
 }
 \value{
 Invisibly returns the fitted PALM null model object.

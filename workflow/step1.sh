@@ -6,6 +6,12 @@ source "$WORK/config.sh"
 ################################# workflow below (do not modify) #################################
 mkdir -p "${outputFolder}"
 
+# Prefer renamed Step1 variables while remaining compatible with existing config.sh files.
+FeatureInfoFile="${FeatureInfoFile:-${outputFeatureFile:-NULL}}"
+FeatureNameListFile="${FeatureNameListFile:-${outputFeatureListFile:-NULL}}"
+NULLObjPrefix="${NULLObjPrefix:-${NULLmodelFile:-}}"
+NULLObjPrefix="${NULLObjPrefix%.rda}"
+
 # step0: check input files
 echo "Start: Check input files."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step0_checkInput.R \
@@ -28,6 +34,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step1_null.R 
     --covarColList=${covarColList:-NULL} \
     --depthCol=${depthCol:-NULL} \
     --prev.filter=${prev_filter:-0.1} \
-    --outputFeatureFile=${outputFeatureFile:-NULL} \
-    --NULLmodelFile=${NULLmodelFile}
+    --FeatureInfoFile=${FeatureInfoFile:-NULL} \
+    --FeatureNameListFile=${FeatureNameListFile:-NULL} \
+    --NULLObjPrefix=${NULLObjPrefix}
 echo "Finish: Fit null model."

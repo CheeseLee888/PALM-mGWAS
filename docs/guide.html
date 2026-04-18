@@ -186,8 +186,9 @@ docker run --rm --platform=linux/amd64 \
     --covarColList=${covarColList} \
     --depthCol=${depthCol} \
     --prev.filter=${prev_filter} \
-    --outputFeatureFile=${outputFeatureFile} \
-    --NULLmodelFile=${NULLmodelFile}</code></pre>
+    --FeatureInfoFile=${FeatureInfoFile} \
+    --FeatureNameListFile=${FeatureNameListFile} \
+    --NULLObjPrefix=${NULLObjPrefix}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
@@ -197,16 +198,17 @@ docker run --rm --platform=linux/amd64 \
     --covarColList=${covarColList} \
     --depthCol=${depthCol} \
     --prev.filter=${prev_filter} \
-    --outputFeatureFile=${outputFeatureFile} \
-    --NULLmodelFile=${NULLmodelFile}</code></pre>
+    --FeatureInfoFile=${FeatureInfoFile} \
+    --FeatureNameListFile=${FeatureNameListFile} \
+    --NULLObjPrefix=${NULLObjPrefix}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> the Step0-aligned abundance table plus the aligned covariate table.</li>
-    <li><strong>Outputs:</strong> <code>NULLmodelFile</code> containing <code>modglmm</code>; directories are created if missing.</li>
+    <li><strong>Outputs:</strong> <code>NULLObjPrefix</code> containing <code>modglmm</code>; directories are created if missing.</li>
     <li><strong>Behavior:</strong> pass <code>--covFile=NULL</code> to run covariate-free; the CLI converts empty string or <code>NULL</code> to R <code>NULL</code>.</li>
     <li><strong>Docker path note:</strong> when you mount the project at <code>/work</code> and use <code>-w /work</code>, relative paths such as <code>example/input/study1/abd.txt</code> work directly inside the container. This also avoids invalid strings like <code>/work/NULL</code> for optional arguments.</li>
     <li><strong>Covariate subset:</strong> pass <code>--covarColList=AGE,SEX,PC01</code> to use only those columns from <code>covFile</code>; names must match the header exactly.</li>
     <li><strong>PALM arguments:</strong> <code>depthCol</code> selects one column from <code>covFile</code> as PALM <code>depth</code>; if omitted, PALM uses row sums of <code>abdFile</code>. <code>prev.filter</code> is forwarded directly to <code>PALM::palm.null.model()</code>.</li>
-    <li><strong>Optional info output:</strong> set <code>--outputFeatureFile</code> to write <code>FeatureInfo</code>. Behavior definition: <code>FeatureInfo</code> is computed from the Step1 input abundance table before <code>prev.filter</code> removes low-prevalence features.</li>
+    <li><strong>Optional info output:</strong> set <code>--FeatureInfoFile</code> to write <code>FeatureInfo</code>. Behavior definition: <code>FeatureInfo</code> is computed from the Step1 input abundance table before <code>prev.filter</code> removes low-prevalence features.</li>
     <li><strong>Tips:</strong> ensure no duplicated sample IDs; use abundance(count); keep sessionInfo for reproducibility.</li>
   </ul>
   <table>
@@ -216,8 +218,9 @@ docker run --rm --platform=linux/amd64 \
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code></td><td><code>--covarColList=AGE,SEX</code>; <code>--covarColList=NULL</code></td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as PALM <code>depth</code>; if omitted, PALM uses row sums of <code>abdFile</code></td><td><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></td></tr>
     <tr><td><code>--prev.filter</code></td><td><code>double</code></td><td><code>0.1</code></td><td>Feature prevalence threshold passed to PALM</td><td><code>--prev.filter=0.1</code>; <code>--prev.filter=0</code></td></tr>
-    <tr><td><code>--outputFeatureFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for Step1 feature prevalence and average proportion before feature filtering</td><td><code>--outputFeatureFile=example/output/study1/info_feature.txt</code>; <code>--outputFeatureFile=NULL</code></td></tr>
-    <tr><td><code>--NULLmodelFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output <code>.rda</code> file storing the fitted PALM null model</td><td><code>--NULLmodelFile=example/output/study1/step1_allpheno.rda</code></td></tr>
+    <tr><td><code>--FeatureInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for Step1 feature prevalence and average proportion before feature filtering</td><td><code>--FeatureInfoFile=example/output/study1/info_feature.txt</code>; <code>--FeatureInfoFile=NULL</code></td></tr>
+    <tr><td><code>--FeatureNameListFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for modeled feature IDs retained after prevalence filtering</td><td><code>--FeatureNameListFile=example/output/study1/feature_list.txt</code>; <code>--FeatureNameListFile=NULL</code></td></tr>
+    <tr><td><code>--NULLObjPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for the fitted PALM null model; Step1 writes <code>${NULLObjPrefix}.rda</code></td><td><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code></td></tr>
   </table>
 
   <h2 id="step2">Step2: Per-study Summary</h2>
@@ -474,7 +477,7 @@ FeatureID	Prevalence	AvgProportion
 g_Bifidobacterium	1	0.126328820649519
 g_Escherichia_Shigella	0.64	0.0119515389416789
 g_Ruminococcus_gnavus_group	0.67	0.00726159029760336</code></pre>
-  <p>This optional table is written by Step1 when <code>--outputFeatureFile</code> is set. Behavior definition: <code>FeatureInfo</code> is computed from the Step1 input abundance table before <code>prev.filter</code> removes low-prevalence features. It tells users, for example, that <code>g_Bifidobacterium</code> appears in all samples in study1, while <code>g_Escherichia_Shigella</code> is less prevalent.</p>
+  <p>This optional table is written by Step1 when <code>--FeatureInfoFile</code> is set. Behavior definition: <code>FeatureInfo</code> is computed from the Step1 input abundance table before <code>prev.filter</code> removes low-prevalence features. It tells users, for example, that <code>g_Bifidobacterium</code> appears in all samples in study1, while <code>g_Escherichia_Shigella</code> is less prevalent.</p>
 
   <h3>Example Output: Step0 sequencing depth summary</h3>
   <pre><code class="language-tsv"># file: example/output/study1/info_seqdepth.txt
@@ -521,8 +524,9 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --covarColList=AGE,SEX,PC01 \
     --depthCol=NULL \
     --prev.filter=0.1 \
-    --outputFeatureFile=NULL \
-    --NULLmodelFile=example/output/study1/step1_allpheno.rda</code></pre>
+    --FeatureInfoFile=NULL \
+    --FeatureNameListFile=NULL \
+    --NULLObjPrefix=example/output/study1/step1_allpheno</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
@@ -532,8 +536,9 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --covarColList=AGE,SEX,PC01 \
     --depthCol=NULL \
     --prev.filter=0.1 \
-    --outputFeatureFile=NULL \
-    --NULLmodelFile=example/output/study1/step1_allpheno.rda</code></pre>
+    --FeatureInfoFile=NULL \
+    --FeatureNameListFile=NULL \
+    --NULLObjPrefix=example/output/study1/step1_allpheno</code></pre>
   <p><strong>Output:</strong> <code>example/output/study1/step1_allpheno.rda</code>, which is then passed into Step2 as <code>--NULLmodelFile</code>. If requested, Step1 also writes <code>example/output/study1/info_feature.txt</code>.</p>
 
   <h3>Step2.1: null model + genotype to per-feature association files</h3>

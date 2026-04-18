@@ -62,7 +62,7 @@ echo "step1_fit_null_model: SIF=${SIF}"
 echo "step1_fit_null_model: STUDY=${STUDY}"
 echo "step1_fit_null_model: covarColList=${COVAR_COL_LIST}"
 echo "step1_fit_null_model: depthCol=${DEPTH_COL}, prev.filter=${PREV_FILTER}"
-echo "step1_fit_null_model: outputFeatureFile=${OUTPUT_FEATURE_FILE}"
+echo "step1_fit_null_model: FeatureInfoFile=${OUTPUT_FEATURE_FILE}"
 
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step1_null.R \
@@ -71,9 +71,9 @@ apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   --covarColList="${COVAR_COL_LIST}" \
   --depthCol="${DEPTH_COL}" \
   --prev.filter="${PREV_FILTER}" \
-  --outputFeatureFile="${OUTPUT_FEATURE_FILE}" \
-  --outputFeatureListFile="${FEATURE_LIST_FILE}" \
-  --NULLmodelFile="${NULLMODEL_FILE}"
+  --FeatureInfoFile="${OUTPUT_FEATURE_FILE}" \
+  --FeatureNameListFile="${FEATURE_LIST_FILE}" \
+  --NULLObjPrefix="${NULLMODEL_FILE}"
 
 echo "step1_fit_null_model: finished"
 echo "step1_fit_null_model: outputs"

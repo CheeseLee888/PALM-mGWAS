@@ -4,6 +4,9 @@ source "$WORK/config.sh"
 
 
 ################################# workflow below (do not modify) #################################
+NULLObjPrefix="${NULLObjPrefix:-${NULLmodelFile:-}}"
+NULLObjPrefix="${NULLObjPrefix%.rda}"
+NULLmodelFile="${NULLmodelFile:-${NULLObjPrefix}.rda}"
 
 # step2.1: score test without compositional correction
 echo "Start: Perform step2.1 score test."
