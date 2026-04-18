@@ -108,6 +108,8 @@ fi
 
 ZERO_BASED=$(( TASK_ID - 1 ))
 
+STEP2_SUMMARY_PREFIX="${OUTPUT_DIR}/step2"
+
 if [[ "${STEP2_MODE}" == "feature_allchr" ]]; then
   FEATURE_LINE=${TASK_ID}
   FEATURE=$(sed -n "${FEATURE_LINE}p" "${FEATURE_FILE}")
@@ -115,7 +117,6 @@ if [[ "${STEP2_MODE}" == "feature_allchr" ]]; then
     echo "Resolved feature is empty for task ${TASK_ID}." >&2
     exit 1
   fi
-  STEP2_PREFIX="${OUTPUT_DIR}/step2_allchr"
   CHROM_ARG="NULL"
 else
   FEATURE_INDEX=$(( ZERO_BASED / N_CHROM + 1 ))
@@ -126,7 +127,6 @@ else
     echo "Resolved feature is empty for task ${TASK_ID}." >&2
     exit 1
   fi
-  STEP2_PREFIX="${OUTPUT_DIR}/step2_chr${CHROM}"
   CHROM_ARG="${CHROM}"
 fi
 
@@ -145,13 +145,13 @@ if [[ "${STEP2_MODE}" == "feature_allchr" ]]; then
 else
   echo "step2_1_run_array: chrom=${CHROM}"
 fi
-echo "step2_1_run_array: outputPrefix=${STEP2_PREFIX}"
+echo "step2_1_run_array: SummaryPrefix=${STEP2_SUMMARY_PREFIX}"
 
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step2_1_summary.R \
   --genoFile="${GENO_PREFIX}" \
   --NULLObjPrefix="${NULLMODEL_FILE%.rda}" \
-  --PALMOutputFile="${STEP2_PREFIX}" \
+  --SummaryPrefix="${STEP2_SUMMARY_PREFIX}" \
   --chrom="${CHROM_ARG}" \
   --featureColList="${FEATURE}" \
   --minMAF="${MIN_MAF}" \

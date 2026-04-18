@@ -10,11 +10,7 @@ input_prefix="${step2MergeInputPrefix:-NULL}"
 output_prefix="${step2MergeOutputPrefix:-${step2InputPrefix:-NULL}}"
 
 if [[ -z "${input_prefix}" || "${input_prefix}" == "NULL" ]]; then
-  if [[ "${palm1_step2_prefix}" =~ ^(.*)_(chr([1-9]|1[0-9]|2[0-2])|allchr)$ ]]; then
-    input_prefix="${BASH_REMATCH[1]}"
-  else
-    input_prefix="${palm1_step2_prefix}"
-  fi
+  input_prefix="${SummaryPrefix}"
 fi
 
 echo "Start: Perform step2.2 merge."

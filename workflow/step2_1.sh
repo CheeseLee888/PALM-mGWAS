@@ -11,7 +11,7 @@ echo "Start: Perform step2.1 score test."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_1_summary.R \
     --genoFile=${genoFile} \
     --NULLObjPrefix=${NULLObjPrefix} \
-    --PALMOutputFile=${palm1_step2_prefix} \
+    --SummaryPrefix=${SummaryPrefix} \
     --chrom=${chrom:-NULL} \
     --featureColList=${featureColList:-NULL} \
     --minMAF=${minMAF:-0.05} \

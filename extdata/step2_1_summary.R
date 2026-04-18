@@ -14,7 +14,7 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
-    make_option("--PALMOutputFile",
+    make_option("--SummaryPrefix",
         type = "character", default = "",
         help = ""
     ),
@@ -52,7 +52,7 @@ if (is.null(opt$featureColList) || !nzchar(opt$featureColList) || toupper(opt$fe
 }
 
 message("step2.1: PALM summary started.")
-message("step2.1: output prefix = ", opt$PALMOutputFile)
+message("step2.1: summary prefix = ", opt$SummaryPrefix)
 message("step2.1: chromosome = ", if (is.null(opt$chrom) || !nzchar(opt$chrom)) "NULL" else opt$chrom)
 message(
   "step2.1: featureColList = ",
@@ -66,7 +66,7 @@ message(
 getSummary(
   genoFile = opt$genoFile,
   NULLObjPrefix = opt$NULLObjPrefix,
-  PALMOutputFile = opt$PALMOutputFile,
+  SummaryPrefix = opt$SummaryPrefix,
   chrom = opt$chrom,
   featureColList = opt$featureColList,
   minMAF = opt$minMAF,
