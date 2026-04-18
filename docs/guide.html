@@ -168,14 +168,14 @@ docker run --rm --platform=linux/amd64 \
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--abdFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose sample order will be checked/reordered</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
-    <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Covariate table whose sample order will be checked/reordered</td><td><code>--covFile=example/input/study1/cov.txt</code></td></tr>
-    <tr><td><code>--abdAlignedFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned abundance table; original input is not overwritten</td><td><code>--abdAlignedFile=example/output/study1/abd_aligned.txt</code></td></tr>
-    <tr><td><code>--covAlignedFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned covariate table; original input is not overwritten</td><td><code>--covAlignedFile=example/output/study1/cov_aligned.txt</code></td></tr>
+    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose sample order will be checked/reordered</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
+    <tr><td><strong><code>--covFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Covariate table whose sample order will be checked/reordered</td><td><code>--covFile=example/input/study1/cov.txt</code></td></tr>
+    <tr><td><strong><code>--abdAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned abundance table; original input is not overwritten</td><td><code>--abdAlignedFile=example/output/study1/abd_aligned.txt</code></td></tr>
+    <tr><td><strong><code>--covAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned covariate table; original input is not overwritten</td><td><code>--covAlignedFile=example/output/study1/cov_aligned.txt</code></td></tr>
+    <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the sample-order reference: PLINK prefix or VCF</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></td></tr>
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated covariate columns required by Step1; if omitted, all non-ID columns in <code>covFile</code> are used. Samples missing these values are removed before ID matching</td><td><code>--covarColList=AGE,SEX,PC01</code>; <code>--covarColList=NULL</code></td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td><td><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></td></tr>
     <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Sample-level depth threshold applied before genotype ID matching; samples with depth <code>&lt;=</code> this value are removed</td><td><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></td></tr>
-    <tr><td><code>--genoFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the sample-order reference: PLINK prefix or VCF</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></td></tr>
     <tr><td><code>--SeqDepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for sequencing-depth info used by Step0 sample filtering</td><td><code>--SeqDepthInfoFile=example/output/study1/info_seqdepth.txt</code>; <code>--SeqDepthInfoFile=NULL</code></td></tr>
   </table>
 
@@ -213,14 +213,14 @@ docker run --rm --platform=linux/amd64 \
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--abdFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Aligned abundance table used to fit the null model</td><td><code>--abdFile=example/output/study1/abd_aligned.txt</code></td></tr>
+    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Aligned abundance table used to fit the null model</td><td><code>--abdFile=example/output/study1/abd_aligned.txt</code></td></tr>
+    <tr><td><strong><code>--NULLObjPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for the fitted PALM null model; Step1 writes <code>${NULLObjPrefix}.rda</code></td><td><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code></td></tr>
     <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional aligned covariate file; the CLI also accepts empty string or <code>NULL</code> to omit covariates</td><td><code>--covFile=example/output/study1/cov_aligned.txt</code>; <code>--covFile=NULL</code></td></tr>
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code></td><td><code>--covarColList=AGE,SEX</code>; <code>--covarColList=NULL</code></td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as PALM <code>depth</code>; if omitted, PALM uses row sums of <code>abdFile</code></td><td><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></td></tr>
     <tr><td><code>--prev.filter</code></td><td><code>double</code></td><td><code>0.1</code></td><td>Feature prevalence threshold passed to PALM</td><td><code>--prev.filter=0.1</code>; <code>--prev.filter=0</code></td></tr>
     <tr><td><code>--FeatureInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for Step1 feature prevalence and average proportion before feature filtering</td><td><code>--FeatureInfoFile=example/output/study1/info_feature.txt</code>; <code>--FeatureInfoFile=NULL</code></td></tr>
     <tr><td><code>--FeatureNameListFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for modeled feature IDs retained after prevalence filtering</td><td><code>--FeatureNameListFile=example/output/study1/feature_list.txt</code>; <code>--FeatureNameListFile=NULL</code></td></tr>
-    <tr><td><code>--NULLObjPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for the fitted PALM null model; Step1 writes <code>${NULLObjPrefix}.rda</code></td><td><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code></td></tr>
   </table>
 
   <h2 id="step2">Step2: Per-study Summary</h2>
@@ -265,9 +265,9 @@ docker run --rm --platform=linux/amd64 \
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--genoFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input for association testing: PLINK prefix or VCF</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></td></tr>
-    <tr><td><code>--NULLObjPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>Null model prefix generated by Step1; Step2.1 reads <code>${NULLObjPrefix}.rda</code></td><td><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code></td></tr>
-    <tr><td><code>--SummaryPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 summary prefix; Step2.1 writes <code>${SummaryPrefix}_chr1_&lt;feature&gt;.txt</code> or <code>${SummaryPrefix}_allchr_&lt;feature&gt;.txt</code></td><td><code>--SummaryPrefix=example/output/study1/step2</code></td></tr>
+    <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input for association testing: PLINK prefix or VCF</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></td></tr>
+    <tr><td><strong><code>--NULLObjPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Null model prefix generated by Step1; Step2.1 reads <code>${NULLObjPrefix}.rda</code></td><td><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code></td></tr>
+    <tr><td><strong><code>--SummaryPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 summary prefix; Step2.1 writes <code>${SummaryPrefix}_chr1_&lt;feature&gt;.txt</code> or <code>${SummaryPrefix}_allchr_&lt;feature&gt;.txt</code></td><td><code>--SummaryPrefix=example/output/study1/step2</code></td></tr>
     <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>""</code></td><td>Optional chromosome subset; leave empty to keep all chromosomes</td><td><code>--chrom=1</code>; omit it or set <code>--chrom=</code> for all chromosomes</td></tr>
     <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated feature IDs to keep from the Step1 null model</td><td><code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code>; <code>--featureColList=NULL</code></td></tr>
     <tr><td><code>--minMAF</code></td><td><code>double</code></td><td><code>0.05</code></td><td>Optional minimum minor allele frequency threshold for SNP filtering</td><td><code>--minMAF=0.05</code>; <code>--minMAF=0</code></td></tr>
@@ -295,7 +295,7 @@ docker run --rm --platform=linux/amd64 \
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--inputPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 prefix used to discover <code>chr1..chr22</code> or <code>allchr</code> files for one study</td><td><code>--inputPrefix=example/output/study1/step2</code></td></tr>
+    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 prefix used to discover <code>chr1..chr22</code> or <code>allchr</code> files for one study</td><td><code>--inputPrefix=example/output/study1/step2</code></td></tr>
     <tr><td><code>--outputPrefix</code></td><td><code>character</code></td><td><code>"NULL"</code> (auto-derived)</td><td>Base output prefix for merged Step2.2 files; the script writes merged files as <code>&lt;outputPrefix&gt;_allchr_*.txt</code></td><td><code>--outputPrefix=example/output/study1/step2</code>; <code>--outputPrefix=NULL</code></td></tr>
   </table>
 
@@ -317,7 +317,7 @@ docker run --rm --platform=linux/amd64 \
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--inputPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>Step2.1 file prefix used to discover all feature files for correction</td><td><code>--inputPrefix=example/output/study1/step2_allchr</code></td></tr>
+    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Step2.1 file prefix used to discover all feature files for correction</td><td><code>--inputPrefix=example/output/study1/step2_allchr</code></td></tr>
     <tr><td><code>--overwriteOutput</code></td><td><code>character</code></td><td><code>"TRUE"</code></td><td>If <code>TRUE</code>, overwrite merged Step2.2 outputs in place. If <code>FALSE</code>, keep the originals and write corrected copies with suffix <code>_corrected</code></td><td><code>--overwriteOutput=TRUE</code>; <code>--overwriteOutput=FALSE</code></td></tr>
   </table>
 
@@ -345,10 +345,10 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--studyDirFile</code></td><td><code>character</code></td><td><code>""</code></td><td>Study list file mapping study IDs to result directories</td><td><code>--studyDirFile=example/input/study_dirs.txt</code> for local pixi runs; <code>--studyDirFile=example/input/study_dirs_docker.txt</code> for Docker runs</td></tr>
-    <tr><td><code>--pattern</code></td><td><code>character</code></td><td><code>""</code></td><td>Regex selecting which Step2 result files to meta-analyze. Step2 filenames contain the feature in the middle, such as <code>step2_allchr_g_Bifidobacterium.txt</code>, so the regex should match the fixed prefix/suffix and leave the feature part variable for extraction. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step2_allchr_.*[.]txt$'</code>; <code>--pattern='step2_chr1_.*[.]txt$'</code>; do not write <code>--pattern=step2_allchr_g_Bifidobacterium.txt</code> if you want all features</td></tr>
-    <tr><td><code>--metaDir</code></td><td><code>character</code></td><td><code>""</code></td><td>Output directory for meta-analysis tables</td><td><code>--metaDir=example/output/meta</code></td></tr>
-    <tr><td><code>--metaPrefix</code></td><td><code>character</code></td><td><code>""</code></td><td>Filename prefix for meta-analysis outputs</td><td><code>--metaPrefix=step3_meta_</code></td></tr>
+    <tr><td><strong><code>--studyDirFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Study list file mapping study IDs to result directories</td><td><code>--studyDirFile=example/input/study_dirs.txt</code> for local pixi runs; <code>--studyDirFile=example/input/study_dirs_docker.txt</code> for Docker runs</td></tr>
+    <tr><td><strong><code>--pattern</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Regex selecting which Step2 result files to meta-analyze. Step2 filenames contain the feature in the middle, such as <code>step2_allchr_g_Bifidobacterium.txt</code>, so the regex should match the fixed prefix/suffix and leave the feature part variable for extraction. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step2_allchr_.*[.]txt$'</code>; <code>--pattern='step2_chr1_.*[.]txt$'</code>; do not write <code>--pattern=step2_allchr_g_Bifidobacterium.txt</code> if you want all features</td></tr>
+    <tr><td><strong><code>--metaDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output directory for meta-analysis tables</td><td><code>--metaDir=example/output/meta</code></td></tr>
+    <tr><td><strong><code>--metaPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Filename prefix for meta-analysis outputs</td><td><code>--metaPrefix=step3_meta_</code></td></tr>
   </table>
 
   <h2 id="viz">Visualization</h2>
@@ -409,9 +409,9 @@ docker run --rm --platform=linux/amd64 \
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--metaDir</code></td><td><code>character</code></td><td><code>""</code></td><td>Directory containing Step3 meta files or single-study Step2 files</td><td><code>--metaDir=example/output/meta</code></td></tr>
-    <tr><td><code>--plotDir</code></td><td><code>character</code></td><td><code>""</code></td><td>Directory where plots will be written</td><td><code>--plotDir=example/output/plot</code></td></tr>
-    <tr><td><code>--pattern</code></td><td><code>character</code></td><td><code>""</code></td><td>Regex matching result files to plot. It should usually match all feature files in the target directory, so that the script can later subset by <code>--pheno</code> and/or <code>--snp</code>. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step3_meta_.*[.]txt$'</code>; <code>--pattern='step2_allchr_.*[.]txt$'</code> for single-study Step2 plots</td></tr>
+    <tr><td><strong><code>--metaDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory containing Step3 meta files or single-study Step2 files</td><td><code>--metaDir=example/output/meta</code></td></tr>
+    <tr><td><strong><code>--plotDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory where plots will be written</td><td><code>--plotDir=example/output/plot</code></td></tr>
+    <tr><td><strong><code>--pattern</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Regex matching result files to plot. It should usually match all feature files in the target directory, so that the script can later subset by <code>--pheno</code> and/or <code>--snp</code>. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot.</td><td><code>--pattern='step3_meta_.*[.]txt$'</code>; <code>--pattern='step2_allchr_.*[.]txt$'</code> for single-study Step2 plots</td></tr>
     <tr><td><code>--pheno</code></td><td><code>character</code></td><td><code>NA</code></td><td>(Microbial) feature name; used in case 2 and case 4</td><td><code>--pheno=g_Peptoniphilus_unclassified</code>; omit it for case 1 or case 3</td></tr>
     <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier; used in case 3 and case 4</td><td><code>--snp=chr1:14678191:A:C</code>; omit it for case 1 or case 2</td></tr>
     <tr><td><code>--PlotOutputFile</code></td><td><code>character</code></td><td><code>NA</code></td><td>Optional explicit output filename; otherwise auto-generated. In case 3 this acts as a base name and the feature suffix is inserted before the extension for each generated forest plot.</td><td><code>--PlotOutputFile=example/output/plot/custom.png</code>; <code>--PlotOutputFile=NA</code>; omit it to auto-name</td></tr>
