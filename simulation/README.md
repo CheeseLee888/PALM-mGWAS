@@ -181,7 +181,7 @@ are merged into:
 
 - `step2_allchr_g_Acinetobacter.txt`
 
-After Step2.2 merge, Step2.3 updates the merged `step2_allchr_*.txt` files in place using median correction. The meta-analysis step then reads those corrected files and writes `step3_meta_*.txt` through a feature-level array. The visualization step reads those meta files.
+After Step2.2 merge, Step2.3 applies median correction to the merged `step2_allchr_*.txt` files. By default it overwrites them in place. If you set `OVERWRITE_OUTPUT=FALSE`, Step2.3 keeps the originals and writes corrected copies with suffix `_corrected`, for example `step2_allchr_g_Acinetobacter_corrected.txt`. The meta-analysis step then reads whichever corrected files match that setting and writes `step3_meta_*.txt` through a feature-level array. The visualization step reads those meta files.
 
 Choose a feature block size, for example `10` features per task:
 

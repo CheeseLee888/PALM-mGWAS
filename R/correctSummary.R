@@ -9,17 +9,14 @@
 #'
 #' @param inputPrefix Step2 file prefix. Files are expected at
 #'   `<inputPrefix>_<feature>.txt`.
-#' @param outputPrefix Output prefix for corrected files. Defaults to
-#'   `inputPrefix`, which overwrites the original Step2 files.
-#' @param NULLmodelFile Optional Step1 NULL-model `.rda` file containing
-#'   `modglmm`. When provided, the function mirrors the PALM behavior of forcing
-#'   correction to be skipped if any study has `abd = TRUE`.
+#' @param overwriteOutput Logical; if `TRUE` overwrite the original Step2 files.
+#'   If `FALSE`, keep the originals and write new files with suffix
+#'   `"_corrected"`.
 #'
 #' @return Invisibly returns the corrected file paths.
 #' @export
 correctSummary <- function(inputPrefix,
-                           outputPrefix = inputPrefix,
-                           NULLmodelFile = NULL) {
+                           overwriteOutput = TRUE) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
   }
@@ -27,8 +24,8 @@ correctSummary <- function(inputPrefix,
   if (missing(inputPrefix) || !nzchar(inputPrefix)) {
     stop("'inputPrefix' must be provided.")
   }
-  if (missing(outputPrefix) || !nzchar(outputPrefix)) {
-    stop("'outputPrefix' must be provided.")
+  if (!is.logical(overwriteOutput) || length(overwriteOutput) != 1L || is.na(overwriteOutput)) {
+    stop("'overwriteOutput' must be a single TRUE/FALSE value.")
   }
 
   escape_regex <- function(x) {
@@ -39,6 +36,7 @@ correctSummary <- function(inputPrefix,
   step2_base <- basename(inputPrefix)
   pattern <- paste0("^", escape_regex(step2_base), "_.*[.]txt$")
   files <- list.files(step2_dir, pattern = pattern, full.names = TRUE)
+  files <- files[!grepl("_corrected[.]txt$", basename(files))]
   if (!length(files)) {
     stop("No Step2 files found for inputPrefix: ", inputPrefix)
   }
@@ -54,16 +52,23 @@ correctSummary <- function(inputPrefix,
   }
   names(files) <- features
 
-  copy_step2_outputs <- function() {
-    out_dir <- dirname(outputPrefix)
-    if (!out_dir %in% c("", ".")) {
-      dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  build_output_path <- function(src, feat) {
+    if (isTRUE(overwriteOutput)) {
+      return(src)
     }
+    sub("[.]txt$", "_corrected.txt", src)
+  }
+
+  copy_step2_outputs <- function() {
     out_paths <- character(length(files))
     names(out_paths) <- names(files)
     for (feat in names(files)) {
       src <- files[[feat]]
-      dst <- paste0(outputPrefix, "_", feat, ".txt")
+      dst <- build_output_path(src, feat)
+      out_dir <- dirname(dst)
+      if (!out_dir %in% c("", ".")) {
+        dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+      }
       if (!identical(normalizePath(src, winslash = "/", mustWork = FALSE),
                      normalizePath(dst, winslash = "/", mustWork = FALSE))) {
         ok <- file.copy(src, dst, overwrite = TRUE)
@@ -74,27 +79,6 @@ correctSummary <- function(inputPrefix,
       out_paths[[feat]] <- dst
     }
     invisible(unname(out_paths))
-  }
-
-  if (!is.null(NULLmodelFile)) {
-    if (!file.exists(NULLmodelFile)) {
-      stop("NULL model file not found: ", NULLmodelFile)
-    }
-    env <- new.env()
-    load(NULLmodelFile, envir = env)
-    if (!exists("modglmm", envir = env)) {
-      stop("Object 'modglmm' not found in ", NULLmodelFile)
-    }
-    modglmm <- env$modglmm
-
-    if (any(vapply(modglmm, function(d) isTRUE(d$abd), logical(1)))) {
-      warning(
-        "At least one study includes features with an average proportion larger than 90%. ",
-        "Skipping correction to match PALM behavior."
-      )
-      return(copy_step2_outputs())
-    }
-
   }
 
   read_step2_one <- function(path) {
@@ -151,11 +135,6 @@ correctSummary <- function(inputPrefix,
   }, numeric(1))
   names(adjust_part) <- snp_ids
 
-  out_dir <- dirname(outputPrefix)
-  if (!out_dir %in% c("", ".")) {
-    dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-  }
-
   out_paths <- character(length(feature_ids))
   names(out_paths) <- feature_ids
   for (feat in feature_ids) {
@@ -166,7 +145,11 @@ correctSummary <- function(inputPrefix,
     dat$stderr[ok] <- sqrt(dat$stderr[ok]^2 + adjust_part[idx][ok])
     dat$pval <- 1 - stats::pchisq((dat$est / dat$stderr)^2, df = 1)
 
-    out_file <- paste0(outputPrefix, "_", feat, ".txt")
+    out_file <- build_output_path(files[[feat]], feat)
+    out_dir <- dirname(out_file)
+    if (!out_dir %in% c("", ".")) {
+      dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+    }
     utils::write.table(
       dat,
       file = out_file,
@@ -180,7 +163,7 @@ correctSummary <- function(inputPrefix,
 
   message(
     "Step2 correction finished: wrote ", length(out_paths),
-    " corrected file(s) with prefix ", outputPrefix
+    " corrected file(s)"
   )
   invisible(unname(out_paths))
 }

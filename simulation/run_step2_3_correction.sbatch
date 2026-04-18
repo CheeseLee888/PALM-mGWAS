@@ -22,6 +22,7 @@ else
   STUDIES_CSV="study1,study2,study3"
 fi
 SIF="${SIF:-${SIMU_ROOT}/PALMmGWAS.sif}"
+OVERWRITE_OUTPUT="${OVERWRITE_OUTPUT:-TRUE}"
 
 cd "${SIMU_ROOT}"
 mkdir -p "${SIMU_ROOT}/logs"
@@ -34,16 +35,12 @@ fi
 
 echo "run_step2_3_correction: simulation root = ${SIMU_ROOT}"
 echo "run_step2_3_correction: studies = ${STUDIES_CSV}"
+echo "run_step2_3_correction: overwriteOutput = ${OVERWRITE_OUTPUT}"
 
 for study_name in "${STUDY_LIST[@]}"; do
   OUTPUT_DIR="${SIMU_ROOT}/output/${study_name}"
-  NULLMODEL_FILE="${OUTPUT_DIR}/step1_allpheno.rda"
   INPUT_PREFIX="${OUTPUT_DIR}/step2_allchr"
 
-  if [[ ! -f "${NULLMODEL_FILE}" ]]; then
-    echo "run_step2_3_correction: missing null model ${NULLMODEL_FILE}" >&2
-    exit 1
-  fi
   if ! find "${OUTPUT_DIR}" -maxdepth 1 -type f -name 'step2_allchr_*.txt' | grep -q .; then
     echo "run_step2_3_correction: no merged Step2.2 files found in ${OUTPUT_DIR}" >&2
     exit 1
@@ -55,6 +52,5 @@ for study_name in "${STUDY_LIST[@]}"; do
   apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
     step2_3_correct.R \
     --inputPrefix="${INPUT_PREFIX}" \
-    --outputPrefix=NULL \
-    --NULLmodelFile="${NULLMODEL_FILE}"
+    --overwriteOutput="${OVERWRITE_OUTPUT}"
 done

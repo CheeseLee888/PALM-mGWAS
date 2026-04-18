@@ -18,6 +18,7 @@ STUDIES="${STUDIES:-study1,study2,study3}"
 META_DIR="${META_DIR:-${SIMU_ROOT}/output/meta}"
 FEATURE_LIST_FILE="${FEATURE_LIST_FILE:-${SIMU_ROOT}/output/study1/feature_list.txt}"
 STEP2_JID_DIR="${STEP2_JID_DIR:-${SIMU_ROOT}/logs/step2_jids}"
+OVERWRITE_OUTPUT="${OVERWRITE_OUTPUT:-TRUE}"
 
 cd "${SIMU_ROOT}"
 mkdir -p "${SIMU_ROOT}/logs" "${META_DIR}"
@@ -54,7 +55,7 @@ echo "submit_post_step2_pipeline: Step2.2 merge job ${jid_merge}"
 
 jid_corr=$(sbatch --parsable \
   --dependency=afterok:${jid_merge} \
-  --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDIES=${STUDIES} \
+  --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDIES=${STUDIES},OVERWRITE_OUTPUT=${OVERWRITE_OUTPUT} \
   run_step2_3_correction.sbatch)
 echo "submit_post_step2_pipeline: Step2.3 correction job ${jid_corr}"
 

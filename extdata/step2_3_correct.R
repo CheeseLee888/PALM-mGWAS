@@ -10,34 +10,28 @@ option_list <- list(
     type = "character", default = "",
     help = ""
   ),
-  make_option("--outputPrefix",
-    type = "character", default = "NULL",
-    help = ""
-  ),
-  make_option("--NULLmodelFile",
-    type = "character", default = "NULL",
+  make_option("--overwriteOutput",
+    type = "character", default = "TRUE",
     help = ""
   )
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
-if (is.null(opt$outputPrefix) || !nzchar(opt$outputPrefix) || toupper(opt$outputPrefix) == "NULL") {
-  opt$outputPrefix <- opt$inputPrefix
+overwrite_flag <- toupper(trimws(opt$overwriteOutput))
+if (!overwrite_flag %in% c("TRUE", "FALSE")) {
+  stop("--overwriteOutput must be TRUE or FALSE.")
 }
-if (is.null(opt$NULLmodelFile) || !nzchar(opt$NULLmodelFile) || toupper(opt$NULLmodelFile) == "NULL") {
-  opt$NULLmodelFile <- NULL
-}
+opt$overwriteOutput <- identical(overwrite_flag, "TRUE")
 
 ptm <- proc.time()
 message("step2.3: correction started.")
 message("step2.3: input prefix = ", opt$inputPrefix)
-message("step2.3: output prefix = ", opt$outputPrefix)
+message("step2.3: overwrite output = ", opt$overwriteOutput)
 message("step2.3: correction mode = median")
 
 correctSummary(
   inputPrefix = opt$inputPrefix,
-  outputPrefix = opt$outputPrefix,
-  NULLmodelFile = opt$NULLmodelFile
+  overwriteOutput = opt$overwriteOutput
 )
 
 elapsed <- proc.time() - ptm
