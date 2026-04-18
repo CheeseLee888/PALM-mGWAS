@@ -24,7 +24,7 @@
 #   COVAR_COL_LIST=AGE,SEX,PC01,PC02,PC03,PC04,PC05
 #   DEPTH_COL=NULL
 #   DEPTH_FILTER=0
-#   OUTPUT_SEQDEPTH_FILE=NULL
+#   SEQDEPTH_INFO_FILE=NULL
 
 set -euo pipefail
 
@@ -41,7 +41,7 @@ STUDY="${STUDY:-study1}"
 COVAR_COL_LIST="${COVAR_COL_LIST:-AGE,SEX,PC01,PC02,PC03,PC04,PC05}"
 DEPTH_COL="${DEPTH_COL:-NULL}"
 DEPTH_FILTER="${DEPTH_FILTER:-0}"
-OUTPUT_SEQDEPTH_FILE="${OUTPUT_SEQDEPTH_FILE:-NULL}"
+SEQDEPTH_INFO_FILE="${SEQDEPTH_INFO_FILE:-NULL}"
 
 INPUT_DIR="${SIMU_ROOT}/input/${STUDY}"
 OUTPUT_DIR="${SIMU_ROOT}/output/${STUDY}"
@@ -65,7 +65,7 @@ echo "step0_align_inputs: STUDY=${STUDY}"
 echo "step0_align_inputs: running Step0 alignment"
 echo "step0_align_inputs: covarColList=${COVAR_COL_LIST}"
 echo "step0_align_inputs: depthCol=${DEPTH_COL}, depth.filter=${DEPTH_FILTER}"
-echo "step0_align_inputs: outputSeqDepthFile=${OUTPUT_SEQDEPTH_FILE}"
+echo "step0_align_inputs: SeqDepthInfoFile=${SEQDEPTH_INFO_FILE}"
 
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step0_checkInput.R \
@@ -77,7 +77,7 @@ apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   --depthCol="${DEPTH_COL}" \
   --depth.filter="${DEPTH_FILTER}" \
   --genoFile="${GENO_PREFIX}" \
-  --outputSeqDepthFile="${OUTPUT_SEQDEPTH_FILE}"
+  --SeqDepthInfoFile="${SEQDEPTH_INFO_FILE}"
 
 echo "step0_align_inputs: finished"
 echo "step0_align_inputs: aligned outputs"

@@ -23,7 +23,7 @@ option_list <- list(
               help = "Sample-level depth threshold; samples with depth <= threshold are removed before ID matching [default %default]"),
   make_option("--genoFile", type = "character",
               help = "Genotype input: PLINK prefix or VCF(.vcf/.vcf.gz/.vcf.bgz)"),
-  make_option("--outputSeqDepthFile", type = "character", default = "NULL",
+  make_option("--SeqDepthInfoFile", type = "character", default = "NULL",
               help = "Optional output file for sequencing depth info used by Step0 filtering [default %default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -115,8 +115,8 @@ cat(
   " sample(s), cov=", nrow(cov_df), " sample(s).\n",
   sep = ""
 )
-if (is.null(opt$outputSeqDepthFile) || !nzchar(opt$outputSeqDepthFile) || toupper(opt$outputSeqDepthFile) == "NULL") {
-  opt$outputSeqDepthFile <- NULL
+if (is.null(opt$SeqDepthInfoFile) || !nzchar(opt$SeqDepthInfoFile) || toupper(opt$SeqDepthInfoFile) == "NULL") {
+  opt$SeqDepthInfoFile <- NULL
 }
 opt$covarColList <- normalize_col_list(opt$covarColList, "covarColList")
 opt$depthCol <- normalize_col_list(opt$depthCol, "depthCol")
@@ -170,18 +170,18 @@ cat(
   ", max=", max(depth), ".\n",
   sep = ""
 )
-if (!is.null(opt$outputSeqDepthFile)) {
+if (!is.null(opt$SeqDepthInfoFile)) {
   cat("Generating DepthInfo from the exact depth values used by Step0 sample filtering...\n")
   seqdepth_df <- PALMmGWAS:::seqdepth_info_from_values(names(depth), depth)
-  dir.create(dirname(opt$outputSeqDepthFile), recursive = TRUE, showWarnings = FALSE)
-  fwrite(seqdepth_df, file = opt$outputSeqDepthFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
+  dir.create(dirname(opt$SeqDepthInfoFile), recursive = TRUE, showWarnings = FALSE)
+  fwrite(seqdepth_df, file = opt$SeqDepthInfoFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
   cat(
     "DepthInfo finished: ", nrow(seqdepth_df),
-    " sample(s) written to ", opt$outputSeqDepthFile, ".\n",
+    " sample(s) written to ", opt$SeqDepthInfoFile, ".\n",
     sep = ""
   )
 } else {
-  cat("DepthInfo skipped: --outputSeqDepthFile is NULL.\n")
+  cat("DepthInfo skipped: --SeqDepthInfoFile is NULL.\n")
 }
 
 if (opt$depth.filter > 0) {

@@ -10,6 +10,7 @@ mkdir -p "${outputFolder}"
 FeatureInfoFile="${FeatureInfoFile:-${outputFeatureFile:-NULL}}"
 FeatureNameListFile="${FeatureNameListFile:-${outputFeatureListFile:-NULL}}"
 NULLObjPrefix="${NULLObjPrefix:-${NULLmodelFile:-}}"
+SeqDepthInfoFile="${SeqDepthInfoFile:-NULL}"
 NULLObjPrefix="${NULLObjPrefix%.rda}"
 
 # step0: check input files
@@ -23,7 +24,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step0_checkIn
     --depthCol=${depthCol:-NULL} \
     --depth.filter=${depth_filter:-0} \
     --genoFile=${genoFile} \
-    --outputSeqDepthFile=${outputSeqDepthFile:-NULL}
+    --SeqDepthInfoFile=${SeqDepthInfoFile:-NULL}
 echo "Finish: Check input files."    
 
 # step1: fit null model for all phenotypes

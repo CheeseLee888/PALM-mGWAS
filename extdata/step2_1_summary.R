@@ -10,7 +10,7 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
-    make_option("--NULLmodelFile",
+    make_option("--NULLObjPrefix",
         type = "character", default = "",
         help = ""
     ),
@@ -34,7 +34,7 @@ option_list <- list(
         type = "integer", default = 5,
         help = ""
     ),
-    make_option("--outputSnpFile",
+    make_option("--SnpInfoFile",
         type = "character", default = "NULL",
         help = ""
     ),
@@ -44,8 +44,8 @@ option_list <- list(
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
-if (is.null(opt$outputSnpFile) || !nzchar(opt$outputSnpFile) || toupper(opt$outputSnpFile) == "NULL") {
-  opt$outputSnpFile <- NULL
+if (is.null(opt$SnpInfoFile) || !nzchar(opt$SnpInfoFile) || toupper(opt$SnpInfoFile) == "NULL") {
+  opt$SnpInfoFile <- NULL
 }
 if (is.null(opt$featureColList) || !nzchar(opt$featureColList) || toupper(opt$featureColList) == "NULL") {
   opt$featureColList <- NULL
@@ -65,12 +65,12 @@ message(
 
 getSummary(
   genoFile = opt$genoFile,
-  NULLmodelFile = opt$NULLmodelFile,
+  NULLObjPrefix = opt$NULLObjPrefix,
   PALMOutputFile = opt$PALMOutputFile,
   chrom = opt$chrom,
   featureColList = opt$featureColList,
   minMAF = opt$minMAF,
   minMAC = opt$minMAC,
-  outputSnpFile = opt$outputSnpFile,
+  SnpInfoFile = opt$SnpInfoFile,
   useCluster = opt$useCluster
 )
