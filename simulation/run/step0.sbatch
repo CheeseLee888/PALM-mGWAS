@@ -53,13 +53,6 @@ GENO_PREFIX="${INPUT_DIR}/geno"
 ABD_ALIGNED_FILE="${INPUT_DIR}/abd_aligned.txt"
 COV_ALIGNED_FILE="${INPUT_DIR}/cov_aligned.txt"
 
-mkdir -p "${SIMU_ROOT}/logs" "${OUTPUT_DIR}"
-
-if [[ ! -f "${ABD_FILE}" || ! -f "${COV_FILE}" || ! -f "${GENO_PREFIX}.bed" || ! -f "${GENO_PREFIX}.bim" || ! -f "${GENO_PREFIX}.fam" ]]; then
-  echo "Missing simulation input files. Run Rscript simulation/generate_simulation_data.R first." >&2
-  exit 1
-fi
-
 echo "step0_align_inputs: SIMU_ROOT=${SIMU_ROOT}"
 echo "step0_align_inputs: SIF=${SIF}"
 echo "step0_align_inputs: STUDY=${STUDY}"

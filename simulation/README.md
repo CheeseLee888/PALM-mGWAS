@@ -35,13 +35,13 @@ Core design:
 
 The simulation workflow has been run successfully through `Step0 -> Step2.3` on the cluster layout described below.
 
-In particular, `step2.1` has been verified under Slurm with a `chrom x feature block` decomposition:
+In particular, `step2.1` has been verified under Slurm with a `one chromosome per job` decomposition:
 
 - chromosome subsetting is controlled by `--chrom`
-- feature subsetting is controlled by `--featureColList`
+- all features on that chromosome are modeled together with `--featureColList=NULL`
 - parallelism is handled at the scheduler level by submitting multiple jobs, rather than inside one R process
 
-This means the current implementation supports user-managed `chrom x feature` parallel execution for `step2.1`, followed by a separate `step2.2` merge stage and `step2.3` correction stage.
+This means the simulation workflow follows one fixed route: `step2.1` runs as `chrom only`, `step2.2` merges chromosome-split files into `step2_allchr_*`, `step2.3` overwrites those merged files in place, and `step3` reads `step2_allchr_*.txt`.
 
 ## Slurm submission order
 
@@ -60,41 +60,20 @@ Phase 2: run analysis
 
 ```bash
 cd /mnt/scratch/group/ztang2/pli297/simulation
-bash submit_pipeline.sh
-```
-
-This submits `Step0 -> Step1 -> Step2.1`.
-
-If you want one command that submits the full workflow from `Step0` through visualization, run:
-
-```bash
-cd /mnt/scratch/group/ztang2/pli297/simulation
 bash submit_all.sh
 ```
 
-This submits:
+This is the only submit entrypoint. It submits:
 
 - `run/step0.sbatch`
 - `run/step1.sbatch`
-- `submit_step2_array.sbatch`
-- `run/step2_2.sbatch`
-- `run/step2_3.sbatch`
+- `run/step2_1.sbatch` as a one-chromosome-per-task array for each study
+- `run/step2_2.sbatch` for each study
+- `run/step2_3.sbatch` for each study
 - `run/step3.sbatch` as a feature-level array
 - `run/step4.sbatch`
 
-After all Step2.1 array jobs finish, run:
-
-```bash
-cd /mnt/scratch/group/ztang2/pli297/simulation
-sbatch run/step2_2.sbatch
-sbatch run/step2_3.sbatch
-sbatch submit_step3_meta_array.sbatch
-sbatch run/step4.sbatch
-```
-
-This now performs four stages across four commands:
-
-- merge per-chromosome Step2.1 outputs into per-phenotype `step2_allchr_*` files within each study
+- merge per-chromosome Step2.1 outputs into per-feature `step2_allchr_*` files within each study
 - run Step2.3 median correction on the merged per-feature files within each study
 - run Step3 meta-analysis across studies as one array task per feature
 - run the same four visualization modes used in the main workflow on the meta-analysis results
@@ -104,28 +83,13 @@ This now performs four stages across four commands:
 - SNP-only forest across phenotypes
 - combined overview across phenotypes
 
-By default, `run/step2_2.sbatch` uses `study1,study2,study3`. If needed, you can restrict the Step2.2 stage to one study or a subset:
-
-```bash
-sbatch --export=ALL,STUDY=study2 run/step2_2.sbatch
-sbatch --export=ALL,STUDIES=study1,study3 run/step2_2.sbatch
-```
-
-Submit the split merge and meta steps as Slurm jobs so runtime and memory are recorded separately:
-
-```bash
-sbatch run/step2_2.sbatch
-sbatch --export=ALL,STUDY=study2 run/step2_2.sbatch
-sbatch submit_step3_meta_array.sbatch
-```
-
 `run/step4.sbatch` reads the meta-analysis results from `/mnt/scratch/group/ztang2/pli297/simulation/output/meta` by default and writes plots to `/mnt/scratch/group/ztang2/pli297/simulation/output` by default:
 
 ```bash
 sbatch --export=ALL,PHENO=g_Acinetobacter,SNP=chr4:1682869:G:C run/step4.sbatch
 ```
 
-You can also run the analysis chain manually in three scheduler steps:
+You can also run the first two scheduler steps manually:
 
 ```bash
 ENV_FILE=/path/to/your.env
@@ -143,14 +107,11 @@ That directory is expected to contain at least `generate_simulation_data.R`, `in
 
 Default simulation parameters are written directly inside the sbatch scripts. If needed, you can override them at submit time with `sbatch --export=...`.
 
-Then compute the Step2.1 array size and submit the chromosome x feature-block jobs:
+Then compute the Step2.1 array size and submit the per-chromosome jobs:
 
 ```bash
-FEATURE_BLOCK=10
-N_FEATURE=$(wc -l < output/study1/feature_list.txt)
-N_BLOCK=$(( (N_FEATURE + FEATURE_BLOCK - 1) / FEATURE_BLOCK ))
 N_CHROM=22
-TOTAL_TASKS=$(( N_BLOCK * N_CHROM ))
+TOTAL_TASKS=${N_CHROM}
 
 sbatch \
   --dependency=afterok:${jid1} \
@@ -159,9 +120,9 @@ sbatch \
   run/step2_1.sbatch
 ```
 
-`run/step1.sbatch` writes `output/<study>/feature_list.txt` automatically for the selected study, so Step2.1 can use it directly.
+`run/step1.sbatch` writes `output/<study>/feature_list.txt` automatically for the selected study, so Step2.1 can verify the feature backbone before running the per-chromosome jobs.
 
-`submit_pipeline.sh` submits the analysis stages through Step2.1. The Step2.2 merge, Step2.3 correction, meta stage, and visualization stage are intentionally run later as separate manual commands after Step2.1 finishes.
+`submit_all.sh` is the only submission entrypoint for this simulation workflow. The three studies run independently through `Step0 -> Step2.3` in parallel. Step3 and Step4 run once after all studies complete Step2.3. Step2.1 is always submitted as one chromosome per task, Step2.2 always merges them to `step2_allchr_*`, Step2.3 always overwrites those merged files in place, Step3 always reads `step2_allchr_*.txt`, and Step4 always runs after Step3.
 
 ## Main outputs
 
@@ -173,9 +134,9 @@ sbatch \
 
 ## Slurm array for Step2.1
 
-If you want to parallelize simulated `step2.1` runs across both chromosome and feature subsets, run `Step0` and `Step1` once first, then submit `run/step2_1.sbatch`.
+If you want to parallelize simulated `step2.1` runs, run `Step0` and `Step1` once first, then submit `run/step2_1.sbatch`.
 
-This has already been validated in the simulation workflow: `step2.1` array jobs were launched across multiple chromosomes and feature blocks, and the expected per-chromosome outputs were produced.
+This has already been validated in the simulation workflow: `step2.1` array jobs were launched as one chromosome per task, and the expected per-chromosome outputs were produced.
 
 After the Step2.1 array completes, the simulation workflow merges files sharing the same phenotype across chromosomes. For example:
 
@@ -187,17 +148,14 @@ are merged into:
 
 - `step2_allchr_g_Acinetobacter.txt`
 
-After Step2.2 merge, Step2.3 applies median correction to the merged `step2_allchr_*.txt` files. By default it overwrites them in place. If you set `OVERWRITE_OUTPUT=FALSE`, Step2.3 keeps the originals and writes corrected copies with suffix `_corrected`, for example `step2_allchr_g_Acinetobacter_corrected.txt`. The meta-analysis step then reads whichever corrected files match that setting and writes `step3_meta_*.txt` through a feature-level array. The visualization step reads those meta files through `run/step4.sbatch`.
+After Step2.2 merge, Step2.3 applies median correction to the merged `step2_allchr_*.txt` files and overwrites them in place. Step3 then reads those corrected `step2_allchr_*.txt` files and writes `step3_meta_*.txt` through a feature-level array. The visualization step reads those meta files through `run/step4.sbatch`.
 
-Choose a feature block size, for example `10` features per task:
+Choose the chromosome count for the array size:
 
 ```bash
 ENV_FILE=/path/to/your.env
-FEATURE_BLOCK=10
-N_FEATURE=$(wc -l < output/study1/feature_list.txt)
-N_BLOCK=$(( (N_FEATURE + FEATURE_BLOCK - 1) / FEATURE_BLOCK ))
 N_CHROM=22
-TOTAL_TASKS=$(( N_BLOCK * N_CHROM ))
+TOTAL_TASKS=${N_CHROM}
 
 sbatch --array=1-${TOTAL_TASKS} --export=ALL,ENV_FILE=${ENV_FILE} run/step2_1.sbatch
 ```
@@ -207,7 +165,7 @@ You can override settings at submit time:
 ```bash
 sbatch \
   --array=1-${TOTAL_TASKS} \
-  --export=ALL,ENV_FILE=${ENV_FILE},FEATURE_BLOCK=10,STUDY=study1 \
+  --export=ALL,ENV_FILE=${ENV_FILE},STUDY=study1 \
   run/step2_1.sbatch
 ```
 
@@ -215,13 +173,13 @@ If you need a custom chromosome list, edit the `CHROMS` default directly in the 
 
 This script uses 1-based array indexing:
 
-- task `1` is chromosome `1`, feature block `1`
-- task `2` is chromosome `1`, feature block `2`
+- task `1` is the first chromosome in `CHROMS`
+- task `2` is the second chromosome in `CHROMS`
 - ...
-- after the last block on chromosome `1`, the next task moves to chromosome `2`
+- the last task is the last chromosome in `CHROMS`
 
 ## Note
 
-The input generator now creates three related studies for later meta-analysis work. The current Slurm analysis scripts still default to `study1`, so if you want to run `study2` or `study3`, override `STUDY` at submit time or edit the default inside the sbatch files. By contrast, `run/step2_2.sbatch` defaults to combining all three studies for later meta-analysis unless you restrict `STUDY` or `STUDIES`.
+The input generator now creates three related studies for later meta-analysis work. The current single-study sbatch scripts still default to `study1`, so if you want to run `study2` or `study3` manually, override `STUDY` at submit time or edit the default inside the sbatch files. The default reproducible route is still `bash submit_all.sh`.
 
 The simulation working directory keeps the lightweight metadata under `provided/`. Users regenerate `input/` and `output/` locally by running the scripts above.

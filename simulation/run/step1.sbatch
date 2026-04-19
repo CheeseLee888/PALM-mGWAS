@@ -51,13 +51,6 @@ COV_ALIGNED_FILE="${INPUT_DIR}/cov_aligned.txt"
 NULLMODEL_FILE="${OUTPUT_DIR}/step1_allpheno.rda"
 FEATURE_LIST_FILE="${OUTPUT_DIR}/feature_list.txt"
 
-mkdir -p "${SIMU_ROOT}/logs" "${OUTPUT_DIR}"
-
-if [[ ! -f "${ABD_ALIGNED_FILE}" || ! -f "${COV_ALIGNED_FILE}" ]]; then
-  echo "Missing Step0-aligned input files. Run simulation/run/step0.sbatch first." >&2
-  exit 1
-fi
-
 echo "step1_fit_null_model: SIMU_ROOT=${SIMU_ROOT}"
 echo "step1_fit_null_model: SIF=${SIF}"
 echo "step1_fit_null_model: STUDY=${STUDY}"

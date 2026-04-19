@@ -34,25 +34,8 @@ PLOT_HEIGHT="${PLOT_HEIGHT:-NA}"
 WORK="$(cd "${WORK}" && pwd)"
 SIMU_ROOT="$(cd "${SIMU_ROOT}" && pwd)"
 SIF="$(cd "$(dirname "${SIF}")" && pwd)/$(basename "${SIF}")"
-META_DIR="$(mkdir -p "${META_DIR}" && cd "${META_DIR}" && pwd)"
-PLOT_DIR="$(mkdir -p "${PLOT_DIR}" && cd "${PLOT_DIR}" && pwd)"
-
-if [[ ! -d "${META_DIR}" ]]; then
-  echo "step4: missing meta directory ${META_DIR}" >&2
-  exit 1
-fi
-if [[ ! -f "${SIF}" ]]; then
-  echo "step4: missing sif image ${SIF}" >&2
-  exit 1
-fi
-
-META_FILE_COUNT=$(
-  find "${META_DIR}" -maxdepth 1 -type f | grep -E "/$(printf '%s' "${STEP4_PATTERN}")" | wc -l | tr -d ' '
-)
-if [[ "${META_FILE_COUNT}" -eq 0 ]]; then
-  echo "step4: no meta result files found in ${META_DIR} matching ${STEP4_PATTERN}" >&2
-  exit 1
-fi
+META_DIR="$(cd "${META_DIR}" && pwd)"
+PLOT_DIR="$(cd "${PLOT_DIR}" && pwd)"
 
 echo "step4: work = ${WORK}"
 echo "step4: simulation root = ${SIMU_ROOT}"
