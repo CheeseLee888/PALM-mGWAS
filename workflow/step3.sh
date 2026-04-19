@@ -9,6 +9,8 @@ source "$WORK/config.sh"
 echo "Start: Performe meta analysis."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step3_meta.R \
     --studyDirFile=${studyDirFile} \
-    --pattern=${pattern} \
+    --inputPrefix=${step3InputPrefix} \
+    --chrom=${step3MetaChrom:-NULL} \
+    --featureColList=${step3FeatureColList:-NULL} \
     --metaPrefix=${metaPrefix}
 echo "Finish: Performe meta analysis."

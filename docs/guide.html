@@ -332,28 +332,35 @@ docker run --rm --platform=linux/amd64 \
   <pre><code class="language-bash"># studyDirFile lines: studyID<TAB>dir (e.g., "study1\t${outputFolder}/study1")
 pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --studyDirFile=${studyDirFile} \
-    --pattern='${pattern}' \
+    --inputPrefix=${step3InputPrefix} \
+    --chrom=${step3MetaChrom} \
+    --featureColList=${step3FeatureColList} \
     --metaPrefix=${metaPrefix}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step3_meta.R \
     --studyDirFile=/work/${studyDirFile} \
-    --pattern='${pattern}' \
+    --inputPrefix=/work/${step3InputPrefix} \
+    --chrom=${step3MetaChrom} \
+    --featureColList=${step3FeatureColList} \
     --metaPrefix=${metaPrefix}</code></pre>
   <ul>
-    <li><strong>Inputs:</strong> <code>studyDirFile</code> is a text file with two columns per line: <code>studyID</code> and Step2 output directory. Files inside those directories are selected by <code>pattern</code>.</li>
-    <li><strong>Outputs:</strong> one file per feature named <code>metaPrefix_&lt;pheno&gt;.txt</code>, where <code>metaPrefix</code> already includes the output directory and should not end with <code>_</code>. The output contains <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
-    <li><strong>Prefix rule:</strong> <code>--metaPrefix</code> is the full output prefix including directory and basename, not a complete filename. Step3 removes any trailing <code>_</code>, then automatically appends <code>_&lt;feature&gt;.txt</code>. Example: <code>--metaPrefix=example/output/meta/step3_meta</code> writes <code>example/output/meta/step3_meta_g_Bifidobacterium.txt</code>. Example: <code>--metaPrefix=example/output/meta/step3_meta_</code> is normalized to the same output prefix and writes the same filenames.</li>
+    <li><strong>Inputs:</strong> <code>studyDirFile</code> is a text file with two columns per line: <code>studyID</code> and Step2 output directory. <code>--inputPrefix</code> must be the shared Step2 base prefix, and Step3 then appends <code>_allchr</code> or <code>_chrN</code> according to <code>--chrom</code>.</li>
+    <li><strong>Outputs:</strong> one file per feature named <code>metaPrefix_&lt;allchr|chrN&gt;_&lt;pheno&gt;.txt</code>, where the scope and feature parts match the selected Step2 input scope. The output contains <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
+    <li><strong>Prefix rule:</strong> <code>--inputPrefix</code> must be the shared Step2 base prefix before <code>_allchr</code> or <code>_chrN</code>; do not pass <code>step2_allchr</code>, <code>step2_chr1</code>, or the removed old <code>--pattern</code>/<code>--features</code> interface. <code>--metaPrefix</code> is the full output prefix including directory and basename, not a complete filename. Step3 removes any trailing <code>_</code>, then automatically appends <code>_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code>. Example: <code>--metaPrefix=example/output/meta/step3_meta</code> with <code>--chrom=NULL</code> writes <code>example/output/meta/step3_meta_allchr_g_Bifidobacterium.txt</code>. Example: with <code>--chrom=1</code> it writes <code>example/output/meta/step3_meta_chr1_g_Bifidobacterium.txt</code>.</li>
     <li><strong>Single-study mode:</strong> still useful to standardize column names for plotting.</li>
-    <li><strong>Pattern:</strong> this is the key setting for Step3. Step2 writes files such as <code>step2_allchr_g_Bifidobacterium.txt</code> and <code>step2_allchr_g_Peptoniphilus_unclassified.txt</code>, where the feature name is embedded in the filename. Your <code>pattern</code> should match the fixed prefix and suffix, but leave the feature part to be captured from the filename, for example <code>step2_allchr_.*[.]txt$</code> or <code>step2_chr1_.*[.]txt$</code>. In other words, the regex should include the position where the feature name appears, rather than hard-coding one feature. Example: <code>step2_allchr_.*[.]txt$</code> matches <code>step2_allchr_g_Bifidobacterium.txt</code> and <code>step2_allchr_g_Peptoniphilus_unclassified.txt</code>, but does not match <code>step2_chr1_g_Bifidobacterium.txt</code>. Example: <code>step2_chr1_.*[.]txt$</code> matches <code>step2_chr1_g_Bifidobacterium.txt</code>, but does not match <code>step2_allchr_g_Bifidobacterium.txt</code>. Example: <code>step2_allchr_g_Bifidobacterium[.]txt$</code> matches only that one feature file, so do not use it if you want all features.</li>
-    <li><strong>Current CLI behavior:</strong> the wrapper fixes <code>features = NULL</code> and <code>keep_het = TRUE</code>.</li>
+    <li><strong>Chrom scope:</strong> use <code>--chrom=NULL</code> to meta-analyze merged files such as <code>step2_allchr_g_Bifidobacterium.txt</code>, or <code>--chrom=1</code> to meta-analyze chromosome-specific files such as <code>step2_chr1_g_Bifidobacterium.txt</code>.</li>
+    <li><strong>Feature subset:</strong> use <code>--featureColList=NULL</code> for all features in that Step2 scope, or pass a comma-separated list such as <code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code> to meta-analyze only those features.</li>
+    <li><strong>Current CLI behavior:</strong> the wrapper always keeps <code>keep_het = TRUE</code>; <code>--featureColList</code> controls whether Step3 uses all features or a requested subset.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
     <tr><td><strong><code>--studyDirFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Study list file mapping study IDs to result directories</td><td><code>--studyDirFile=example/input/study_dirs.txt</code> for local pixi runs; <code>--studyDirFile=example/input/study_dirs_docker.txt</code> for Docker runs</td></tr>
-    <tr><td><strong><code>--pattern</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Regex selecting which Step2 result files to meta-analyze. Step2 filenames contain the feature in the middle, such as <code>step2_allchr_g_Bifidobacterium.txt</code>, so the regex should match the fixed prefix/suffix and leave the feature part variable for extraction. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot. Example mapping: <code>'step2_allchr_.*[.]txt$'</code> matches <code>step2_allchr_g_Bifidobacterium.txt</code> and <code>step2_allchr_g_Peptoniphilus_unclassified.txt</code>; <code>'step2_chr1_.*[.]txt$'</code> matches only chromosome-1 shards such as <code>step2_chr1_g_Bifidobacterium.txt</code>.</td><td><code>--pattern='step2_allchr_.*[.]txt$'</code>; <code>--pattern='step2_chr1_.*[.]txt$'</code>; do not write <code>--pattern=step2_allchr_g_Bifidobacterium.txt</code> if you want all features</td></tr>
-    <tr><td><strong><code>--metaPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Full output prefix for meta-analysis tables, including directory and filename prefix; do not add a trailing underscore</td><td><code>--metaPrefix=example/output/meta/step3_meta</code></td></tr>
+    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for meta-analysis; do not add a trailing underscore</td><td><code>--inputPrefix=example/output/study1/step2</code></td></tr>
+    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Meta-analysis scope. Use <code>NULL</code> for <code>allchr</code>, or <code>1..22</code> for one chromosome-specific shard</td><td><code>--chrom=NULL</code>; <code>--chrom=1</code></td></tr>
+    <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated feature IDs to meta-analyze; <code>NULL</code> keeps all features in the selected Step2 scope</td><td><code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code>; <code>--featureColList=NULL</code></td></tr>
+    <tr><td><strong><code>--metaPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Full output prefix for meta-analysis tables, including directory and filename prefix; do not add a trailing underscore. Step3 writes files as <code>&lt;metaPrefix&gt;_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td><td><code>--metaPrefix=example/output/meta/step3_meta</code></td></tr>
   </table>
 
   <h2 id="viz">Step4: Visualization</h2>
@@ -408,7 +415,7 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Case 4:</strong> both <code>--pheno</code> and <code>--snp</code> give a forest plot for one feature-SNP pair across studies.</li>
     <li><strong>Single-study Step4:</strong> you can run Step4 directly after Step2 by pointing <code>metaDir</code> to one study's Step2 output folder and setting <code>pattern</code> to match those files; in that case the plots summarize a single study rather than a meta-analysis.</li>
     <li><strong>Outputs:</strong> plots saved to <code>--plotDir</code>; if <code>--PlotOutputFile</code> is not provided, the script auto-generates a file name based on mode, feature, and SNP.</li>
-    <li><strong>Input scope:</strong> <code>--metaDir</code> can point to Step3 outputs or any directory of Step2/Step3-like files matching <code>--pattern</code>. In normal use, <code>pattern</code> should match all feature files in that directory, so the later logic can decide what to show based on whether <code>--pheno</code> and <code>--snp</code> are specified. Example: in <code>example/output/meta</code>, <code>step3_meta_.*[.]txt$</code> matches <code>step3_meta_g_Bifidobacterium.txt</code> and <code>step3_meta_g_Peptoniphilus_unclassified.txt</code>. In a single-study Step2 folder, <code>step2_allchr_.*[.]txt$</code> matches files such as <code>step2_allchr_g_Bifidobacterium.txt</code>. By contrast, <code>step3_meta_g_Bifidobacterium[.]txt$</code> matches only one feature file, so it is too narrow if you want the script to discover all available features first.</li>
+    <li><strong>Input scope:</strong> <code>--metaDir</code> can point to Step3 outputs or any directory of Step2/Step3-like files matching <code>--pattern</code>. In normal use, <code>pattern</code> should match all feature files in that directory, so the later logic can decide what to show based on whether <code>--pheno</code> and <code>--snp</code> are specified. Example: in <code>example/output/meta</code>, <code>step3_meta_.*[.]txt$</code> matches <code>step3_meta_allchr_g_Bifidobacterium.txt</code> and <code>step3_meta_allchr_g_Peptoniphilus_unclassified.txt</code>. In a single-study Step2 folder, <code>step2_allchr_.*[.]txt$</code> matches files such as <code>step2_allchr_g_Bifidobacterium.txt</code>. By contrast, <code>step3_meta_allchr_g_Bifidobacterium[.]txt$</code> matches only one feature file, so it is too narrow if you want the script to discover all available features first.</li>
     <li><strong>Validation rules:</strong> <code>pCut</code> is only accepted in case 1 and case 3; <code>showMeta</code> and <code>showHet</code> require <code>--snp</code>; <code>plotMinP</code> only affects Manhattan plots.</li>
     <li><strong>SNP-specific options:</strong> when <code>--snp</code> is supplied, you can additionally pass <code>--showMeta</code> and <code>--showHet</code>.</li>
   </ul>
@@ -416,7 +423,7 @@ docker run --rm --platform=linux/amd64 \
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
     <tr><td><strong><code>--metaDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory containing Step3 meta files or single-study Step2 files</td><td><code>--metaDir=example/output/meta</code></td></tr>
     <tr><td><strong><code>--plotDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory where plots will be written</td><td><code>--plotDir=example/output/plot</code></td></tr>
-    <tr><td><strong><code>--pattern</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Regex matching result files to plot. It should usually match all feature files in the target directory, so that the script can later subset by <code>--pheno</code> and/or <code>--snp</code>. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot. Example mapping: <code>'step3_meta_.*[.]txt$'</code> matches <code>step3_meta_g_Bifidobacterium.txt</code> and <code>step3_meta_g_Peptoniphilus_unclassified.txt</code>; <code>'step2_allchr_.*[.]txt$'</code> matches single-study files such as <code>step2_allchr_g_Bifidobacterium.txt</code>; <code>'step3_meta_g_Bifidobacterium[.]txt$'</code> matches only one file.</td><td><code>--pattern='step3_meta_.*[.]txt$'</code>; <code>--pattern='step2_allchr_.*[.]txt$'</code> for single-study Step2 plots</td></tr>
+    <tr><td><strong><code>--pattern</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Regex matching result files to plot. It should usually match all feature files in the target directory, so that the script can later subset by <code>--pheno</code> and/or <code>--snp</code>. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot. Example mapping: <code>'step3_meta_.*[.]txt$'</code> matches <code>step3_meta_allchr_g_Bifidobacterium.txt</code> and <code>step3_meta_allchr_g_Peptoniphilus_unclassified.txt</code>; <code>'step2_allchr_.*[.]txt$'</code> matches single-study files such as <code>step2_allchr_g_Bifidobacterium.txt</code>; <code>'step3_meta_allchr_g_Bifidobacterium[.]txt$'</code> matches only one file.</td><td><code>--pattern='step3_meta_.*[.]txt$'</code>; <code>--pattern='step2_allchr_.*[.]txt$'</code> for single-study Step2 plots</td></tr>
     <tr><td><code>--pheno</code></td><td><code>character</code></td><td><code>NA</code></td><td>(Microbial) feature name; used in case 2 and case 4</td><td><code>--pheno=g_Peptoniphilus_unclassified</code>; omit it for case 1 or case 3</td></tr>
     <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier; used in case 3 and case 4</td><td><code>--snp=chr1:14678191:A:C</code>; omit it for case 1 or case 2</td></tr>
     <tr><td><code>--PlotOutputFile</code></td><td><code>character</code></td><td><code>NA</code></td><td>Optional explicit output filename; otherwise auto-generated. In case 3 this acts as a base name and the feature suffix is inserted before the extension for each generated forest plot.</td><td><code>--PlotOutputFile=example/output/plot/custom.png</code>; <code>--PlotOutputFile=NA</code>; omit it to auto-name</td></tr>
@@ -613,19 +620,23 @@ chr1:14985097:C:T	1	14985097	-0.0257207814851513	0.0927341291837284	0.7815033330
   <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code> for local pixi runs or <code>example/input/study_dirs_docker.txt</code> for Docker runs, plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --studyDirFile=example/input/study_dirs.txt \
-    --pattern='step2_allchr_.*[.]txt$' \
+    --inputPrefix=example/output/study1/step2 \
+    --chrom=NULL \
+    --featureColList=NULL \
     --metaPrefix=example/output/meta/step3_meta</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step3_meta.R \
     --studyDirFile=/work/example/input/study_dirs_docker.txt \
-    --pattern='step2_allchr_.*[.]txt$' \
+    --inputPrefix=/work/example/output/study1/step2 \
+    --chrom=NULL \
+    --featureColList=NULL \
     --metaPrefix=/work/example/output/meta/step3_meta</code></pre>
-  <p><strong>Output:</strong> one meta file per feature, such as <code>example/output/meta/step3_meta_g_Bifidobacterium.txt</code> or <code>example/output/meta/step3_meta_g_Peptoniphilus_unclassified.txt</code>.</p>
+  <p><strong>Output:</strong> one meta file per feature, such as <code>example/output/meta/step3_meta_allchr_g_Bifidobacterium.txt</code> or <code>example/output/meta/step3_meta_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
 
   <h3>Example Output: Step3 meta-analysis</h3>
-  <pre><code class="language-tsv"># file: example/output/meta/step3_meta_g_Peptoniphilus_unclassified.txt
+  <pre><code class="language-tsv"># file: example/output/meta/step3_meta_allchr_g_Peptoniphilus_unclassified.txt
 SNP	CHR	POS	meta_est	meta_stderr	meta_pval	meta_pval.het	study1_est	study1_stderr	study2_est	study2_stderr	study3_est	study3_stderr
 chr1:1837340:C:T	1	1837340	0.0463852582715931	0.0450563820405764	0.303247771896138	0.996847502056907	0.0474191553950809	0.0774090197587034	0.0446844343909193	0.057420429744195	0.0617042413967133	0.211237280776727
 chr1:2261200:G:C	1	2261200	-0.00263712209195503	0.0276773131927774	0.924091633399156	0.94193326985361	0.00910291825612166	0.0603368037873752	-0.00732671404169002	0.0316885247045871	0.0387934695531109	0.169307506561956

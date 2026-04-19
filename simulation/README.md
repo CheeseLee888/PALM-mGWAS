@@ -122,7 +122,7 @@ sbatch \
 
 `run/step1.sbatch` writes `output/<study>/feature_list.txt` automatically for the selected study, so Step2.1 can verify the feature backbone before running the per-chromosome jobs.
 
-`submit_all.sh` is the only submission entrypoint for this simulation workflow. The three studies run independently through `Step0 -> Step2.3` in parallel. Step3 and Step4 run once after all studies complete Step2.3. Step2.1 is always submitted as one chromosome per task, Step2.2 always merges them to `step2_allchr_*`, Step2.3 always overwrites those merged files in place, Step3 always reads `step2_allchr_*.txt`, and Step4 always runs after Step3.
+`submit_all.sh` is the only submission entrypoint for this simulation workflow. The three studies run independently through `Step0 -> Step2.3` in parallel. Step3 and Step4 run once after all studies complete Step2.3. Step2.1 is always submitted as one chromosome per task, Step2.2 always merges them to `step2_allchr_*`, Step2.3 always overwrites those merged files in place, Step3 runs by default with shared base prefix `step2` and `--chrom=NULL`, and Step4 always runs after Step3.
 
 ## Main outputs
 
@@ -148,7 +148,7 @@ are merged into:
 
 - `step2_allchr_g_Acinetobacter.txt`
 
-After Step2.2 merge, Step2.3 applies median correction to the merged `step2_allchr_*.txt` files and overwrites them in place. The script now also supports direct chromosome-specific correction through `--chrom=1..22`, which targets `step2_chrN_*.txt` for one chromosome without requiring merge first. Step3 still reads the corrected `step2_allchr_*.txt` files and writes `step3_meta_*.txt` through a feature-level array. The visualization step reads those meta files through `run/step4.sbatch`.
+After Step2.2 merge, Step2.3 applies median correction to the merged `step2_allchr_*.txt` files and overwrites them in place. The script now also supports direct chromosome-specific correction through `--chrom=1..22`, which targets `step2_chrN_*.txt` for one chromosome without requiring merge first. Step3 now reads Step2 inputs through the shared base prefix plus `--chrom` and `--featureColList`, then writes outputs named `step3_meta_<allchr|chrN>_<feature>.txt` through a feature-level array. The visualization step reads those meta files through `run/step4.sbatch`.
 
 Choose the chromosome count for the array size:
 

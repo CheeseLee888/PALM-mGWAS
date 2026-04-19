@@ -5,13 +5,25 @@ suppressPackageStartupMessages({
   library(optparse)
 })
 
+args_all <- commandArgs(trailingOnly = FALSE)
+file_arg <- grep("^--file=", args_all, value = TRUE)
+if (length(file_arg)) {
+  script_path <- normalizePath(sub("^--file=", "", file_arg[[1L]]), mustWork = FALSE)
+  local_impl <- file.path(dirname(script_path), "..", "R", "metaSummary.R")
+  if (file.exists(local_impl)) {
+    source(local_impl)
+  }
+}
+
 option_list <- list(
   make_option("--studyDirFile", type="character", default="",
               help="txt: each line 'studyID<TAB>dir'"),
-  make_option("--pattern", type="character", default="",
-              help="Regex pattern for input step2 filenames [default %default]"),
-  make_option("--features", type="character", default="",
-              help="Optional comma-separated feature name(s) to meta-analyze [default all matched features]"),
+  make_option("--inputPrefix", type="character", default="",
+              help="Shared Step2 base prefix [default %default]"),
+  make_option("--chrom", type="character", default="NULL",
+              help="Step2 scope: NULL for allchr, or 1..22 [default %default]"),
+  make_option("--featureColList", type="character", default="NULL",
+              help="Optional comma-separated feature name(s) to meta-analyze [default %default]"),
   make_option("--metaPrefix", type="character", default="",
               help="Full output prefix for meta files, e.g. example/output/meta/step3_meta")
 )
@@ -20,6 +32,8 @@ opt <- parse_args(OptionParser(option_list = option_list))
 
 if (!nzchar(opt$studyDirFile) || !file.exists(opt$studyDirFile))
   stop("Missing/invalid --studyDirFile")
+if (!nzchar(opt$inputPrefix))
+  stop("Missing --inputPrefix")
 if (!nzchar(opt$metaPrefix))
   stop("Missing --metaPrefix")
 
@@ -35,19 +49,25 @@ if (!meta_out_dir %in% c("", ".")) {
 }
 
 feature_subset <- NULL
-if (nzchar(opt$features)) {
-  feature_subset <- strsplit(opt$features, ",", fixed = TRUE)[[1]]
+feature_flag <- trimws(opt$featureColList)
+if (nzchar(feature_flag) && toupper(feature_flag) != "NULL") {
+  feature_subset <- strsplit(feature_flag, ",", fixed = TRUE)[[1]]
   feature_subset <- trimws(feature_subset)
   feature_subset <- feature_subset[nzchar(feature_subset)]
   if (length(feature_subset) == 0L) {
     feature_subset <- NULL
   }
 }
+chrom_flag <- trimws(opt$chrom)
+if (!nzchar(chrom_flag) || toupper(chrom_flag) == "NULL") {
+  opt$chrom <- NULL
+}
 
 metaSummary(
   study_dirs = study_dirs,
-  pattern    = opt$pattern,
-  features   = feature_subset,
+  inputPrefix = opt$inputPrefix,
+  chrom = opt$chrom,
+  featureColList = feature_subset,
   out_dir    = meta_out_dir,
   out_prefix = meta_out_prefix,
   keep_het   = TRUE

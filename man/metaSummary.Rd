@@ -6,10 +6,11 @@
 \usage{
 metaSummary(
   study_dirs,
-  pattern,
-  features = NULL,
+  inputPrefix,
+  chrom = NULL,
+  featureColList = NULL,
   out_dir = NULL,
-  out_prefix = "meta_step2_allchr",
+  out_prefix = "step3_meta",
   out_suffix = ".txt",
   keep_het = TRUE,
   meta.method = NULL
@@ -18,14 +19,21 @@ metaSummary(
 \arguments{
 \item{study_dirs}{Named character vector/list. Names are study IDs, values are directories.}
 
-\item{pattern}{Regex pattern for input filenames, e.g. `step2_allchr_.*\\.txt$`.
-The phenotype/feature name is extracted from the first wildcard capture.}
+\item{inputPrefix}{Shared Step2 base prefix. Files are expected at
+`<inputPrefix>_chr<chrom>_<feature>.txt` when `chrom` is set, or
+`<inputPrefix>_allchr_<feature>.txt` when `chrom` is `NULL`. An optional
+trailing underscore is ignored.}
 
-\item{features}{Optional feature names (without prefix/suffix). If NULL, infer from first study dir.}
+\item{chrom}{Optional chromosome selector. Use `NULL` to meta-analyze the
+merged `_allchr` files. Use `1`..`22` or strings like `"chr1"` to
+meta-analyze one chromosome-specific shard across all studies.}
+
+\item{featureColList}{Optional feature names (without prefix/suffix). If
+`NULL`, infer all features from the selected Step2 scope.}
 
 \item{out_dir}{If not NULL, write per-feature meta files to this directory.}
 
-\item{out_prefix}{Output meta file prefix, e.g. "meta_step2_allchr". A trailing underscore is ignored.}
+\item{out_prefix}{Output meta file prefix, e.g. "step3_meta". A trailing underscore is ignored. Output filenames are written as `<out_prefix>_<allchr|chrN>_<feature>.txt`.}
 
 \item{out_suffix}{Output file suffix, default ".txt"}
 

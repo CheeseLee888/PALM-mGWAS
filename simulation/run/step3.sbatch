@@ -19,6 +19,8 @@ SIMU_ROOT="${SIMU_ROOT:-${DEFAULT_SIMU_ROOT}}"
 SIF="${SIF:-${SIMU_ROOT}/PALMmGWAS.sif}"
 META_PREFIX="${META_PREFIX:-step3_meta_}"
 FEATURE="${FEATURE:-}"
+STEP3_INPUT_PREFIX="${STEP3_INPUT_PREFIX:-step2}"
+STEP3_CHROM="${STEP3_CHROM:-NULL}"
 
 cd "${SIMU_ROOT}"
 
@@ -33,17 +35,20 @@ fi
 echo "run_step3_meta: simulation root = ${SIMU_ROOT}"
 echo "run_step3_meta: study dir file = ${STUDY_FILE}"
 echo "run_step3_meta: meta dir = ${META_DIR}"
+echo "run_step3_meta: input prefix = ${STEP3_INPUT_PREFIX}"
+echo "run_step3_meta: chrom = ${STEP3_CHROM}"
 echo "run_step3_meta: feature = ${FEATURE}"
 
 CMD=(
   apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}"
   step3_meta.R
   --studyDirFile="${STUDY_FILE}"
-  --pattern='step2_allchr_.*\.txt$'
+  --inputPrefix="${STEP3_INPUT_PREFIX}"
+  --chrom="${STEP3_CHROM}"
   --metaPrefix="${META_DIR}/${META_PREFIX}"
 )
 
-CMD+=(--features="${FEATURE}")
+CMD+=(--featureColList="${FEATURE:-NULL}")
 
 "${CMD[@]}"
 

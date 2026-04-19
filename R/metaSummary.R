@@ -1,11 +1,17 @@
 #' Meta-analyze step2 results across studies (meta columns prefixed with `meta_`)
 #'
 #' @param study_dirs Named character vector/list. Names are study IDs, values are directories.
-#' @param pattern Regex pattern for input filenames, e.g. `step2_allchr_.*\\.txt$`.
-#'   The phenotype/feature name is extracted from the first wildcard capture.
-#' @param features Optional feature names (without prefix/suffix). If NULL, infer from first study dir.
+#' @param inputPrefix Shared Step2 base prefix. Files are expected at
+#'   `<inputPrefix>_chr<chrom>_<feature>.txt` when `chrom` is set, or
+#'   `<inputPrefix>_allchr_<feature>.txt` when `chrom` is `NULL`. An optional
+#'   trailing underscore is ignored.
+#' @param chrom Optional chromosome selector. Use `NULL` to meta-analyze the
+#'   merged `_allchr` files. Use `1`..`22` or strings like `"chr1"` to
+#'   meta-analyze one chromosome-specific shard across all studies.
+#' @param featureColList Optional feature names (without prefix/suffix). If
+#'   `NULL`, infer all features from the selected Step2 scope.
 #' @param out_dir If not NULL, write per-feature meta files to this directory.
-#' @param out_prefix Output meta file prefix, e.g. "meta_step2_allchr". A trailing underscore is ignored.
+#' @param out_prefix Output meta file prefix, e.g. "step3_meta". A trailing underscore is ignored.
 #' @param out_suffix Output file suffix, default ".txt"
 #' @param keep_het If TRUE and multi-study, keep pval.het column; if FALSE, drop it to match 6-column step2 format exactly.
 #' @param meta.method (deprecated) no longer used; meta-analysis now uses fixed-effect inverse-variance weighting.
@@ -14,10 +20,11 @@
 #' @import dplyr
 #' @export
 metaSummary <- function(study_dirs,
-                        pattern,
-                        features = NULL,
+                        inputPrefix,
+                        chrom = NULL,
+                        featureColList = NULL,
                         out_dir = NULL,
-                        out_prefix = "meta_step2_allchr",
+                        out_prefix = "step3_meta",
                         out_suffix = ".txt",
                         keep_het = TRUE,
                         meta.method = NULL) {
@@ -28,7 +35,45 @@ metaSummary <- function(study_dirs,
   if (is.null(names(study_dirs)) || any(names(study_dirs) == "")) {
     stop("study_dirs must be a named vector/list: names are study IDs.")
   }
+  if (missing(inputPrefix) || !nzchar(inputPrefix)) {
+    stop("'inputPrefix' must be provided.")
+  }
+  if (!is.null(chrom) && length(chrom) != 1L) {
+    stop("'chrom' must be NULL or a single chromosome value.")
+  }
   study.ID <- names(study_dirs)
+
+  escape_regex <- function(x) {
+    gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", x)
+  }
+  normalize_scope <- function(x) {
+    if (is.null(x)) {
+      return(NULL)
+    }
+    x <- trimws(as.character(x))
+    if (!nzchar(x) || toupper(x) == "NULL") {
+      return(NULL)
+    }
+    x <- sub("^chr", "", x, ignore.case = TRUE)
+    if (!grepl("^([1-9]|1[0-9]|2[0-2])$", x)) {
+      stop("'chrom' must be NULL or one of 1..22 (optionally prefixed with 'chr'). Received: ", x)
+    }
+    paste0("chr", as.integer(x))
+  }
+
+  step2_base <- sub("_+$", "", basename(inputPrefix))
+  if (grepl("_(allchr|chr([1-9]|1[0-9]|2[0-2]))$", step2_base)) {
+    stop(
+      "'inputPrefix' must be the shared Step2 base prefix without '_allchr' or '_chrN'. ",
+      "Use inputPrefix='", sub("_(allchr|chr([1-9]|1[0-9]|2[0-2]))$", "", step2_base),
+      "' together with --chrom=NULL or --chrom=1..22."
+    )
+  }
+  requested_scope <- normalize_scope(chrom)
+  if (is.null(requested_scope)) {
+    requested_scope <- "allchr"
+  }
+  file_pattern <- paste0("^", escape_regex(step2_base), "_", escape_regex(requested_scope), "_(.*)[.]txt$")
 
   # info: how many studies were provided
   message(sprintf(
@@ -56,23 +101,16 @@ metaSummary <- function(study_dirs,
 
   # high-level run context (output directory printed near end)
   message("metaSummary: meta method = ", meta.method)
-
-  capture_pattern <- sub("\\.\\*", "(.*)", pattern)
-  capture_pattern <- sub("\\*", "(.*)", capture_pattern, fixed = FALSE)
+  message("metaSummary: input prefix = ", inputPrefix)
+  message("metaSummary: chromosome scope = ", requested_scope)
 
   extract_feature_names <- function(files) {
     base_names <- basename(files)
-    matches <- regexec(capture_pattern, base_names)
-    extracted <- regmatches(base_names, matches)
-    feats <- vapply(extracted, function(x) {
-      if (length(x) >= 2) x[2] else NA_character_
-    }, character(1))
-
-    if (any(is.na(feats))) {
-      feats[is.na(feats)] <- tools::file_path_sans_ext(base_names[is.na(feats)])
-    }
-
-    feats
+    sub(
+      paste0("^", escape_regex(step2_base), "_", escape_regex(requested_scope), "_(.*)[.]txt$"),
+      "\\1",
+      base_names
+    )
   }
 
   # feature (phenotype) availability summary across studies + file matching echo
@@ -80,7 +118,7 @@ metaSummary <- function(study_dirs,
     d <- study_dirs[[sid]]
     ff <- list.files(
       d,
-      pattern = pattern,
+      pattern = file_pattern,
       full.names = FALSE
     )
     feats <- extract_feature_names(ff)
@@ -90,7 +128,7 @@ metaSummary <- function(study_dirs,
       stop(
         "metaSummary: duplicated extracted feature names in study ", sid, ": ",
         paste(dup_feats, collapse = ", "),
-        ". Please refine --pattern so each feature matches exactly one file."
+        ". The Step2 scope should contain exactly one file per feature."
       )
     }
 
@@ -98,9 +136,9 @@ metaSummary <- function(study_dirs,
 
     # logging: only counts, suppress listing file names or phenotype names
     if (length(ff) == 0) {
-      message("metaSummary: study ", sid, " matched 0 files with pattern ", pattern)
+      message("metaSummary: study ", sid, " matched 0 files for scope ", requested_scope)
     } else {
-      message("metaSummary: study ", sid, " matched ", length(ff), " file(s) with pattern ", pattern)
+      message("metaSummary: study ", sid, " matched ", length(ff), " file(s) for scope ", requested_scope)
       message("metaSummary: study ", sid, " extracted ", length(unique(feats)), " feature(s)")
     }
 
@@ -114,9 +152,31 @@ metaSummary <- function(study_dirs,
   feat_union <- sort(unique(unlist(feature_lists)))
   feat_inter <- if (length(feature_lists) > 1) Reduce(intersect, feature_lists) else feat_union
 
-  # if user does not specify, use union
-  if (is.null(features)) {
+  if (length(feat_union) == 0L) {
+    expected <- paste0(step2_base, "_", requested_scope, "_<feature>.txt")
+    if (identical(requested_scope, "allchr")) {
+      stop(
+        "No Step2 files found for meta-analysis scope 'allchr' under base prefix: ", inputPrefix,
+        ". Expected to see files like ", expected,
+        ". If only chromosome-split files exist, run step2.2 merge first or use --chrom=1..22."
+      )
+    }
+    stop(
+      "No Step2 files found for meta-analysis scope '", requested_scope,
+      "' under base prefix: ", inputPrefix,
+      ". Expected to see files like ", expected, "."
+    )
+  }
+
+  if (is.null(featureColList)) {
     features <- feat_union
+  } else {
+    features <- unique(as.character(featureColList))
+    features <- trimws(features)
+    features <- features[nzchar(features)]
+    if (length(features) == 0L) {
+      stop("'featureColList' must be NULL or contain at least one feature name.")
+    }
   }
 
   considered_feats <- features
@@ -350,9 +410,9 @@ metaSummary <- function(study_dirs,
     # write to disk if requested
     if (!is.null(out_dir) && !is.null(out)) {
       out_name <- if (nzchar(out_prefix)) {
-        paste0(out_prefix, "_", feat, out_suffix)
+        paste0(out_prefix, "_", requested_scope, "_", feat, out_suffix)
       } else {
-        paste0(feat, out_suffix)
+        paste0(requested_scope, "_", feat, out_suffix)
       }
       out_path <- file.path(out_dir, out_name)
       write.table(out,
