@@ -9,5 +9,6 @@ source "$WORK/config.sh"
 echo "Start: Perform step2.3 compositional correction."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_3_correct.R \
     --inputPrefix=${step2InputPrefix} \
+    --chrom=${step2CorrectChrom:-NULL} \
     --overwriteOutput=${overwriteOutput:-TRUE}
 echo "Finish: Perform step2.3 compositional correction."

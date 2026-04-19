@@ -4,11 +4,17 @@
 #' Reads per-feature Step2 result files produced by [getSummary()] or
 #' `extdata/step2_1_summary.R`, then applies the compositional correction logic
 #' from `thirdParty/palm.get.summary.R` across features for each SNP. This is
-#' intended for a post-processing "Step2.3" stage after the Step2.2
-#' chromosome-merge step and after all feature-level Step2 jobs have completed.
+#' intended for a post-processing "Step2.3" stage after all feature-level Step2
+#' jobs have completed. It can operate on either one chromosome suffix
+#' (`_chr1`..`_chr22`) or the merged `_allchr` files.
 #'
-#' @param inputPrefix Step2 file prefix. Files are expected at
-#'   `<inputPrefix>_<feature>.txt`. An optional trailing underscore is ignored.
+#' @param inputPrefix Shared Step2 base prefix. Files are expected at
+#'   `<inputPrefix>_chr<chrom>_<feature>.txt` when `chrom` is set, or
+#'   `<inputPrefix>_allchr_<feature>.txt` when `chrom` is `NULL`. An optional
+#'   trailing underscore is ignored.
+#' @param chrom Optional chromosome selector. Use `NULL` to correct the merged
+#'   `_allchr` files. Use `1`..`22` or strings like `"chr1"` to correct one
+#'   chromosome-specific shard across all features.
 #' @param overwriteOutput Logical; if `TRUE` overwrite the original Step2 files.
 #'   If `FALSE`, keep the originals and write new files with suffix
 #'   `"_corrected"`.
@@ -16,6 +22,7 @@
 #' @return Invisibly returns the corrected file paths.
 #' @export
 correctSummary <- function(inputPrefix,
+                           chrom = NULL,
                            overwriteOutput = TRUE) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
@@ -23,6 +30,9 @@ correctSummary <- function(inputPrefix,
 
   if (missing(inputPrefix) || !nzchar(inputPrefix)) {
     stop("'inputPrefix' must be provided.")
+  }
+  if (!is.null(chrom) && length(chrom) != 1L) {
+    stop("'chrom' must be NULL or a single chromosome value.")
   }
   if (!is.logical(overwriteOutput) || length(overwriteOutput) != 1L || is.na(overwriteOutput)) {
     stop("'overwriteOutput' must be a single TRUE/FALSE value.")
@@ -32,18 +42,57 @@ correctSummary <- function(inputPrefix,
     gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", x)
   }
 
+  normalize_scope <- function(x) {
+    if (is.null(x)) {
+      return(NULL)
+    }
+    x <- trimws(as.character(x))
+    if (!nzchar(x) || toupper(x) == "NULL") {
+      return(NULL)
+    }
+    x <- sub("^chr", "", x, ignore.case = TRUE)
+    if (!grepl("^([1-9]|1[0-9]|2[0-2])$", x)) {
+      stop("'chrom' must be NULL or one of 1..22 (optionally prefixed with 'chr'). Received: ", x)
+    }
+    paste0("chr", as.integer(x))
+  }
+
   step2_dir <- dirname(inputPrefix)
   step2_base <- sub("_+$", "", basename(inputPrefix))
-  pattern <- paste0("^", escape_regex(step2_base), "_.*[.]txt$")
+  if (grepl("_(allchr|chr([1-9]|1[0-9]|2[0-2]))$", step2_base)) {
+    stop(
+      "'inputPrefix' must be the shared Step2 base prefix without '_allchr' or '_chrN'. ",
+      "Use inputPrefix='", sub("_(allchr|chr([1-9]|1[0-9]|2[0-2]))$", "", step2_base),
+      "' together with --chrom=NULL or --chrom=1..22."
+    )
+  }
+
+  requested_scope <- normalize_scope(chrom)
+  if (is.null(requested_scope)) {
+    requested_scope <- "allchr"
+  }
+
+  pattern <- paste0("^", escape_regex(step2_base), "_", escape_regex(requested_scope), "_.*[.]txt$")
   files <- list.files(step2_dir, pattern = pattern, full.names = TRUE)
   files <- files[!grepl("_corrected[.]txt$", basename(files))]
   if (!length(files)) {
-    stop("No Step2 files found for inputPrefix: ", inputPrefix)
+    expected <- paste0(step2_base, "_", requested_scope, "_<feature>.txt")
+    if (identical(requested_scope, "allchr")) {
+      stop(
+        "No Step2 files found for correction scope 'allchr' under base prefix: ", inputPrefix,
+        ". Expected to see files like ", expected, "."
+      )
+    }
+    stop(
+      "No Step2 files found for correction scope '", requested_scope,
+      "' under base prefix: ", inputPrefix,
+      ". Expected to see files like ", expected, "."
+    )
   }
 
   extract_feature <- function(path) {
     base <- basename(path)
-    sub(paste0("^", escape_regex(step2_base), "_(.*)[.]txt$"), "\\1", base)
+    sub(paste0("^", escape_regex(step2_base), "_", escape_regex(requested_scope), "_(.*)[.]txt$"), "\\1", base)
   }
   features <- vapply(files, extract_feature, character(1))
   if (anyDuplicated(features)) {
@@ -162,8 +211,8 @@ correctSummary <- function(inputPrefix,
   }
 
   message(
-    "Step2 correction finished: wrote ", length(out_paths),
-    " corrected file(s)"
+    "Step2 correction finished for scope ", requested_scope, ": wrote ",
+    length(out_paths), " corrected file(s)"
   )
   invisible(unname(out_paths))
 }

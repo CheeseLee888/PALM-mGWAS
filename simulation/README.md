@@ -41,7 +41,7 @@ In particular, `step2.1` has been verified under Slurm with a `one chromosome pe
 - all features on that chromosome are modeled together with `--featureColList=NULL`
 - parallelism is handled at the scheduler level by submitting multiple jobs, rather than inside one R process
 
-This means the simulation workflow follows one fixed route: `step2.1` runs as `chrom only`, `step2.2` merges chromosome-split files into `step2_allchr_*`, `step2.3` overwrites those merged files in place, and `step3` reads `step2_allchr_*.txt`.
+This means the simulation workflow follows one fixed route by default: `step2.1` runs as `chrom only`, `step2.2` merges chromosome-split files into `step2_allchr_*`, `step2.3` runs with `--chrom=NULL` and overwrites those merged files in place, and `step3` reads `step2_allchr_*.txt`.
 
 ## Slurm submission order
 
@@ -148,7 +148,7 @@ are merged into:
 
 - `step2_allchr_g_Acinetobacter.txt`
 
-After Step2.2 merge, Step2.3 applies median correction to the merged `step2_allchr_*.txt` files and overwrites them in place. Step3 then reads those corrected `step2_allchr_*.txt` files and writes `step3_meta_*.txt` through a feature-level array. The visualization step reads those meta files through `run/step4.sbatch`.
+After Step2.2 merge, Step2.3 applies median correction to the merged `step2_allchr_*.txt` files and overwrites them in place. The script now also supports direct chromosome-specific correction through `--chrom=1..22`, which targets `step2_chrN_*.txt` for one chromosome without requiring merge first. Step3 still reads the corrected `step2_allchr_*.txt` files and writes `step3_meta_*.txt` through a feature-level array. The visualization step reads those meta files through `run/step4.sbatch`.
 
 Choose the chromosome count for the array size:
 
