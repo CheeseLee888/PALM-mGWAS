@@ -77,124 +77,87 @@ read_result_file <- function(path, sep = "\t", study_id = NULL) {
 #' Utility to list meta files and extract phenotype names from filenames.
 #'
 #' @param metaDir Directory containing meta files.
-#' @param pattern Regex pattern for filenames; default matches `step3_meta_*.txt`.
 #'
-#' @return A data frame with columns `pheno` and `file`.
+#' @return A data frame with columns `pheno`, `scope`, and `file`.
 #' @export
-discover_meta_files <- function(metaDir,
-                                pattern = "step3_meta_.*\\.txt$") {
-  message("discover_meta_files: scanning ", metaDir, " with pattern ", pattern)
-  files <- list.files(metaDir,
-    pattern = pattern,
-    full.names = TRUE
-  )
+discover_meta_files <- function(metaDir) {
+  message("discover_meta_files: scanning ", metaDir)
+  files <- list.files(metaDir, pattern = "[.]txt$", full.names = TRUE)
 
   if (length(files) == 0) {
     stop(
       "No result files found in: ", metaDir,
-      "\nLooked for pattern: ", pattern,
       "\nFiles present: ",
       paste(list.files(metaDir), collapse = ", ")
     )
   }
 
   base_names <- basename(files)
-  extract_by_fixed_affixes <- function(names_vec, pattern_str) {
-    wildcard_pos <- regexpr("\\.\\*", pattern_str)
-    if (wildcard_pos[1] < 0) {
-      wildcard_pos <- regexpr("\\*", pattern_str)
-    }
-    if (wildcard_pos[1] < 0) {
-      return(rep(NA_character_, length(names_vec)))
-    }
-
-    prefix_pat <- substr(pattern_str, 1, wildcard_pos[1] - 1)
-    suffix_pat <- substr(
-      pattern_str,
-      wildcard_pos[1] + attr(wildcard_pos, "match.length"),
-      nchar(pattern_str)
+  parsed <- regexec("^(.*)_(allchr|chr([1-9]|1[0-9]|2[0-2]))_(.+)[.]txt$", base_names)
+  pieces <- regmatches(base_names, parsed)
+  ok <- vapply(pieces, length, integer(1)) >= 5L
+  if (!any(ok)) {
+    stop(
+      "discover_meta_files: no Step2/Step3-style files found in ", metaDir,
+      ". Expected names ending in _allchr_<feature>.txt or _chrN_<feature>.txt."
     )
+  }
 
-    unescape_literal <- function(x) {
-      x <- sub("\\$$", "", x)
-      x <- gsub("^\\^", "", x)
-      x <- gsub("\\\\\\.", ".", x)
-      x <- gsub("\\\\\\+", "+", x)
-      x <- gsub("\\\\\\(", "(", x)
-      x <- gsub("\\\\\\)", ")", x)
-      x <- gsub("\\\\\\[", "[", x)
-      x <- gsub("\\\\\\]", "]", x)
-      x <- gsub("\\\\\\{", "{", x)
-      x <- gsub("\\\\\\}", "}", x)
-      x <- gsub("\\\\\\|", "|", x)
-      x <- gsub("\\\\\\?", "?", x)
-      x <- gsub("\\\\\\^", "^", x)
-      x <- gsub("\\\\\\$", "$", x)
-      x <- gsub("\\\\\\\\", "\\\\", x)
-      x
+  dropped <- base_names[!ok]
+  if (length(dropped) > 0) {
+    message(
+      "discover_meta_files: ignoring ", length(dropped),
+      " file(s) that do not match _allchr_<feature>.txt or _chrN_<feature>.txt."
+    )
+  }
+
+  idx <- which(ok)
+  info <- data.frame(
+    file = files[idx],
+    base = base_names[idx],
+    scope = vapply(pieces[idx], `[`, character(1), 3),
+    pheno = vapply(pieces[idx], `[`, character(1), 5),
+    stringsAsFactors = FALSE
+  )
+
+  choose_one_feature <- function(df) {
+    allchr_rows <- df[df$scope == "allchr", , drop = FALSE]
+    if (nrow(allchr_rows) >= 1L) {
+      if (nrow(allchr_rows) > 1L) {
+        stop(
+          "discover_meta_files: duplicated allchr files for feature ", df$pheno[[1L]], ": ",
+          paste(basename(allchr_rows$file), collapse = ", ")
+        )
+      }
+      return(allchr_rows[1, , drop = FALSE])
     }
 
-    prefix <- unescape_literal(prefix_pat)
-    suffix <- unescape_literal(suffix_pat)
-
-    bad_prefix <- nzchar(prefix) & !startsWith(names_vec, prefix)
-    bad_suffix <- nzchar(suffix) & !endsWith(names_vec, suffix)
-    out <- substring(names_vec, first = nchar(prefix) + 1)
-    if (nzchar(suffix)) {
-      suffix_n <- nchar(suffix)
-      out <- ifelse(
-        nchar(out) >= suffix_n,
-        substr(out, 1, nchar(out) - suffix_n),
-        ""
+    unique_scopes <- unique(df$scope)
+    if (length(unique_scopes) == 1L && nrow(df) == 1L) {
+      return(df)
+    }
+    if (length(unique_scopes) == 1L && nrow(df) > 1L) {
+      stop(
+        "discover_meta_files: duplicated files for feature ", df$pheno[[1L]], " and scope ",
+        unique_scopes[[1L]], ": ", paste(basename(df$file), collapse = ", ")
       )
     }
-    out[bad_prefix | bad_suffix] <- NA_character_
-    out
-  }
 
-  pheno <- extract_by_fixed_affixes(base_names, pattern)
-  if (any(is.na(pheno) | !nzchar(pheno))) {
-    # Fallback to regex capture when fixed prefix/suffix stripping is not enough.
-    capture_pattern <- sub("\\.\\*", "(.*)", pattern)
-    capture_pattern <- sub("\\*", "(.*)", capture_pattern, fixed = FALSE)
-    matches <- regexec(capture_pattern, base_names)
-    extracted <- regmatches(base_names, matches)
-    pheno_regex <- vapply(extracted, function(x) {
-      if (length(x) >= 2) x[2] else NA_character_
-    }, character(1))
-
-    replace_idx <- is.na(pheno) | !nzchar(pheno)
-    pheno[replace_idx] <- pheno_regex[replace_idx]
-  }
-
-  if (any(is.na(pheno) | !nzchar(pheno))) {
-    pheno[is.na(pheno) | !nzchar(pheno)] <- tools::file_path_sans_ext(base_names[is.na(pheno) | !nzchar(pheno)])
-  }
-
-  dup_pheno <- unique(pheno[duplicated(pheno)])
-  if (length(dup_pheno) > 0) {
-    dup_rows <- data.frame(pheno = pheno, file = files, stringsAsFactors = FALSE) |>
-      dplyr::filter(.data$pheno %in% dup_pheno) |>
-      dplyr::arrange(.data$pheno, .data$file)
     stop(
-      "discover_meta_files: duplicated phenotype names extracted from filenames: ",
-      paste(dup_pheno, collapse = ", "),
-      "\nExamples:\n",
-      paste(sprintf("  %s -> %s", dup_rows$pheno, basename(dup_rows$file)), collapse = "\n")
+      "discover_meta_files: feature ", df$pheno[[1L]],
+      " has multiple chromosome-specific files but no allchr file: ",
+      paste(basename(df$file), collapse = ", "),
+      ". Keep one chromosome-specific file per feature or provide allchr outputs."
     )
   }
 
-  data.frame(
-    pheno = pheno,
-    file = files,
-    mode = "pattern",
-    stringsAsFactors = FALSE
-  ) |>
-    dplyr::arrange(.data$pheno) |>
-    (\(x) {
-      message("discover_meta_files: matched ", nrow(x), " file(s).")
-      x
-    })()
+  out <- split(info, info$pheno) |>
+    lapply(choose_one_feature) |>
+    dplyr::bind_rows() |>
+    dplyr::arrange(.data$pheno)
+
+  message("discover_meta_files: matched ", nrow(out), " file(s) after scope resolution.")
+  out[, c("pheno", "scope", "file")]
 }
 
 # Detect study columns (est/stderr) in a meta result data frame
@@ -928,7 +891,7 @@ mode_big_combined <- function(metaIndex, outFile,
       dplyr::mutate(feature = ph) |>
       dplyr::select(
         dplyr::any_of(c("SNP", "CHR", "POS", "meta_est", "meta_stderr", pcol, "est", "stderr")),
-        .data$feature
+        "feature"
       )
 
     if (nrow(keep) == 0) next
@@ -961,7 +924,7 @@ mode_big_combined <- function(metaIndex, outFile,
     hits_to_print <- hits_to_print |> dplyr::select(dplyr::all_of(keep_cols))
 
     if (nrow(hits_to_print) > 0) {
-      msg("SNP/pheno pairs with p < %g (best per SNP):", pCut)
+      msg("SNP/feature pairs with p < %g (best per SNP):", pCut)
       apply(hits_to_print, 1, function(r) {
         p_out <- if ("meta_pval" %in% names(r)) as.numeric(r[["meta_pval"]]) else as.numeric(r[["pval"]])
         msg("  %s\t%s\t%.3e", r[["SNP"]], r[["feature"]], p_out)
@@ -978,7 +941,7 @@ mode_big_combined <- function(metaIndex, outFile,
         utils::write.table(hits_to_print, list_out, sep = "\t", quote = FALSE, row.names = FALSE)
       }
     } else {
-      msg("No SNP/pheno pairs found with p < %g (best per SNP).", pCut)
+      msg("No SNP/feature pairs found with p < %g (best per SNP).", pCut)
     }
   }
 
@@ -1011,7 +974,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
                                  topOutFile = NULL, top_n = 10,
                                  plotMinP = NA_real_) {
   row <- metaIndex |> dplyr::filter(.data$pheno == .env$phenoName)
-  if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", phenoName)
+  if (nrow(row) == 0) stop("Cannot find meta file for feature: ", phenoName)
 
   df <- read_result_file(row$file[1], sep = sep, study_id = phenoName)
   plot_manhattan(
@@ -1089,18 +1052,18 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
 
   if (length(rows) == 0) {
     if (!is.na(pCut)) {
-      stop("No phenotypes found (with this SNP) passing significance cutoff. Try pCut=NA or loosen pCut.")
+      stop("No features found (with this SNP) passing significance cutoff. Try pCut=NA or loosen pCut.")
     } else {
-      stop("No phenotypes contain this SNP in meta files: ", snp)
+      stop("No features contain this SNP in result files: ", snp)
     }
   }
 
   df_all <- dplyr::bind_rows(rows)
-  msg("Mode C: retained %d phenotype(s) for SNP %s.", nrow(df_all), snp)
+  msg("Mode C: retained %d feature(s) for SNP %s.", nrow(df_all), snp)
 
   # sort phenos by significance (use pval)
   if (!("meta_pval" %in% names(df_all))) {
-    stop("Missing meta_pval column after binding phenotypes.")
+    stop("Missing meta_pval column after binding features.")
   }
   df_all <- df_all |>
     dplyr::mutate(score = .data$meta_pval) |>
@@ -1111,7 +1074,7 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
 
   for (i in seq_len(nrow(df_all))) {
     ph <- df_all$pheno[i]
-    msg("Mode C: plotting %d/%d phenotype(s): %s", i, nrow(df_all), ph)
+    msg("Mode C: plotting %d/%d feature(s): %s", i, nrow(df_all), ph)
     ph_out <- with_suffix(outFile, paste0("_", sanitize_filename(ph)))
     forest_plot_single_pheno(
       r = df_all[i, , drop = FALSE],
@@ -1151,11 +1114,11 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
                                   show_meta = TRUE,
                                   show_het = TRUE) {
   row <- metaIndex |> dplyr::filter(.data$pheno == .env$pheno)
-  if (nrow(row) == 0) stop("Cannot find meta file for pheno: ", pheno)
+  if (nrow(row) == 0) stop("Cannot find meta file for feature: ", pheno)
 
   df <- read_result_file(row$file[1], sep = sep, study_id = pheno)
   r <- df[df$SNP == snp, , drop = FALSE]
-  if (nrow(r) == 0) stop("SNP not found in this pheno meta file: ", snp)
+  if (nrow(r) == 0) stop("SNP not found in this feature file: ", snp)
 
   xlim_num <- parse_xlim(xlim_str)
   forest_plot_single_pheno(

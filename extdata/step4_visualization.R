@@ -3,9 +3,17 @@ suppressPackageStartupMessages({
     library(optparse)
 })
 
-default_r_plot_file <- "Rplots.pdf"
-default_meta_pattern <- "step3_meta_.*\\.txt$"
+args_all <- commandArgs(trailingOnly = FALSE)
+file_arg <- grep("^--file=", args_all, value = TRUE)
+if (length(file_arg)) {
+  script_path <- normalizePath(sub("^--file=", "", file_arg[[1L]]), mustWork = FALSE)
+  local_impl <- file.path(dirname(script_path), "..", "R", "visualization.R")
+  if (file.exists(local_impl)) {
+    source(local_impl)
+  }
+}
 
+default_r_plot_file <- "Rplots.pdf"
 old_device_option <- getOption("device")
 options(device = function(...) {
   grDevices::pdf(
@@ -28,16 +36,14 @@ option_list <- list(
               help = "Directory containing step3 meta files [default %default]"),
   make_option(c("--plotDir"), type = "character", default = "",
               help = "Directory to save plots [default %default]"),
-  make_option(c("--pattern"), type = "character", default = default_meta_pattern,
-              help = "Regex pattern for meta filenames [default %default]"),
-  make_option(c("--pheno"), type = "character", default = NA,
-              help = "Phenotype name (suffix in step3 meta filename)"),
+  make_option(c("--feature"), type = "character", default = NA,
+              help = "Feature name (suffix in step3/step2 filename)"),
   make_option(c("--snp"), type = "character", default = NA,
               help = "SNP ID, e.g. chr1:123:A:G (must match SNP column exactly)"),
   make_option(c("--PlotOutputFile"), type = "character", default = NA,
               help = "Output file name (png/pdf). If not set, auto-named."),
   make_option(c("--pCut"), type = "character", default = "5e-8",
-              help = "When neither --pheno nor --snp is given, print SNP/pheno pairs whose best p across phenos is below this cutoff; when only --snp is given, filter phenotypes by this cutoff before writing one forest plot per phenotype. Use NA to disable filtering/printing [default %default]"),
+              help = "When neither --feature nor --snp is given, print SNP/feature pairs whose best p across features is below this cutoff; when only --snp is given, filter features by this cutoff before writing one forest plot per feature. Use NA to disable filtering/printing [default %default]"),
   make_option(c("--showMeta"), type = "logical", default = TRUE,
               help = "Only valid when --snp is given; overlay meta est/stderr in black if available [default TRUE]"),
   make_option(c("--showHet"), type = "logical", default = TRUE,
@@ -112,13 +118,13 @@ metaDir <- opt$metaDir
 plotDir <- opt$plotDir
 dir.create(plotDir, recursive = TRUE, showWarnings = FALSE)
 
-metaIndex <- discover_meta_files(metaDir, pattern = opt$pattern)
+metaIndex <- discover_meta_files(metaDir)
 
-pheno <- if (!is.na(opt$pheno)) opt$pheno else NULL
+feature <- if (!is.na(opt$feature)) opt$feature else NULL
 snp   <- if (!is.na(opt$snp)) opt$snp else NULL
 
-if (arg_supplied("pCut") && !((is.null(pheno) && is.null(snp)) || (is.null(pheno) && !is.null(snp)))) {
-  stop("--pCut can only be used when neither --pheno nor --snp is specified, or when only --snp is specified.")
+if (arg_supplied("pCut") && !((is.null(feature) && is.null(snp)) || (is.null(feature) && !is.null(snp)))) {
+  stop("--pCut can only be used when neither --feature nor --snp is specified, or when only --snp is specified.")
 }
 
 if (arg_supplied("showMeta") && is.null(snp)) {
@@ -132,18 +138,18 @@ if (arg_supplied("showHet") && is.null(snp)) {
 # auto output filename
 auto_out <- function() {
   base <- ""
-  if (is.null(pheno) && is.null(snp)) {
+  if (is.null(feature) && is.null(snp)) {
     return(file.path(plotDir, paste0(base, "combined_hits.png")))
   }
-  if (!is.null(pheno) && is.null(snp)) {
-    return(file.path(plotDir, paste0(base, "manhattan_", sanitize_filename(pheno), ".png")))
+  if (!is.null(feature) && is.null(snp)) {
+    return(file.path(plotDir, paste0(base, "manhattan_", sanitize_filename(feature), ".png")))
   }
-  if (is.null(pheno) && !is.null(snp)) {
+  if (is.null(feature) && !is.null(snp)) {
     tag <- sanitize_filename(snp)
     return(file.path(plotDir, paste0(base, "forest_", tag, ".png")))
   }
   # both
-  return(file.path(plotDir, paste0(base, "forest_", sanitize_filename(pheno), "_", sanitize_filename(snp), ".png")))
+  return(file.path(plotDir, paste0(base, "forest_", sanitize_filename(feature), "_", sanitize_filename(snp), ".png")))
 }
 
 outFile <- if (!is.na(opt$PlotOutputFile)) opt$PlotOutputFile else auto_out()
@@ -152,14 +158,13 @@ outFile <- if (!is.na(opt$PlotOutputFile)) opt$PlotOutputFile else auto_out()
 
 msg("MetaDir: %s", metaDir)
 msg("PlotDir: %s", plotDir)
-msg("Pattern: %s", opt$pattern)
 msg("Found %d files.", nrow(metaIndex))
 msg("Resolved pCut: %s", if (is.na(p_cut)) "NA" else format(p_cut, scientific = TRUE))
 msg("Resolved plotMinP: %s", if (is.na(plot_min_p)) "NA" else format(plot_min_p, scientific = TRUE))
 msg("Resolved width x height: %s x %s", if (is.na(width_in)) "auto" else as.character(width_in), if (is.na(height_in)) "auto" else as.character(height_in))
 msg("Output file/base: %s", outFile)
 
-if (is.null(pheno) && is.null(snp)) {
+if (is.null(feature) && is.null(snp)) {
   # Mode A
   # Big combined plot: show best phenotype per SNP, no significance filtering.
   msg("Visualization mode: combined Manhattan across phenotypes.")
@@ -173,9 +178,9 @@ if (is.null(pheno) && is.null(snp)) {
     plotMinP = plot_min_p
   )
 
-} else if (!is.null(pheno) && is.null(snp)) {
+} else if (!is.null(feature) && is.null(snp)) {
   # Mode B
-  msg("Visualization mode: Manhattan and qq for phenotype %s.", pheno)
+  msg("Visualization mode: Manhattan and qq for feature %s.", feature)
   msg("Mode B behavior: pCut is ignored in this mode.")
   # keep auxiliary outputs aligned with main outFile
   base_no_ext <- sub("\\.[^.]+$", "", outFile)
@@ -183,7 +188,7 @@ if (is.null(pheno) && is.null(snp)) {
   top_out <- paste0(base_no_ext, "_top10.txt")
   mode_pheno_manhattan(
     metaIndex = metaIndex,
-    phenoName = pheno,
+    phenoName = feature,
     outFile = outFile,
     sep = "\t",
     width = width_in, height = height_in, dpi = 300,
@@ -193,7 +198,7 @@ if (is.null(pheno) && is.null(snp)) {
     plotMinP = plot_min_p
   )
 
-} else if (is.null(pheno) && !is.null(snp)) {
+} else if (is.null(feature) && !is.null(snp)) {
   # Mode C
   msg("Visualization mode: per-phenotype forest plots for SNP %s.", snp)
   msg("Mode C behavior: pCut %s; showMeta=%s; showHet=%s; one file is generated for each retained phenotype.",
@@ -215,14 +220,14 @@ if (is.null(pheno) && is.null(snp)) {
 
 } else {
   # Mode D
-  msg("Visualization mode: forest for phenotype %s and SNP %s.", pheno, snp)
+  msg("Visualization mode: forest for feature %s and SNP %s.", feature, snp)
   msg("Mode D behavior: showMeta=%s; showHet=%s; pCut is ignored in this mode.", opt$showMeta, opt$showHet)
   if (!is.na(plot_min_p)) {
     msg("Mode D behavior: plotMinP is ignored in this mode.")
   }
   mode_pheno_snp_forest(
     metaIndex = metaIndex,
-    pheno = pheno,
+    pheno = feature,
     snp = snp,
     outFile = outFile,
     sep = "\t",

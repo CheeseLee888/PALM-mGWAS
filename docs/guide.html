@@ -347,7 +347,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --metaPrefix=${metaPrefix}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> <code>studyDirFile</code> is a text file with two columns per line: <code>studyID</code> and Step2 output directory. <code>--inputPrefix</code> must be the shared Step2 base prefix, and Step3 then appends <code>_allchr</code> or <code>_chrN</code> according to <code>--chrom</code>.</li>
-    <li><strong>Outputs:</strong> one file per feature named <code>metaPrefix_&lt;allchr|chrN&gt;_&lt;pheno&gt;.txt</code>, where the scope and feature parts match the selected Step2 input scope. The output contains <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
+    <li><strong>Outputs:</strong> one file per feature named <code>metaPrefix_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code>, where the scope and feature parts match the selected Step2 input scope. The output contains <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
     <li><strong>Prefix rule:</strong> <code>--inputPrefix</code> must be the shared Step2 base prefix before <code>_allchr</code> or <code>_chrN</code>; do not pass <code>step2_allchr</code>, <code>step2_chr1</code>, or the removed old <code>--pattern</code>/<code>--features</code> interface. <code>--metaPrefix</code> is the full output prefix including directory and basename, not a complete filename. Step3 removes any trailing <code>_</code>, then automatically appends <code>_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code>. Example: <code>--metaPrefix=example/output/meta/step3_meta</code> with <code>--chrom=NULL</code> writes <code>example/output/meta/step3_meta_allchr_g_Bifidobacterium.txt</code>. Example: with <code>--chrom=1</code> it writes <code>example/output/meta/step3_meta_chr1_g_Bifidobacterium.txt</code>.</li>
     <li><strong>Single-study mode:</strong> still useful to standardize column names for plotting.</li>
     <li><strong>Chrom scope:</strong> use <code>--chrom=NULL</code> to meta-analyze merged files such as <code>step2_allchr_g_Bifidobacterium.txt</code>, or <code>--chrom=1</code> to meta-analyze chromosome-specific files such as <code>step2_chr1_g_Bifidobacterium.txt</code>.</li>
@@ -367,22 +367,19 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
   <pre><code class="language-bash"># case 1: combined Manhattan across features
 pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=${metaDir} \
-    --pattern='${step4Pattern}' \
     --plotDir=${plotDir} \
     --pCut=${pCut}
 
 # case 2: one feature
 pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=${metaDir} \
-    --pattern='${step4Pattern}' \
     --plotDir=${plotDir} \
-    --pheno=${pheno} \
+    --feature=${feature} \
     --plotMinP=${plotMinP:-NA}
 
 # case 3: one SNP across features
 pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=${metaDir} \
-    --pattern='${step4Pattern}' \
     --plotDir=${plotDir} \
     --snp=${snp} \
     --pCut=${pCut} \
@@ -392,9 +389,8 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
 # case 4: one feature-SNP pair
 pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=${metaDir} \
-    --pattern='${step4Pattern}' \
     --plotDir=${plotDir} \
-    --pheno=${pheno} \
+    --feature=${feature} \
     --snp=${snp} \
     --showMeta=${showMeta:-TRUE} \
     --showHet=${showHet:-TRUE}</code></pre>
@@ -404,18 +400,17 @@ docker run --rm --platform=linux/amd64 \
   cheeselee/palm-mgwas:latest \
   step4_visualization.R \
     --metaDir=${metaDir} \
-    --pattern='${step4Pattern}' \
     --plotDir=${plotDir} \
     --pCut=${pCut}</code></pre>
   <ul>
-    <li><strong>Mode selection:</strong> the plotting mode is determined by whether <code>--pheno</code> and <code>--snp</code> are specified. Different combinations produce the following plot types.</li>
-    <li><strong>Case 1:</strong> no <code>--pheno</code> and no <code>--snp</code> gives a combined overview in which each SNP is represented by the feature with the smallest p-value for that SNP. Here <code>pCut</code> is used to keep only best-hit SNP/feature pairs with <code>p &lt;= pCut</code> in the printed/listed output; use <code>NA</code> to disable that filtering/reporting.</li>
-    <li><strong>Case 2:</strong> <code>--pheno</code> only gives a feature-specific Manhattan plot and QQ plot.</li>
+    <li><strong>Mode selection:</strong> the plotting mode is determined by whether <code>--feature</code> and <code>--snp</code> are specified. Different combinations produce the following plot types.</li>
+    <li><strong>Case 1:</strong> no <code>--feature</code> and no <code>--snp</code> gives a combined overview in which each SNP is represented by the feature with the smallest p-value for that SNP. Here <code>pCut</code> is used to keep only best-hit SNP/feature pairs with <code>p &lt;= pCut</code> in the printed/listed output; use <code>NA</code> to disable that filtering/reporting.</li>
+    <li><strong>Case 2:</strong> <code>--feature</code> only gives a feature-specific Manhattan plot and QQ plot.</li>
     <li><strong>Case 3:</strong> <code>--snp</code> only writes one forest plot per feature containing that SNP; here <code>pCut</code> is used to keep only features with <code>p &lt;= pCut</code>, and <code>NA</code> disables that filtering. Each figure now includes study-level columns such as effect, standard error, weight, and effect with 95% confidence interval.</li>
-    <li><strong>Case 4:</strong> both <code>--pheno</code> and <code>--snp</code> give a forest plot for one feature-SNP pair across studies.</li>
-    <li><strong>Single-study Step4:</strong> you can run Step4 directly after Step2 by pointing <code>metaDir</code> to one study's Step2 output folder and setting <code>pattern</code> to match those files; in that case the plots summarize a single study rather than a meta-analysis.</li>
+    <li><strong>Case 4:</strong> both <code>--feature</code> and <code>--snp</code> give a forest plot for one feature-SNP pair across studies.</li>
+    <li><strong>Single-study Step4:</strong> you can run Step4 directly after Step2 by pointing <code>metaDir</code> to one study's Step2 output folder; in that case the plots summarize a single study rather than a meta-analysis.</li>
     <li><strong>Outputs:</strong> plots saved to <code>--plotDir</code>; if <code>--PlotOutputFile</code> is not provided, the script auto-generates a file name based on mode, feature, and SNP.</li>
-    <li><strong>Input scope:</strong> <code>--metaDir</code> can point to Step3 outputs or any directory of Step2/Step3-like files matching <code>--pattern</code>. In normal use, <code>pattern</code> should match all feature files in that directory, so the later logic can decide what to show based on whether <code>--pheno</code> and <code>--snp</code> are specified. Example: in <code>example/output/meta</code>, <code>step3_meta_.*[.]txt$</code> matches <code>step3_meta_allchr_g_Bifidobacterium.txt</code> and <code>step3_meta_allchr_g_Peptoniphilus_unclassified.txt</code>. In a single-study Step2 folder, <code>step2_allchr_.*[.]txt$</code> matches files such as <code>step2_allchr_g_Bifidobacterium.txt</code>. By contrast, <code>step3_meta_allchr_g_Bifidobacterium[.]txt$</code> matches only one feature file, so it is too narrow if you want the script to discover all available features first.</li>
+    <li><strong>Input scope:</strong> <code>--metaDir</code> can point to Step3 outputs or any directory of Step2/Step3-like files. Step4 auto-discovers files ending in <code>_allchr_&lt;feature&gt;.txt</code> or <code>_chrN_&lt;feature&gt;.txt</code>. For each feature, it prefers <code>allchr</code> when both <code>allchr</code> and chromosome-specific files are present. If no <code>allchr</code> file exists, one chromosome-specific file is accepted. If multiple chromosome-specific files exist for the same feature and no <code>allchr</code> file exists, Step4 stops with an error instead of choosing arbitrarily.</li>
     <li><strong>Validation rules:</strong> <code>pCut</code> is only accepted in case 1 and case 3; <code>showMeta</code> and <code>showHet</code> require <code>--snp</code>; <code>plotMinP</code> only affects Manhattan plots.</li>
     <li><strong>SNP-specific options:</strong> when <code>--snp</code> is supplied, you can additionally pass <code>--showMeta</code> and <code>--showHet</code>.</li>
   </ul>
@@ -423,8 +418,7 @@ docker run --rm --platform=linux/amd64 \
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
     <tr><td><strong><code>--metaDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory containing Step3 meta files or single-study Step2 files</td><td><code>--metaDir=example/output/meta</code></td></tr>
     <tr><td><strong><code>--plotDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory where plots will be written</td><td><code>--plotDir=example/output/plot</code></td></tr>
-    <tr><td><strong><code>--pattern</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Regex matching result files to plot. It should usually match all feature files in the target directory, so that the script can later subset by <code>--pheno</code> and/or <code>--snp</code>. In <code>zsh</code>, quote this argument to avoid shell glob expansion. Using <code>[.]txt$</code> is usually simpler than backslash-escaping the dot. Example mapping: <code>'step3_meta_.*[.]txt$'</code> matches <code>step3_meta_allchr_g_Bifidobacterium.txt</code> and <code>step3_meta_allchr_g_Peptoniphilus_unclassified.txt</code>; <code>'step2_allchr_.*[.]txt$'</code> matches single-study files such as <code>step2_allchr_g_Bifidobacterium.txt</code>; <code>'step3_meta_allchr_g_Bifidobacterium[.]txt$'</code> matches only one file.</td><td><code>--pattern='step3_meta_.*[.]txt$'</code>; <code>--pattern='step2_allchr_.*[.]txt$'</code> for single-study Step2 plots</td></tr>
-    <tr><td><code>--pheno</code></td><td><code>character</code></td><td><code>NA</code></td><td>(Microbial) feature name; used in case 2 and case 4</td><td><code>--pheno=g_Peptoniphilus_unclassified</code>; omit it for case 1 or case 3</td></tr>
+    <tr><td><code>--feature</code></td><td><code>character</code></td><td><code>NA</code></td><td>(Microbial) feature name; used in case 2 and case 4</td><td><code>--feature=g_Peptoniphilus_unclassified</code>; omit it for case 1 or case 3</td></tr>
     <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier; used in case 3 and case 4</td><td><code>--snp=chr1:14678191:A:C</code>; omit it for case 1 or case 2</td></tr>
     <tr><td><code>--PlotOutputFile</code></td><td><code>character</code></td><td><code>NA</code></td><td>Optional explicit output filename; otherwise auto-generated. In case 3 this acts as a base name and the feature suffix is inserted before the extension for each generated forest plot.</td><td><code>--PlotOutputFile=example/output/plot/custom.png</code>; <code>--PlotOutputFile=NA</code>; omit it to auto-name</td></tr>
     <tr><td><code>--pCut</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>"5e-8"</code></td><td>P-value cutoff used in case 1 printing and case 3 feature filtering; <code>NA</code>, <code>NULL</code>, or empty disables it</td><td><code>--pCut=1e-8</code>; <code>--pCut=NA</code>; <code>--pCut=NULL</code>; <code>--pCut=</code></td></tr>
@@ -646,10 +640,9 @@ chr1:14678191:A:C	1	14678191	0.0579555175251001	0.0252011515059977	0.02146425614
   <h3>Step4: meta tables to figures</h3>
   <p><strong>Input:</strong> meta result files in <code>example/output/meta</code>. The example below shows all four Step4 plotting modes separately.</p>
 
-  <h3>Step4 case 1: no <code>--pheno</code>, no <code>--snp</code></h3>
+  <h3>Step4 case 1: no <code>--feature</code>, no <code>--snp</code></h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=example/output/meta \
-    --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
     --pCut=5e-8</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
@@ -657,7 +650,6 @@ chr1:14678191:A:C	1	14678191	0.0579555175251001	0.0252011515059977	0.02146425614
   cheeselee/palm-mgwas:latest \
   step4_visualization.R \
     --metaDir=/work/example/output/meta \
-    --pattern='step3_meta_.*[.]txt$' \
     --plotDir=/work/example/output/plot \
     --pCut=5e-8</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/combined_hits.png</code> and the filtered hit list <code>example/output/plot/combined_hits_pCut.txt</code>.</p>
@@ -675,20 +667,18 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
     </figure>
   </div>
 
-  <h3>Step4 case 2: <code>--pheno</code> only</h3>
+  <h3>Step4 case 2: <code>--feature</code> only</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=example/output/meta \
-    --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
-    --pheno=g_Peptoniphilus_unclassified</code></pre>
+    --feature=g_Peptoniphilus_unclassified</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step4_visualization.R \
     --metaDir=example/output/meta \
-    --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
-    --pheno=g_Peptoniphilus_unclassified</code></pre>
+    --feature=g_Peptoniphilus_unclassified</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/manhattan_g_Peptoniphilus_unclassified.png</code> and the auxiliary QQ plot <code>example/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png</code>.</p>
   <div class="gallery">
     <figure>
@@ -706,7 +696,6 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   <h3>Step4 case 3: <code>--snp</code> only</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=example/output/meta \
-    --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
     --snp=chr1:14678191:A:C \
     --pCut=5e-8</code></pre>
@@ -715,7 +704,6 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   cheeselee/palm-mgwas:latest \
   step4_visualization.R \
     --metaDir=example/output/meta \
-    --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
     --snp=chr1:14678191:A:C \
     --pCut=5e-8</code></pre>
@@ -733,21 +721,19 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
     </figure>
   </div>
 
-  <h3>Step4 case 4: both <code>--pheno</code> and <code>--snp</code></h3>
+  <h3>Step4 case 4: both <code>--feature</code> and <code>--snp</code></h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=example/output/meta \
-    --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
-    --pheno=g_Peptoniphilus_unclassified \
+    --feature=g_Peptoniphilus_unclassified \
     --snp=chr1:14678191:A:C</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step4_visualization.R \
     --metaDir=example/output/meta \
-    --pattern='step3_meta_.*[.]txt$' \
     --plotDir=example/output/plot \
-    --pheno=g_Peptoniphilus_unclassified \
+    --feature=g_Peptoniphilus_unclassified \
     --snp=chr1:14678191:A:C</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/forest_g_Peptoniphilus_unclassified_chr1_14678191_A_C.png</code>.</p>
   <div class="gallery">

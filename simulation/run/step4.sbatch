@@ -20,8 +20,7 @@ SIMU_ROOT="${SIMU_ROOT:-${DEFAULT_SIMU_ROOT}}"
 SIF="${SIF:-${SIMU_ROOT}/PALMmGWAS.sif}"
 META_DIR="${META_DIR:-/mnt/scratch/group/ztang2/pli297/simulation/output/meta}"
 PLOT_DIR="${PLOT_DIR:-/mnt/scratch/group/ztang2/pli297/simulation/output/plot}"
-STEP4_PATTERN="${STEP4_PATTERN:-${VIS_PATTERN:-step3_meta_.*\\.txt$}}"
-PHENO="${PHENO:-g_Acinetobacter}"
+FEATURE="${FEATURE:-g_Acinetobacter}"
 SNP="${SNP:-chr4:1682869:G:C}"
 PCUT1="${PCUT1:-5e-8}"
 PCUT2="${PCUT2:-5e-8}"
@@ -42,30 +41,27 @@ echo "step4: simulation root = ${SIMU_ROOT}"
 echo "step4: sif = ${SIF}"
 echo "step4: meta dir = ${META_DIR}"
 echo "step4: plot dir = ${PLOT_DIR}"
-echo "step4: pattern = ${STEP4_PATTERN}"
-echo "step4: pheno = ${PHENO}"
+echo "step4: feature = ${FEATURE}"
 echo "step4: snp = ${SNP}"
 
-echo "step4: running visualization mode 1 (pheno + snp)"
+echo "step4: running visualization mode 1 (feature + snp)"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step4_visualization.R \
   --metaDir="${META_DIR}" \
-  --pattern="${STEP4_PATTERN}" \
   --plotDir="${PLOT_DIR}" \
-  --pheno="${PHENO}" \
+  --feature="${FEATURE}" \
   --snp="${SNP}" \
   --showMeta="${SHOW_META}" \
   --showHet="${SHOW_HET}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-echo "step4: running visualization mode 2 (pheno only)"
+echo "step4: running visualization mode 2 (feature only)"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step4_visualization.R \
   --metaDir="${META_DIR}" \
-  --pattern="${STEP4_PATTERN}" \
   --plotDir="${PLOT_DIR}" \
-  --pheno="${PHENO}" \
+  --feature="${FEATURE}" \
   --plotMinP="${PLOT_MIN_P}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
@@ -74,7 +70,6 @@ echo "step4: running visualization mode 3 (snp only)"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step4_visualization.R \
   --metaDir="${META_DIR}" \
-  --pattern="${STEP4_PATTERN}" \
   --plotDir="${PLOT_DIR}" \
   --snp="${SNP}" \
   --pCut="${PCUT1}" \
@@ -87,7 +82,6 @@ echo "step4: running visualization mode 4 (combined)"
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
   step4_visualization.R \
   --metaDir="${META_DIR}" \
-  --pattern="${STEP4_PATTERN}" \
   --plotDir="${PLOT_DIR}" \
   --pCut="${PCUT2}" \
   --plotMinP="${PLOT_MIN_P}" \
