@@ -34,17 +34,17 @@ jid2_1=$(sbatch --parsable \
   run/step2_1.sbatch)
 echo "dispatch_step2: submitted Step2.1 array job ${jid2_1} with 1-${TOTAL_TASKS}"
 
-jid2_2=$(sbatch --parsable \
+jid_merge=$(sbatch --parsable \
   --dependency=afterok:${jid2_1} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDY=${STUDY} \
-  run/step2_2.sbatch)
-echo "dispatch_step2: submitted Step2.2 merge job ${jid2_2}"
+  run/step_merge.sbatch)
+echo "dispatch_step2: submitted merge job ${jid_merge}"
 
-jid2_3=$(sbatch --parsable \
-  --dependency=afterok:${jid2_2} \
+jid2_2_correct=$(sbatch --parsable \
+  --dependency=afterok:${jid_merge} \
   --export=ALL,ENV_FILE=${ENV_FILE:-},SIMU_ROOT=${SIMU_ROOT},STUDY=${STUDY},OVERWRITE_OUTPUT=TRUE \
-  run/step2_3.sbatch)
-echo "dispatch_step2: submitted Step2.3 correction job ${jid2_3}"
+  run/step2_2_correct.sbatch)
+echo "dispatch_step2: submitted Step2.2 correction job ${jid2_2_correct}"
 
-printf '%s\n' "${jid2_3}" > "${STEP2_DONE_JID_FILE}"
-echo "dispatch_step2: wrote Step2.3 jid to ${STEP2_DONE_JID_FILE}"
+printf '%s\n' "${jid2_2_correct}" > "${STEP2_DONE_JID_FILE}"
+echo "dispatch_step2: wrote Step2.2 jid to ${STEP2_DONE_JID_FILE}"

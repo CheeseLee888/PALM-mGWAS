@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=simu_step2_3
+#SBATCH --job-name=simu_step2_2_correct
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=8G
 #SBATCH --time=02:00:00
-#SBATCH --output=logs/simu_step2_3_%A_%a.out
-#SBATCH --error=logs/simu_step2_3_%A_%a.err
+#SBATCH --output=logs/simu_step2_2_correct_%A_%a.out
+#SBATCH --error=logs/simu_step2_2_correct_%A_%a.err
 
 set -euo pipefail
 
@@ -24,15 +24,15 @@ OUTPUT_DIR="${SIMU_ROOT}/output/${STUDY}"
 INPUT_PREFIX="${OUTPUT_DIR}/step2"
 CHROM="${CHROM:-NULL}"
 
-echo "run_step2_3_correction: simulation root = ${SIMU_ROOT}"
-echo "run_step2_3_correction: study = ${STUDY}"
-echo "run_step2_3_correction: chrom = ${CHROM}"
-echo "run_step2_3_correction: overwriteOutput = ${OVERWRITE_OUTPUT}"
+echo "run_step2_2_correction: simulation root = ${SIMU_ROOT}"
+echo "run_step2_2_correction: study = ${STUDY}"
+echo "run_step2_2_correction: chrom = ${CHROM}"
+echo "run_step2_2_correction: overwriteOutput = ${OVERWRITE_OUTPUT}"
 
-echo "run_step2_3_correction: inputPrefix=${INPUT_PREFIX}"
+echo "run_step2_2_correction: inputPrefix=${INPUT_PREFIX}"
 
 apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
-  step2_3_correct.R \
+  step2_2_correct.R \
   --inputPrefix="${INPUT_PREFIX}" \
   --chrom="${CHROM}" \
   --overwriteOutput="${OVERWRITE_OUTPUT}"

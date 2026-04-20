@@ -9,13 +9,16 @@
 #'   an optional trailing underscore is ignored. Step2.1 outputs are expected at `<inputPrefix>_chr1_<feature>.txt` through
 #'   `<inputPrefix>_chr22_<feature>.txt`, or already-merged files at
 #'   `<inputPrefix>_allchr_<feature>.txt`.
+#' @param featureColList Optional feature names to merge. Use `NULL` to keep
+#'   all discovered features, or pass a comma-separated string / character
+#'   vector such as `"g_Bifidobacterium,g_Peptoniphilus_unclassified"`.
 #' @param outputPrefix Base output prefix for merged files. When `NULL`, the
 #'   function derives the base prefix from `inputPrefix`, normalizes a trailing underscore when present, then writes merged
 #'   files to `<outputPrefix>_allchr_<feature>.txt`.
 #'
 #' @return Invisibly returns the merged file paths.
 #' @export
-mergeSummary <- function(inputPrefix, outputPrefix = NULL) {
+mergeResults <- function(inputPrefix, featureColList = NULL, outputPrefix = NULL) {
   if (missing(inputPrefix) || !nzchar(inputPrefix)) {
     stop("'inputPrefix' must be provided.")
   }
@@ -25,11 +28,24 @@ mergeSummary <- function(inputPrefix, outputPrefix = NULL) {
     base <- sub("_+$", "", base)
     sub("^(.*)_(chr([1-9]|1[0-9]|2[0-2])|allchr)$", "\\1", base)
   }
+  normalize_feature_list <- function(x) {
+    if (is.null(x)) {
+      return(NULL)
+    }
+    x <- unique(trimws(unlist(strsplit(as.character(x), ",", fixed = TRUE), use.names = FALSE)))
+    x <- x[nzchar(x)]
+    x <- x[toupper(x) != "NULL"]
+    if (!length(x)) {
+      return(NULL)
+    }
+    unique(x)
+  }
 
   input_dir <- dirname(inputPrefix)
   base_prefix <- normalize_step2_base(inputPrefix)
   base_regex <- gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", base_prefix)
   chr_pattern <- paste0("^", base_regex, "_chr([1-9]|1[0-9]|2[0-2])_(.*)[.]txt$")
+  feature_subset <- normalize_feature_list(featureColList)
 
   if (is.null(outputPrefix) || !nzchar(outputPrefix)) {
     outputPrefix <- file.path(input_dir, base_prefix)
@@ -55,7 +71,40 @@ mergeSummary <- function(inputPrefix, outputPrefix = NULL) {
   if (length(files)) {
     features <- vapply(files, extract_feature, character(1))
     chrom_num <- vapply(files, extract_chrom, integer(1))
+    if (!is.null(feature_subset)) {
+      keep <- features %in% feature_subset
+      files <- files[keep]
+      features <- features[keep]
+      chrom_num <- chrom_num[keep]
+    }
     files <- files[order(features, chrom_num, files)]
+  }
+
+  if (!length(files) && !is.null(feature_subset)) {
+    merged_pattern <- paste0(
+      "^",
+      gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", output_base),
+      "_.*[.]txt$"
+    )
+    existing_merged <- list.files(
+      output_dir,
+      pattern = merged_pattern,
+      full.names = TRUE
+    )
+    extract_merged_feature <- function(path) {
+      sub(
+        paste0("^", gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", output_base), "_(.*)[.]txt$"),
+        "\\1",
+        basename(path)
+      )
+    }
+    existing_features <- if (length(existing_merged)) vapply(existing_merged, extract_merged_feature, character(1)) else character(0)
+    matched_existing <- existing_merged[existing_features %in% feature_subset]
+    missing_subset <- setdiff(feature_subset, unique(existing_features))
+    if (length(matched_existing) && !length(missing_subset)) {
+      message("merge: requested merged files already exist under output prefix; leaving them in place.")
+      return(invisible(unname(matched_existing[order(matched_existing)])))
+    }
   }
 
   if (!length(files)) {
@@ -70,8 +119,19 @@ mergeSummary <- function(inputPrefix, outputPrefix = NULL) {
       full.names = TRUE
     )
     if (length(existing_merged)) {
-      message("step2.2: merged files already exist under output prefix; leaving them in place.")
+      message("merge: merged files already exist under output prefix; leaving them in place.")
       return(invisible(unname(existing_merged[order(existing_merged)])))
+    }
+    if (!is.null(feature_subset)) {
+      stop(
+        "No chromosome-split Step2 files found for requested feature(s) under base prefix: ",
+        inputPrefix,
+        ". Requested featureColList: ",
+        paste(feature_subset, collapse = ", "),
+        ". Expected files named like ",
+        base_prefix,
+        "_chr1_<feature>.txt"
+      )
     }
     stop(
       "No chromosome-split Step2 files found for base prefix: ", inputPrefix,
@@ -80,6 +140,17 @@ mergeSummary <- function(inputPrefix, outputPrefix = NULL) {
   }
 
   features <- vapply(files, extract_feature, character(1))
+  if (!is.null(feature_subset)) {
+    missing_features <- setdiff(feature_subset, unique(features))
+    if (length(missing_features)) {
+      stop(
+        "Requested feature(s) not found for merge under base prefix ",
+        inputPrefix,
+        ": ",
+        paste(missing_features, collapse = ", ")
+      )
+    }
+  }
   if (!length(features) || anyNA(features) || any(!nzchar(features))) {
     stop("Could not resolve feature names from Step2 files for inputPrefix: ", inputPrefix)
   }
@@ -104,7 +175,7 @@ mergeSummary <- function(inputPrefix, outputPrefix = NULL) {
     writeLines(unlist(merged, use.names = FALSE), out_file)
 
     message(
-      "step2.2: merged ", length(feature_files),
+      "merge: merged ", length(feature_files),
       " chromosome file(s) -> ", out_file
     )
     out_paths[[feature]] <- out_file

@@ -158,7 +158,7 @@ metaSummary <- function(study_dirs,
       stop(
         "No Step2 files found for meta-analysis scope 'allchr' under base prefix: ", inputPrefix,
         ". Expected to see files like ", expected,
-        ". If only chromosome-split files exist, run step2.2 merge first or use --chrom=1..22."
+        ". If only chromosome-split files exist, run merge first or use --chrom=1..22."
       )
     }
     stop(

@@ -42,11 +42,11 @@ if (!overwrite_flag %in% c("TRUE", "FALSE")) {
 opt$overwriteOutput <- identical(overwrite_flag, "TRUE")
 
 ptm <- proc.time()
-message("step2.3: correction started.")
-message("step2.3: input prefix = ", opt$inputPrefix)
-message("step2.3: chromosome scope = ", if (is.null(opt$chrom)) "NULL" else opt$chrom)
-message("step2.3: overwrite output = ", opt$overwriteOutput)
-message("step2.3: correction mode = median")
+message("step2.2: correction started.")
+message("step2.2: input prefix = ", opt$inputPrefix)
+message("step2.2: chromosome scope = ", if (is.null(opt$chrom)) "NULL" else opt$chrom)
+message("step2.2: overwrite output = ", opt$overwriteOutput)
+message("step2.2: correction mode = median")
 
 correctSummary(
   inputPrefix = opt$inputPrefix,
@@ -57,7 +57,7 @@ correctSummary(
 elapsed <- proc.time() - ptm
 message(
   sprintf(
-    "step2.3: correction finished. user=%.2fs system=%.2fs elapsed=%.2fs",
+    "step2.2: correction finished. user=%.2fs system=%.2fs elapsed=%.2fs",
     unname(elapsed["user.self"]),
     unname(elapsed["sys.self"]),
     unname(elapsed["elapsed"])

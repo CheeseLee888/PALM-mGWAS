@@ -33,7 +33,7 @@ Core design:
 
 ## Validation Status
 
-The simulation workflow has been run successfully through `Step0 -> Step2.3` on the cluster layout described below.
+The simulation workflow has been run successfully through `Step0 -> Step2.2` on the cluster layout described below.
 
 In particular, `step2.1` has been verified under Slurm with a `one chromosome per job` decomposition:
 
@@ -41,7 +41,7 @@ In particular, `step2.1` has been verified under Slurm with a `one chromosome pe
 - all features on that chromosome are modeled together with `--featureColList=NULL`
 - parallelism is handled at the scheduler level by submitting multiple jobs, rather than inside one R process
 
-This means the simulation workflow follows one fixed route by default: `step2.1` runs as `chrom only`, `step2.2` merges chromosome-split files into `step2_allchr_*`, `step2.3` runs with `--chrom=NULL` and overwrites those merged files in place, and `step3` reads `step2_allchr_*.txt`.
+This means the simulation workflow follows one fixed route by default: `step2.1` runs as `chrom only`, `merge` combines chromosome-split files into `step2_allchr_*`, `step2.2` runs with `--chrom=NULL` and overwrites those merged files in place, and `step3` reads `step2_allchr_*.txt`.
 
 ## Slurm submission order
 
@@ -68,13 +68,13 @@ This is the only submit entrypoint. It submits:
 - `run/step0.sbatch`
 - `run/step1.sbatch`
 - `run/step2_1.sbatch` as a one-chromosome-per-task array for each study
-- `run/step2_2.sbatch` for each study
-- `run/step2_3.sbatch` for each study
+- `run/step_merge.sbatch` for each study
+- `run/step2_2_correct.sbatch` for each study
 - `run/step3.sbatch` as a feature-level array
 - `run/step4.sbatch`
 
 - merge per-chromosome Step2.1 outputs into per-feature `step2_allchr_*` files within each study
-- run Step2.3 median correction on the merged per-feature files within each study
+- run Step2.2 median correction on the merged per-feature files within each study
 - run Step3 meta-analysis across studies as one array task per feature
 - run the same four visualization modes used in the main workflow on the meta-analysis results
 
@@ -122,7 +122,7 @@ sbatch \
 
 `run/step1.sbatch` writes `output/<study>/feature_list.txt` automatically for the selected study, so Step2.1 can verify the feature backbone before running the per-chromosome jobs.
 
-`submit_all.sh` is the only submission entrypoint for this simulation workflow. The three studies run independently through `Step0 -> Step2.3` in parallel. Step3 and Step4 run once after all studies complete Step2.3. Step2.1 is always submitted as one chromosome per task, Step2.2 always merges them to `step2_allchr_*`, Step2.3 always overwrites those merged files in place, Step3 runs by default with shared base prefix `step2` and `--chrom=NULL`, and Step4 always runs after Step3.
+`submit_all.sh` is the only submission entrypoint for this simulation workflow. The three studies run independently through `Step0 -> Step2.2` in parallel. Step3 and Step4 run once after all studies complete Step2.2. Step2.1 is always submitted as one chromosome per task, merge then combines those files to `step2_allchr_*`, Step2.2 always overwrites those merged files in place by default, Step3 runs by default with shared base prefix `step2` and `--chrom=NULL`, and Step4 always runs after Step3.
 
 ## Main outputs
 
@@ -148,7 +148,7 @@ are merged into:
 
 - `step2_allchr_g_Acinetobacter.txt`
 
-After Step2.2 merge, Step2.3 applies median correction to the merged `step2_allchr_*.txt` files and overwrites them in place. The script now also supports direct chromosome-specific correction through `--chrom=1..22`, which targets `step2_chrN_*.txt` for one chromosome without requiring merge first. Step3 now reads Step2 inputs through the shared base prefix plus `--chrom` and `--featureColList`, then writes outputs named `step3_meta_<allchr|chrN>_<feature>.txt` through a feature-level array. The visualization step reads those meta files through `run/step4.sbatch`.
+Step2.2 applies median correction to the selected Step2 scope and overwrites those files in place by default. Merge simply combines `step2_chr1` through `step2_chr22` into `step2_allchr_*.txt`, so it can be run after Step2.1, Step2.2, or Step3. If the chromosome-split files do not exist, merge will not work. The visualization step reads those meta files through `run/step4.sbatch`.
 
 Choose the chromosome count for the array size:
 
