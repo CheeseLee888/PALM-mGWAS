@@ -16,8 +16,8 @@
 #'   `_allchr` files. Use `1`..`22` or strings like `"chr1"` to correct one
 #'   chromosome-specific shard across all features.
 #' @param overwriteOutput Logical; if `TRUE` overwrite the original Step2 files.
-#'   If `FALSE`, keep the originals and write new files with suffix
-#'   `"_corrected"`.
+#'   If `FALSE`, keep the originals and write new files as
+#'   `<inputPrefix>_corrected_<allchr|chrN>_<feature>.txt`.
 #'
 #' @return Invisibly returns the corrected file paths.
 #' @export
@@ -105,7 +105,7 @@ correctSummary <- function(inputPrefix,
     if (isTRUE(overwriteOutput)) {
       return(src)
     }
-    sub("[.]txt$", "_corrected.txt", src)
+    file.path(step2_dir, paste0(step2_base, "_corrected_", requested_scope, "_", feat, ".txt"))
   }
 
   copy_step2_outputs <- function() {

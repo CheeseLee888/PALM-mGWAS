@@ -298,7 +298,7 @@ docker run --rm --platform=linux/amd64 \
     <li><strong>Prefix rule:</strong> <code>--inputPrefix</code> and <code>--outputPrefix</code> are base prefixes, not complete filenames. The merge code removes any trailing <code>_</code> and also normalizes accidental suffixes like <code>_chr1</code> or <code>_allchr</code> back to the shared base prefix before writing outputs. It then automatically appends <code>_allchr_&lt;feature&gt;.txt</code>. Example: <code>--inputPrefix=example/output/study1/step2 --outputPrefix=example/output/study1/step2</code> writes <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>. Example: <code>--inputPrefix=example/output/study1/step2_chr1 --outputPrefix=example/output/study1/step2_allchr</code> is normalized to the same base and still writes <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>.</li>
     <li><strong>Ordering:</strong> chromosome files are merged in numeric order, so <code>chr2</code> comes before <code>chr11</code>.</li>
     <li><strong>Header handling:</strong> the merged file keeps the first header row and drops repeated headers from later chromosome files.</li>
-    <li><strong>Output behavior:</strong> if merged files already exist under the output prefix, the script leaves them in place.</li>
+    <li><strong>Output behavior:</strong> merge writes one <code>_allchr</code> file per matched feature. If no chromosome-split input files match, the script stops with an error.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
@@ -322,15 +322,15 @@ docker run --rm --platform=linux/amd64 \
   <ul>
     <li><strong>Inputs:</strong> the full set of Step2 files for one correction scope. Pass the shared base prefix such as <code>step2</code> as <code>--inputPrefix</code>. Then use <code>--chrom=NULL</code> to target merged files <code>step2_allchr_*.txt</code>, or <code>--chrom=1</code> to target chromosome-specific files <code>step2_chr1_*.txt</code>.</li>
     <li><strong>Why separate:</strong> compositional correction is applied across features for each SNP, so Step2.2 needs all feature files for the selected scope. That scope can be one chromosome or <code>allchr</code>.</li>
-    <li><strong>Prefix rule:</strong> <code>--inputPrefix</code> must be the shared base prefix before <code>_allchr</code> or <code>_chrN</code>. Do not pass <code>step2_allchr</code> or <code>step2_chr1</code> here. Example: <code>--inputPrefix=example/output/study1/step2 --chrom=NULL</code> reads <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>. Example: <code>--inputPrefix=example/output/study1/step2 --chrom=1</code> reads <code>example/output/study1/step2_chr1_g_Bifidobacterium.txt</code>. With <code>--overwriteOutput=FALSE</code>, Step2.2 keeps the original file and automatically writes <code>_corrected</code> copies.</li>
+    <li><strong>Prefix rule:</strong> <code>--inputPrefix</code> must be the shared base prefix before <code>_allchr</code> or <code>_chrN</code>. Do not pass <code>step2_allchr</code> or <code>step2_chr1</code> here. Example: <code>--inputPrefix=example/output/study1/step2 --chrom=NULL</code> reads <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>. Example: <code>--inputPrefix=example/output/study1/step2 --chrom=1</code> reads <code>example/output/study1/step2_chr1_g_Bifidobacterium.txt</code>. With <code>--overwriteOutput=FALSE</code>, Step2.2 keeps the original file and writes outputs like <code>step2_corrected_allchr_g_Bifidobacterium.txt</code> or <code>step2_corrected_chr1_g_Bifidobacterium.txt</code>.</li>
     <li><strong>Correction method:</strong> Step2.2 currently supports only median-based correction.</li>
-    <li><strong>Output behavior:</strong> set <code>--overwriteOutput=TRUE</code> (default) to overwrite the selected Step2 scope in place. Set <code>--overwriteOutput=FALSE</code> to keep the originals and write corrected copies with suffix <code>_corrected</code>.</li>
+    <li><strong>Output behavior:</strong> set <code>--overwriteOutput=TRUE</code> (default) to overwrite the selected Step2 scope in place. Set <code>--overwriteOutput=FALSE</code> to keep the originals and write corrected copies as <code>&lt;inputPrefix&gt;_corrected_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code>.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
     <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for correction; do not add a trailing underscore</td><td><code>--inputPrefix=example/output/study1/step2</code></td></tr>
     <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Correction scope. Use <code>NULL</code> for <code>allchr</code>, or <code>1..22</code> for one chromosome-specific shard</td><td><code>--chrom=NULL</code>; <code>--chrom=1</code></td></tr>
-    <tr><td><code>--overwriteOutput</code></td><td><code>character</code></td><td><code>"TRUE"</code></td><td>If <code>TRUE</code>, overwrite the selected Step2 scope in place. If <code>FALSE</code>, keep the originals and write corrected copies with suffix <code>_corrected</code></td><td><code>--overwriteOutput=TRUE</code>; <code>--overwriteOutput=FALSE</code></td></tr>
+    <tr><td><code>--overwriteOutput</code></td><td><code>character</code></td><td><code>"TRUE"</code></td><td>If <code>TRUE</code>, overwrite the selected Step2 scope in place. If <code>FALSE</code>, keep the originals and write corrected copies as <code>&lt;inputPrefix&gt;_corrected_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td><td><code>--overwriteOutput=TRUE</code>; <code>--overwriteOutput=FALSE</code></td></tr>
   </table>
 
   <h2 id="step3">Step3: Meta Analysis</h2>
@@ -604,7 +604,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --inputPrefix=/work/example/output/study1/step2 \
     --chrom=NULL \
     --overwriteOutput=TRUE</code></pre>
-  <p><strong>Output:</strong> corrected per-feature files with the same columns <code>SNP, CHR, POS, est, stderr, pval</code>. With <code>--overwriteOutput=TRUE</code>, the corrected values replace the selected Step2 scope in place. With <code>--overwriteOutput=FALSE</code>, the script writes files such as <code>step2_allchr_g_Peptoniphilus_unclassified_corrected.txt</code> or <code>step2_chr1_g_Peptoniphilus_unclassified_corrected.txt</code>.</p>
+  <p><strong>Output:</strong> corrected per-feature files with the same columns <code>SNP, CHR, POS, est, stderr, pval</code>. With <code>--overwriteOutput=TRUE</code>, the corrected values replace the selected Step2 scope in place. With <code>--overwriteOutput=FALSE</code>, the script writes files such as <code>step2_corrected_allchr_g_Peptoniphilus_unclassified.txt</code> or <code>step2_corrected_chr1_g_Peptoniphilus_unclassified.txt</code>.</p>
 
   <h3>Example Output: Step2.1/Merge/Step2.2 per-feature summary</h3>
   <pre><code class="language-tsv"># file: example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt

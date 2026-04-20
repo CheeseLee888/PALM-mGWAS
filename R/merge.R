@@ -80,48 +80,7 @@ mergeResults <- function(inputPrefix, featureColList = NULL, outputPrefix = NULL
     files <- files[order(features, chrom_num, files)]
   }
 
-  if (!length(files) && !is.null(feature_subset)) {
-    merged_pattern <- paste0(
-      "^",
-      gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", output_base),
-      "_.*[.]txt$"
-    )
-    existing_merged <- list.files(
-      output_dir,
-      pattern = merged_pattern,
-      full.names = TRUE
-    )
-    extract_merged_feature <- function(path) {
-      sub(
-        paste0("^", gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", output_base), "_(.*)[.]txt$"),
-        "\\1",
-        basename(path)
-      )
-    }
-    existing_features <- if (length(existing_merged)) vapply(existing_merged, extract_merged_feature, character(1)) else character(0)
-    matched_existing <- existing_merged[existing_features %in% feature_subset]
-    missing_subset <- setdiff(feature_subset, unique(existing_features))
-    if (length(matched_existing) && !length(missing_subset)) {
-      message("merge: requested merged files already exist under output prefix; leaving them in place.")
-      return(invisible(unname(matched_existing[order(matched_existing)])))
-    }
-  }
-
   if (!length(files)) {
-    merged_pattern <- paste0(
-      "^",
-      gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", output_base),
-      "_.*[.]txt$"
-    )
-    existing_merged <- list.files(
-      output_dir,
-      pattern = merged_pattern,
-      full.names = TRUE
-    )
-    if (length(existing_merged)) {
-      message("merge: merged files already exist under output prefix; leaving them in place.")
-      return(invisible(unname(existing_merged[order(existing_merged)])))
-    }
     if (!is.null(feature_subset)) {
       stop(
         "No chromosome-split Step2 files found for requested feature(s) under base prefix: ",
