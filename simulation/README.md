@@ -16,8 +16,9 @@ Users generate `input/` and `output/` locally by running the simulation workflow
 
 Directory layout:
 
-- `simulation/` root: submit scripts that only orchestrate and call `sbatch`
-- `run/`: scripts that do the actual computation or visualization
+- `provided/`: reference inputs used by the simulation generator, including feature names, covariate names, SNP definitions, and study sample-size settings
+- `run/`: Slurm submission scripts for each simulation stage
+- `generate_simulation_data.R`: the R script that creates the simulation inputs for `study1`, `study2`, and `study3`
 
 Core design:
 
@@ -30,21 +31,8 @@ Core design:
 - The random seed is fixed at `20260409`, so any user running the same script will generate identical inputs and outputs
 - A strong genetic signal is planted in `g_Acinetobacter` so the Manhattan plot contains clear high peaks
 
-## Validation Status
-
-The simulation workflow has been run successfully through `Step0 -> Step2.2` on the cluster layout described below.
-
-In particular, `step2.1` has been verified under Slurm with a `one chromosome per job` decomposition where each job processes all features for that chromosome:
-
-- chromosome subsetting is controlled by `--chrom`
-- all features on that chromosome are modeled together with `--featureColList=NULL`
-- parallelism is handled at the scheduler level by submitting multiple jobs, rather than inside one R process
-
-This means the simulation workflow now follows one fixed route by default: `step2.1` runs as `chrom only` with all features, `step2.2` runs as `chrom only` and overwrites those chromosome-split files in place, `merge` then combines the corrected chromosome-split files into final `step2_allchr_*`, and `step3` reads those merged `step2_allchr_*.txt` files.
 
 ## Reproducible Route
-
-The simulation workflow has one supported route.
 
 Phase 1: generate simulation input
 
@@ -85,7 +73,7 @@ STUDY=study3 sbatch run/step1.sbatch
 ```
 
 For each study, submit `Step2.1 -> Step2.2 -> merge` only after the previous stage has finished.
-If you want to reproduce the same results currently stored under `output/`, do not run `step2.2`.
+If you want to reproduce the same results currently stored under `output/`, skip `step2.2`.
 
 ```bash
 STUDY=study1 sbatch --array=1-22 run/step2_1.sbatch
@@ -111,13 +99,6 @@ This means:
 - `run/step2_2.sbatch` runs as a one-chromosome-per-task array
 - `run/merge.sbatch` runs as a one-feature-per-task array
 
-The default simulation root used by these sbatch scripts is:
-
-```bash
-/path/to/simulation
-```
-
-That directory is expected to contain at least `generate_simulation_data.R`, `input/`, `output/`, `provided/`, and `PALMmGWAS.sif`.
 
 After all three study-level merge stages have completed, write `study_dirs.tsv`, then submit `step3`. Wait for `step3` to finish before submitting `step4`.
 
@@ -136,47 +117,6 @@ sbatch --array=1-${n_feature_meta} run/step3.sbatch
 sbatch run/step4.sbatch
 ```
 
-## Main outputs
+## Outputs
 
-- `input/study1/`, `input/study2/`, `input/study3/`
-- `output/study1/step2_allchr_g_Acinetobacter.txt`
-- `output/study1/info_snp.txt`
-- `output/study1/info_feature.txt`
-- `output/plot/manhattan_g_Acinetobacter.png`
-
-## Step2 Structure
-
-`step2.1` is always launched as a fixed chromosome-level array, and this has already been validated in the simulation workflow.
-
-After the Step2.1 array completes, the simulation workflow runs Step2.2 median correction chromosome by chromosome, overwriting files such as:
-
-- `step2_chr1_g_Acinetobacter.txt`
-- `step2_chr2_g_Acinetobacter.txt`
-- ...
-
-After the Step2.2 array completes, the simulation workflow merges corrected files sharing the same phenotype across chromosomes. These chromosome shards:
-
-- `step2_chr1_g_Acinetobacter.txt`
-- `step2_chr2_g_Acinetobacter.txt`
-- `...`
-
-are merged into:
-
-- `step2_allchr_g_Acinetobacter.txt`
-
-Step2.2 applies median correction to the selected Step2 scope. In the simulation workflow it runs on chromosome-split files with `--overwriteOutput=TRUE`, so merge reads `step2_chr1` through `step2_chr22` after correction and writes final `step2_allchr_*.txt`. If the chromosome-split files do not exist, merge will not work. The visualization step reads the downstream meta files through `run/step4.sbatch`.
-
-Step2.1 and Step2.2 always use a fixed `1-22` Slurm array in this simulation workflow.
-
-This script uses 1-based array indexing:
-
-- task `1` is chromosome 1
-- task `2` is chromosome 2
-- ...
-- task `22` is chromosome 22
-
-## Note
-
-The input generator creates three related studies for later meta-analysis work. The intended reproducible route is the step-by-step submission sequence above.
-
-The simulation working directory keeps the lightweight metadata under `provided/`. Users regenerate `input/` and `output/` locally by running the scripts above.
+For routine inspection, users only need to look at `output/plot/`, which contains the downstream visualization outputs from the simulation workflow.
