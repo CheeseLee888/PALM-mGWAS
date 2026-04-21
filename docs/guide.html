@@ -10,7 +10,11 @@
     pre {background: #f4f6f8; padding: 12px; overflow: auto; border-radius: 6px; position: relative;}
     table {border-collapse: collapse; width: 100%; margin: 12px 0;}
     th, td {border: 1px solid #d0d7de; padding: 8px; text-align: left;}
-    th {background: #eef3f8;}
+    th {background: #eef3f8; text-align: center;}
+    table th:nth-child(1), table td:nth-child(1) {width: 20%;}
+    table th:nth-child(2), table td:nth-child(2) {width: 14%;}
+    table th:nth-child(3), table td:nth-child(3) {width: 14%;}
+    table th:nth-child(4), table td:nth-child(4) {width: 52%;}
     .steps {display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;}
     .env-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 16px 0;}
     .gallery {display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 16px 0;}
@@ -115,20 +119,16 @@ docker run --rm --platform=linux/amd64 \
 
   <h2 id="workflow">Workflow</h2>
   <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Step0</code> to <code>Step4</code>.</p>
-  <p>If you use the shell wrappers under <code>workflow/</code>, start from <code>workflow/config.example.sh</code> and save your project-specific values as <code>config.sh</code>.</p>
+  <p>In the parameter tables below, parameter names shown in bold are required.</p>
   <div class="steps">
     <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> optionally filters low-depth samples, checks IID consistency across abundance, covariates, and genotype input, reorders tables to match genotype sample order, and can write sequencing-depth summaries.</div>
     <div class="card"><strong>Step1 Null</strong><br><code>step1_null.R</code> fits the PALM null model from the Step0-aligned abundance and covariate tables and can write feature summaries.</div>
-    <div class="card"><strong>Step2.1 Summary</strong><br><code>step2_1_summary.R</code> reads genotype input, runs PALM score tests without compositional correction, and writes one association file per feature.</div>
-    <div class="card"><strong>Merge</strong><br><code>step_merge.R</code> merges per-chromosome Step2.1 outputs into per-feature all-chromosome files when later stages need <code>allchr</code> inputs.</div>
-    <div class="card"><strong>Step2.2 Correction</strong><br><code>step2_2_correction.R</code> reads one Step2 scope at a time and applies median-based compositional correction across features for each SNP. The scope is selected by <code>--chrom</code>: <code>NULL</code> means <code>allchr</code>, while <code>1..22</code> means one chromosome shard.</div>
+    <div class="card"><strong>Step2.1 Summary</strong><br><code>step2_1_summary.R</code> reads genotype input, runs PALM score tests without compositional correction, writes one association file per feature, and can write genotype/SNP summaries.</div>
+    <div class="card"><strong>Merge</strong><br><code>step_merge.R</code> merges chromosome-split files into per-feature all-chromosome files when later stages need <code>allchr</code> inputs.</div>
+    <div class="card"><strong>Step2.2 Correction</strong><br><code>step2_2_correction.R</code> reads one Step2 scope at a time and applies median-based compositional correction across features for each SNP.</div>
     <div class="card"><strong>Step3 Meta</strong><br><code>step3_meta.R</code> meta-analyzes multiple studies and adds <code>meta_*</code> columns.</div>
     <div class="card"><strong>Step4 Visualization</strong><br><code>step4_visualization.R</code> generates Manhattan and forest plots.</div>
   </div>
-  <ul>
-    <li><strong>Genotype input used by Step0 / Step2:</strong> set <code>genoFile</code> once, as a PLINK prefix such as <code>example/input/study1/geno</code> or a VCF path such as <code>example/input/study1_vcf/geno.vcf.gz</code>.</li>
-    <li><strong>Format-specific options:</strong> VCF input is auto-detected from <code>DS</code> or <code>GT</code> FORMAT fields, preferring <code>DS</code> when present.</li>
-  </ul>
 
   <h2 id="step0">Step0: Check and Align Input IDs</h2>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
@@ -145,44 +145,50 @@ docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step0_checkInput.R \
-    --abdFile=/work/${abdFile} \
-    --covFile=/work/${covFile} \
-    --abdAlignedFile=/work/${abdAlignedFile} \
-    --covAlignedFile=/work/${covAlignedFile} \
+    --abdFile=${abdFile} \
+    --covFile=${covFile} \
+    --abdAlignedFile=${abdAlignedFile} \
+    --covAlignedFile=${covAlignedFile} \
     --covarColList=${covarColList} \
     --depthCol=${depthCol} \
     --depth.filter=${depth_filter} \
-    --genoFile=/work/${genoFile} \
+    --genoFile=${genoFile} \
     --SeqDepthInfoFile=${SeqDepthInfoFile}</code></pre>
   <ul>
     <li><strong>Purpose:</strong> optionally filter low-depth samples, then verify that abundance, covariates, and genotype input remain aligned before modeling.</li>
-    <li><strong>Behavior:</strong> if <code>depth.filter &gt; 0</code>, samples with depth <code>&lt;= depth.filter</code> are removed before genotype matching. Depth comes from <code>covFile[depthCol]</code> when <code>depthCol</code> is supplied, otherwise from row sums of <code>abdFile</code>.</li>
-    <li><strong>Missing-value filtering:</strong> samples with missing values in Step1-required variables from <code>covarColList</code> and <code>depthCol</code> are removed before ID matching. If <code>covarColList=NULL</code>, Step0 defaults to all non-ID columns in <code>covFile</code>, matching Step1 behavior.</li>
-    <li><strong>Alignment rule:</strong> the step keeps samples matched across <code>abdFile</code>, <code>covFile</code>, and genotype input, then orders the retained samples to match genotype sample order.</li>
+    <li><strong>Alignment rule:</strong> the step keeps samples matched across <code>abdFile</code>, <code>covFile</code>, and genotype input, then writes aligned abundance and covariate tables in genotype sample order.</li>
     <li><strong>Genotype sample count:</strong> genotype input may contain extra samples, but it must not miss any sample retained from <code>abdFile</code>/<code>covFile</code> after filtering.</li>
-    <li><strong>VCF handling:</strong> within Step0, VCF sample IDs are read directly from the VCF header.</li>
-    <li><strong>Optional info output:</strong> set <code>--SeqDepthInfoFile</code> to write <code>DepthInfo</code>. Behavior definition: <code>DepthInfo</code> uses the exact depth values Step0 uses for sample filtering. If <code>depthCol</code> is provided, this file comes from that covariate column; otherwise it uses row sums of <code>abdFile</code>.</li>
-    <li><strong>Requirement:</strong> all three inputs are mandatory in the current CLI.</li>
-    <li><strong>Accepted genotype input:</strong> PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code>.</li>
-    <li><strong>Failure cases:</strong> duplicated IDs, missing values, missing <code>.fam</code> for PLINK input, or non-identical IID sets.</li>
+    <li><strong>Failure cases:</strong> duplicated IDs, missing values, or non-identical IID sets.</li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose sample order will be checked/reordered</td><td><code>--abdFile=example/input/study1/abd.txt</code></td></tr>
-    <tr><td><strong><code>--covFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Covariate table whose sample order will be checked/reordered</td><td><code>--covFile=example/input/study1/cov.txt</code></td></tr>
-    <tr><td><strong><code>--abdAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned abundance table; original input is not overwritten</td><td><code>--abdAlignedFile=example/output/study1/abd_aligned.txt</code></td></tr>
-    <tr><td><strong><code>--covAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned covariate table; original input is not overwritten</td><td><code>--covAlignedFile=example/output/study1/cov_aligned.txt</code></td></tr>
-    <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the sample-order reference: PLINK prefix or VCF</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></td></tr>
-    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated covariate columns required by Step1; if omitted, all non-ID columns in <code>covFile</code> are used. Samples missing these values are removed before ID matching</td><td><code>--covarColList=AGE,SEX,PC01</code>; <code>--covarColList=NULL</code></td></tr>
-    <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td><td><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></td></tr>
-    <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Sample-level depth threshold applied before genotype ID matching; samples with depth <code>&lt;=</code> this value are removed</td><td><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></td></tr>
-    <tr><td><code>--SeqDepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for sequencing-depth info used by Step0 sample filtering</td><td><code>--SeqDepthInfoFile=example/output/study1/info_seqdepth.txt</code>; <code>--SeqDepthInfoFile=NULL</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
+    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose sample order will be checked/reordered</td></tr>
+    <tr><td><strong><code>--covFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Covariate table whose sample order will be checked/reordered</td></tr>
+    <tr><td><strong><code>--abdAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned abundance table; original input is not overwritten</td></tr>
+    <tr><td><strong><code>--covAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned covariate table; original input is not overwritten</td></tr>
+    <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the sample-order reference. Accepted values are a PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code>. For VCF, Step0 reads sample IDs from the sample columns in the <code>#CHROM</code> header line, checks that every retained abundance/covariate IID is present, ignores extra VCF-only samples, and reorders the aligned abundance/covariate outputs to that VCF sample-column order</td></tr>
+    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated covariate columns required by Step1; if omitted, all non-ID columns in <code>covFile</code> are used. Samples missing these values are removed before ID matching</td></tr>
+    <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td></tr>
+    <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Sample-level depth threshold applied before genotype ID matching; samples with depth <code>&lt;=</code> this value are removed</td></tr>
+    <tr><td><code>--SeqDepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>DepthInfo</code>, using the exact depth values Step0 uses for sample filtering. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
   </table>
+  <p><strong>Step0 examples:</strong></p>
+  <ul>
+    <li><code>--abdFile=example/input/study1/abd.txt</code></li>
+    <li><code>--covFile=example/input/study1/cov.txt</code></li>
+    <li><code>--abdAlignedFile=example/output/study1/abd_aligned.txt</code></li>
+    <li><code>--covAlignedFile=example/output/study1/cov_aligned.txt</code></li>
+    <li><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></li>
+    <li><code>--covarColList=AGE,SEX,PC01</code>; <code>--covarColList=NULL</code></li>
+    <li><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></li>
+    <li><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></li>
+    <li><code>--SeqDepthInfoFile=example/output/study1/info_seqdepth.txt</code>; <code>--SeqDepthInfoFile=NULL</code></li>
+  </ul>
 
   <h2 id="step1">Step1: Fit Null Model</h2>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R \
-    --abdFile=${abdAlignedFile} \
-    --covFile=${covAlignedFile} \
+    --abdFile=${abdFile} \
+    --covFile=${covFile} \
     --covarColList=${covarColList} \
     --depthCol=${depthCol} \
     --prev.filter=${prev_filter} \
@@ -193,8 +199,8 @@ docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step1_null.R \
-    --abdFile=${abdAlignedFile} \
-    --covFile=${covAlignedFile} \
+    --abdFile=${abdFile} \
+    --covFile=${covFile} \
     --covarColList=${covarColList} \
     --depthCol=${depthCol} \
     --prev.filter=${prev_filter} \
@@ -204,25 +210,30 @@ docker run --rm --platform=linux/amd64 \
   <ul>
     <li><strong>Inputs:</strong> the Step0-aligned abundance table plus the aligned covariate table.</li>
     <li><strong>Outputs:</strong> <code>NULLObjPrefix</code> containing <code>modglmm</code>; directories are created if missing.</li>
-    <li><strong>Prefix rule:</strong> <code>--NULLObjPrefix</code> is a filename prefix, not a complete filename. Step1 automatically writes <code>${NULLObjPrefix}.rda</code>. Example: <code>--NULLObjPrefix=example/output/study1/step1_allpheno</code> writes <code>example/output/study1/step1_allpheno.rda</code>. If you accidentally pass <code>.rda</code>, the code normalizes it back to the prefix.</li>
-    <li><strong>Behavior:</strong> pass <code>--covFile=NULL</code> to run covariate-free; the CLI converts empty string or <code>NULL</code> to R <code>NULL</code>.</li>
-    <li><strong>Docker path note:</strong> when you mount the project at <code>/work</code> and use <code>-w /work</code>, relative paths such as <code>example/input/study1/abd.txt</code> work directly inside the container. This also avoids invalid strings like <code>/work/NULL</code> for optional arguments.</li>
-    <li><strong>Covariate subset:</strong> pass <code>--covarColList=AGE,SEX,PC01</code> to use only those columns from <code>covFile</code>; names must match the header exactly.</li>
-    <li><strong>PALM arguments:</strong> <code>depthCol</code> selects one column from <code>covFile</code> as PALM <code>depth</code>; if omitted, PALM uses row sums of <code>abdFile</code>. <code>prev.filter</code> is forwarded directly to <code>PALM::palm.null.model()</code>.</li>
-    <li><strong>Optional info output:</strong> set <code>--FeatureInfoFile</code> to write <code>FeatureInfo</code>. Behavior definition: <code>FeatureInfo</code> is computed from the Step1 input abundance table before <code>prev.filter</code> removes low-prevalence features.</li>
     <li><strong>Tips:</strong> ensure no duplicated sample IDs; use abundance(count); keep sessionInfo for reproducibility.</li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Aligned abundance table used to fit the null model</td><td><code>--abdFile=example/output/study1/abd_aligned.txt</code></td></tr>
-    <tr><td><strong><code>--NULLObjPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for the fitted PALM null model; Step1 writes <code>${NULLObjPrefix}.rda</code></td><td><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code></td></tr>
-    <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional aligned covariate file; the CLI also accepts empty string or <code>NULL</code> to omit covariates</td><td><code>--covFile=example/output/study1/cov_aligned.txt</code>; <code>--covFile=NULL</code></td></tr>
-    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code></td><td><code>--covarColList=AGE,SEX</code>; <code>--covarColList=NULL</code></td></tr>
-    <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as PALM <code>depth</code>; if omitted, PALM uses row sums of <code>abdFile</code></td><td><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></td></tr>
-    <tr><td><code>--prev.filter</code></td><td><code>double</code></td><td><code>0.1</code></td><td>Feature prevalence threshold passed to PALM</td><td><code>--prev.filter=0.1</code>; <code>--prev.filter=0</code></td></tr>
-    <tr><td><code>--FeatureInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for Step1 feature prevalence and average proportion before feature filtering</td><td><code>--FeatureInfoFile=example/output/study1/info_feature.txt</code>; <code>--FeatureInfoFile=NULL</code></td></tr>
-    <tr><td><code>--FeatureNameListFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for modeled feature IDs retained after prevalence filtering</td><td><code>--FeatureNameListFile=example/output/study1/feature_list.txt</code>; <code>--FeatureNameListFile=NULL</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
+    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Aligned abundance table used to fit the null model</td></tr>
+    <tr><td><strong><code>--NULLObjPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for the fitted PALM null model, not a complete filename. Step1 writes <code>${NULLObjPrefix}.rda</code>; if <code>.rda</code> is supplied accidentally, it is normalized back to the prefix</td></tr>
+    <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional aligned covariate file; the CLI also accepts empty string or <code>NULL</code> to omit covariates</td></tr>
+    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code>; names must match the header exactly. If omitted or set to <code>NULL</code> while <code>covFile</code> is provided, Step1 uses all covariate columns in <code>covFile</code>. If <code>covFile=NULL</code>, Step1 fits the null model without covariates</td></tr>
+    <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as PALM <code>depth</code>; if omitted, PALM uses row sums of <code>abdFile</code></td></tr>
+    <tr><td><code>--prev.filter</code></td><td><code>double</code></td><td><code>0.1</code></td><td>Feature prevalence threshold forwarded to <code>PALM::palm.null.model()</code></td></tr>
+    <tr><td><code>--FeatureInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>FeatureInfo</code>, computed from the Step1 input abundance table before <code>prev.filter</code> removes low-prevalence features</td></tr>
+    <tr><td><code>--FeatureNameListFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for modeled feature IDs retained after prevalence filtering</td></tr>
   </table>
+  <p><strong>Step1 examples:</strong></p>
+  <ul>
+    <li><code>--abdFile=example/output/study1/abd_aligned.txt</code></li>
+    <li><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code> writes <code>example/output/study1/step1_allpheno.rda</code></li>
+    <li><code>--covFile=example/output/study1/cov_aligned.txt</code>; <code>--covFile=NULL</code></li>
+    <li><code>--covarColList=AGE,SEX,PC01</code>; <code>--covarColList=NULL</code></li>
+    <li><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></li>
+    <li><code>--prev.filter=0.1</code>; <code>--prev.filter=0</code></li>
+    <li><code>--FeatureInfoFile=example/output/study1/info_feature.txt</code>; <code>--FeatureInfoFile=NULL</code></li>
+    <li><code>--FeatureNameListFile=example/output/study1/feature_list.txt</code>; <code>--FeatureNameListFile=NULL</code></li>
+  </ul>
 
   <h2 id="step2">Step2: Per-study Summary</h2>
   <h3>Step2.1: null model + genotype to per-feature association files</h3>
@@ -240,9 +251,9 @@ docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step2_1_summary.R \
-    --genoFile=/work/${genoFile} \
-    --NULLObjPrefix=/work/${NULLObjPrefix} \
-    --SummaryPrefix=/work/${SummaryPrefix} \
+    --genoFile=${genoFile} \
+    --NULLObjPrefix=${NULLObjPrefix} \
+    --SummaryPrefix=${SummaryPrefix} \
     --chrom=${chrom} \
     --featureColList=${featureColList} \
     --minMAF=${minMAF} \
@@ -250,123 +261,138 @@ docker run --rm --platform=linux/amd64 \
     --SnpInfoFile=${SnpInfoFile} \
     --useCluster=${useCluster}</code></pre>
   <ul>
-    <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>. Step2.1 accepts a PLINK prefix or <code>.vcf/.vcf.gz/.vcf.bgz</code>.</li>
-    <li><strong>Outputs:</strong> one per-feature <code>.txt</code> file with columns <code>SNP, CHR, POS, est, stderr, pval</code>.</li>
-    <li><strong>Prefix rule:</strong> <code>--NULLObjPrefix</code> is still a prefix here, so Step2.1 reads <code>${NULLObjPrefix}.rda</code>. <code>--SummaryPrefix</code> is also a prefix, not a complete output filename. Step2.1 removes any trailing <code>_</code>, then automatically appends <code>_chr&lt;chrom&gt;</code> or <code>_allchr</code>, then <code>_&lt;feature&gt;.txt</code>. Example: <code>--SummaryPrefix=example/output/study1/step2 --chrom=1</code> writes files such as <code>example/output/study1/step2_chr1_g_Bifidobacterium.txt</code>. Example: <code>--SummaryPrefix=example/output/study1/step2_ --chrom=NULL</code> still writes <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>.</li>
+    <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>.</li>
+    <li><strong>Outputs:</strong> generates many per-feature <code>.txt</code> files, one file for each tested feature, with columns <code>SNP, CHR, POS, est, stderr, pval</code>.</li>
     <li><strong>SNP format:</strong> dots are replaced by colons, e.g., <code>chr1:12345:REF:ALT</code>.</li>
-    <li><strong>Temporary conversion:</strong> VCF input is read directly.</li>
-    <li><strong>VCF import:</strong> Step2.1 auto-detects <code>DS</code> or <code>GT</code> from the VCF FORMAT field and prefers <code>DS</code> when present.</li>
-    <li><strong>Chrom filter:</strong> current CLI default is empty string; use <code>--chrom=1</code> to restrict, otherwise leave empty to keep all chromosomes.</li>
-    <li><strong>Feature subset:</strong> pass <code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code> to test only those modeled features from the Step1 null model; <code>NULL</code> keeps all features.</li>
     <li><strong>Parallelization pattern:</strong> the software exposes <code>--chrom</code> and <code>--featureColList</code> so users can decompose Step2.1 into independent jobs. In other words, <code>chrom x feature</code> parallelism is achieved by scheduler-level job submission, not by internal multithreading within one Step2.1 process.</li>
-    <li><strong>MAF filter:</strong> default is <code>--minMAF=0.05</code>; use another threshold as needed, and <code>0</code> disables this filter.</li>
-    <li><strong>MAC filter:</strong> default is <code>--minMAC=5</code>; use <code>0</code> to disable minor-allele-count filtering.</li>
-    <li><strong>Optional info output:</strong> set <code>--SnpInfoFile</code> to write <code>SNPInfo</code>. Behavior definition: <code>SNPInfo</code> is computed from the Step2.1 genotype matrix after NULL-model sample alignment and optional chromosome filtering, but before <code>minMAF</code>/<code>minMAC</code> remove SNPs.</li>
-    <li><strong>Clustering:</strong> <code>useCluster</code> defaults to <code>FALSE</code>. When set to <code>TRUE</code>, FID from the PLINK <code>.fam</code> file is passed to PALM; this is only supported for native PLINK input, and all-zero FIDs still disable clustering.</li>
-    <li><strong>Compositional correction:</strong> Step2.1 does not perform compositional correction. Merge simply combines <code>step2_chr1</code> through <code>step2_chr22</code> into <code>step2_allchr_*.txt</code>, so it can be run after Step2.1, Step2.2, or Step3.</li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input for association testing: PLINK prefix or VCF</td><td><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></td></tr>
-    <tr><td><strong><code>--NULLObjPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Null model prefix generated by Step1; Step2.1 reads <code>${NULLObjPrefix}.rda</code></td><td><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code></td></tr>
-    <tr><td><strong><code>--SummaryPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 summary prefix; do not add a trailing underscore. Step2.1 writes <code>${SummaryPrefix}_chr1_&lt;feature&gt;.txt</code> or <code>${SummaryPrefix}_allchr_&lt;feature&gt;.txt</code></td><td><code>--SummaryPrefix=example/output/study1/step2</code></td></tr>
-    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>""</code></td><td>Optional chromosome subset; leave empty to keep all chromosomes</td><td><code>--chrom=1</code>; omit it or set <code>--chrom=</code> for all chromosomes</td></tr>
-    <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated feature IDs to keep from the Step1 null model</td><td><code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code>; <code>--featureColList=NULL</code></td></tr>
-    <tr><td><code>--minMAF</code></td><td><code>double</code></td><td><code>0.05</code></td><td>Optional minimum minor allele frequency threshold for SNP filtering</td><td><code>--minMAF=0.05</code>; <code>--minMAF=0</code></td></tr>
-    <tr><td><code>--minMAC</code></td><td><code>integer</code></td><td><code>5</code></td><td>Optional minimum minor allele count threshold for SNP filtering</td><td><code>--minMAC=5</code>; <code>--minMAC=0</code></td></tr>
-    <tr><td><code>--SnpInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for Step2.1 SNP summary before minMAF/minMAC filtering</td><td><code>--SnpInfoFile=example/output/study1/info_snp.txt</code>; <code>--SnpInfoFile=NULL</code></td></tr>
-    <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether to use FID-based clustering from the PLINK <code>.fam</code> file; only supported for native PLINK input</td><td><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
+    <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input for association testing: PLINK prefix or VCF. VCF input is read directly; Step2.1 auto-detects <code>DS</code> or <code>GT</code> from the FORMAT field and prefers <code>DS</code> when present</td></tr>
+    <tr><td><strong><code>--NULLObjPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Null model prefix generated by Step1; Step2.1 reads <code>${NULLObjPrefix}.rda</code></td></tr>
+    <tr><td><strong><code>--SummaryPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 summary prefix, not a complete output filename. Step2.1 removes any trailing <code>_</code>, appends <code>_chr&lt;chrom&gt;</code> or <code>_allchr</code>, then appends <code>_&lt;feature&gt;.txt</code></td></tr>
+    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>""</code></td><td>Optional chromosome subset; use <code>--chrom=1</code> to restrict to one chromosome, or leave empty/use <code>NULL</code> to keep all chromosomes</td></tr>
+    <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated feature IDs to test from the Step1 null model; <code>NULL</code> keeps all modeled features</td></tr>
+    <tr><td><code>--minMAF</code></td><td><code>double</code></td><td><code>0.05</code></td><td>Optional minimum minor allele frequency threshold for SNP filtering; <code>0</code> disables this filter</td></tr>
+    <tr><td><code>--minMAC</code></td><td><code>integer</code></td><td><code>5</code></td><td>Optional minimum minor allele count threshold for SNP filtering; <code>0</code> disables this filter</td></tr>
+    <tr><td><code>--SnpInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for genotype/SNP summary. <code>SNPInfo</code> is computed from the Step2.1 genotype matrix after NULL-model sample alignment and optional chromosome filtering, but before <code>minMAF</code>/<code>minMAC</code> remove SNPs</td></tr>
+    <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether to use FID-based clustering from the PLINK <code>.fam</code> file. Only supported for native PLINK input; all-zero FIDs still disable clustering</td></tr>
   </table>
+  <p><strong>Step2.1 examples:</strong></p>
+  <ul>
+    <li><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></li>
+    <li><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code></li>
+    <li><code>--SummaryPrefix=example/output/study1/step2 --chrom=1</code> writes one file per tested feature, such as <code>example/output/study1/step2_chr1_g_Bifidobacterium.txt</code> and <code>example/output/study1/step2_chr1_g_Peptoniphilus_unclassified.txt</code>; <code>--SummaryPrefix=example/output/study1/step2_ --chrom=NULL</code> writes all-chromosome files such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code> and <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code></li>
+    <li><code>--chrom=1</code>; <code>--chrom=NULL</code>; omit it or set <code>--chrom=</code> for all chromosomes</li>
+    <li><code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code>; <code>--featureColList=NULL</code></li>
+    <li><code>--minMAF=0.05</code>; <code>--minMAF=0</code></li>
+    <li><code>--minMAC=5</code>; <code>--minMAC=0</code></li>
+    <li><code>--SnpInfoFile=example/output/study1/info_snp.txt</code>; <code>--SnpInfoFile=NULL</code></li>
+    <li><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></li>
+  </ul>
 
-  <h3>Merge: per-chromosome Step2.1 files into per-feature all-chromosome files</h3>
+  <h3>Merge: chromosome-split files into per-feature all-chromosome files</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step_merge.R \
-    --inputPrefix=${mergeInputPrefix} \
-    --featureColList=${mergeFeatureColList} \
-    --outputPrefix=${mergeOutputPrefix}</code></pre>
+    --inputPrefix=${inputPrefix} \
+    --featureColList=${featureColList} \
+    --outputPrefix=${outputPrefix}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step_merge.R \
-    --inputPrefix=/work/${mergeInputPrefix} \
-    --featureColList=${mergeFeatureColList} \
-    --outputPrefix=/work/${mergeOutputPrefix}</code></pre>
+    --inputPrefix=${inputPrefix} \
+    --featureColList=${featureColList} \
+    --outputPrefix=${outputPrefix}</code></pre>
   <ul>
-    <li><strong>Inputs:</strong> the shared Step2 base prefix for one study, for example <code>step2</code>. Do not add a trailing underscore; the script automatically appends <code>_chr&lt;n&gt;</code> or <code>_allchr</code> when matching files. Under the naming convention here, it discovers files named <code>step2_chr1_*.txt</code> through <code>step2_chr22_*.txt</code>, or leaves existing <code>step2_allchr_*.txt</code> files in place.</li>
     <li><strong>Purpose:</strong> merge groups files by feature name and concatenates all chromosome shards into one <code>step2_allchr_*.txt</code> file per feature.</li>
-    <li><strong>Feature subset:</strong> use <code>--featureColList=NULL</code> for all features, or pass a comma-separated list such as <code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code> to merge only those features.</li>
-    <li><strong>Placement:</strong> merge can be run after Step2.1, Step2.2, or Step3. It just combines <code>step2_chr1</code> through <code>step2_chr22</code>, so if those chromosome-split files do not exist, merge will not work.</li>
-    <li><strong>Prefix rule:</strong> <code>--inputPrefix</code> and <code>--outputPrefix</code> are base prefixes, not complete filenames. The merge code removes any trailing <code>_</code> and also normalizes accidental suffixes like <code>_chr1</code> or <code>_allchr</code> back to the shared base prefix before writing outputs. It then automatically appends <code>_allchr_&lt;feature&gt;.txt</code>. Example: <code>--inputPrefix=example/output/study1/step2 --outputPrefix=example/output/study1/step2</code> writes <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>. Example: <code>--inputPrefix=example/output/study1/step2_chr1 --outputPrefix=example/output/study1/step2_allchr</code> is normalized to the same base and still writes <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>.</li>
+    <li><strong>Placement:</strong> merge can be run after Step2.1, Step2.2, or Step3. It just combines chromosome-split files from <code>chr1</code> through <code>chr22</code>, so if those files do not exist, merge will not work.</li>
     <li><strong>Ordering:</strong> chromosome files are merged in numeric order, so <code>chr2</code> comes before <code>chr11</code>.</li>
     <li><strong>Header handling:</strong> the merged file keeps the first header row and drops repeated headers from later chromosome files.</li>
-    <li><strong>Output behavior:</strong> merge writes one <code>_allchr</code> file per matched feature. If no chromosome-split input files match, the script stops with an error.</li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 prefix used to discover <code>chr1..chr22</code> or <code>allchr</code> files for one study</td><td><code>--inputPrefix=example/output/study1/step2</code></td></tr>
-    <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated feature IDs to merge; <code>NULL</code> keeps all discovered features</td><td><code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code>; <code>--featureColList=NULL</code></td></tr>
-    <tr><td><code>--outputPrefix</code></td><td><code>character</code></td><td><code>"NULL"</code> (auto-derived)</td><td>Base output prefix for merged files; do not add a trailing underscore. The script writes merged files as <code>&lt;outputPrefix&gt;_allchr_*.txt</code></td><td><code>--outputPrefix=example/output/study1/step2</code>; <code>--outputPrefix=NULL</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
+    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 prefix used to discover <code>chr1..chr22</code> or <code>allchr</code> files for one study. Do not add a trailing underscore; accidental suffixes like <code>_chr1</code> or <code>_allchr</code> are normalized back to the shared base prefix</td></tr>
+    <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated feature IDs to merge; <code>NULL</code> keeps all discovered features</td></tr>
+    <tr><td><code>--outputPrefix</code></td><td><code>character</code></td><td><code>"NULL"</code> (auto-derived)</td><td>Base output prefix for merged files, not a complete filename. The script writes one matched feature per <code>&lt;outputPrefix&gt;_allchr_*.txt</code> file, and stops with an error if no chromosome-split input files match</td></tr>
   </table>
+  <p><strong>Merge examples:</strong></p>
+  <ul>
+    <li>If the input directory contains chromosome-split files such as <code>example/output/study1/step2_chr1_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_chr22_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_chr1_g_Peptoniphilus_unclassified.txt</code>, and <code>example/output/study1/step2_chr22_g_Peptoniphilus_unclassified.txt</code>, set <code>--inputPrefix=example/output/study1/step2</code>. The prefix is the shared part before <code>_chrN_&lt;feature&gt;.txt</code>.</li>
+    <li>Use <code>--featureColList=NULL</code> to merge all discovered features. With <code>--outputPrefix=example/output/study1/step2</code>, this writes one all-chromosome file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code> and <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</li>
+    <li>Use <code>--featureColList=g_Bifidobacterium</code> to merge only that feature. With <code>--outputPrefix=example/output/study1/merged/step2</code>, the output is <code>example/output/study1/merged/step2_allchr_g_Bifidobacterium.txt</code>.</li>
+    <li>If <code>--outputPrefix=NULL</code>, the merge output prefix is auto-derived from <code>--inputPrefix</code>, so the merged files are written next to the input files using the same base prefix.</li>
+  </ul>
 
   <h3>Step2.2: median compositional correction on one Step2 scope</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_2_correction.R \
-    --inputPrefix=${step2InputPrefix} \
-    --chrom=${step2CorrectChrom} \
+    --inputPrefix=${inputPrefix} \
+    --chrom=${chrom} \
     --overwriteOutput=${overwriteOutput}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step2_2_correction.R \
-    --inputPrefix=/work/${step2InputPrefix} \
-    --chrom=${step2CorrectChrom} \
+    --inputPrefix=${inputPrefix} \
+    --chrom=${chrom} \
     --overwriteOutput=${overwriteOutput}</code></pre>
   <ul>
-    <li><strong>Inputs:</strong> the full set of Step2 files for one correction scope. Pass the shared base prefix such as <code>step2</code> as <code>--inputPrefix</code>. Then use <code>--chrom=NULL</code> to target merged files <code>step2_allchr_*.txt</code>, or <code>--chrom=1</code> to target chromosome-specific files <code>step2_chr1_*.txt</code>.</li>
-    <li><strong>Why separate:</strong> compositional correction is applied across features for each SNP, so Step2.2 needs all feature files for the selected scope. That scope can be one chromosome or <code>allchr</code>.</li>
-    <li><strong>Prefix rule:</strong> <code>--inputPrefix</code> must be the shared base prefix before <code>_allchr</code> or <code>_chrN</code>. Do not pass <code>step2_allchr</code> or <code>step2_chr1</code> here. Example: <code>--inputPrefix=example/output/study1/step2 --chrom=NULL</code> reads <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>. Example: <code>--inputPrefix=example/output/study1/step2 --chrom=1</code> reads <code>example/output/study1/step2_chr1_g_Bifidobacterium.txt</code>. With <code>--overwriteOutput=FALSE</code>, Step2.2 keeps the original file and writes outputs like <code>step2_corrected_allchr_g_Bifidobacterium.txt</code> or <code>step2_corrected_chr1_g_Bifidobacterium.txt</code>.</li>
+    <li><strong>Why separate:</strong> Step2.1 can test multiple features in one run when <code>--featureColList=NULL</code>, but it still writes one result file per feature. Compositional correction must be applied across all feature result files for each SNP, so Step2.2 is kept as a separate step that runs after the selected scope has all feature files available. That scope can be one chromosome or <code>allchr</code>.</li>
     <li><strong>Correction method:</strong> Step2.2 currently supports only median-based correction.</li>
-    <li><strong>Output behavior:</strong> set <code>--overwriteOutput=TRUE</code> (default) to overwrite the selected Step2 scope in place. Set <code>--overwriteOutput=FALSE</code> to keep the originals and write corrected copies as <code>&lt;inputPrefix&gt;_corrected_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code>.</li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for correction; do not add a trailing underscore</td><td><code>--inputPrefix=example/output/study1/step2</code></td></tr>
-    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Correction scope. Use <code>NULL</code> for <code>allchr</code>, or <code>1..22</code> for one chromosome-specific shard</td><td><code>--chrom=NULL</code>; <code>--chrom=1</code></td></tr>
-    <tr><td><code>--overwriteOutput</code></td><td><code>character</code></td><td><code>"TRUE"</code></td><td>If <code>TRUE</code>, overwrite the selected Step2 scope in place. If <code>FALSE</code>, keep the originals and write corrected copies as <code>&lt;inputPrefix&gt;_corrected_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td><td><code>--overwriteOutput=TRUE</code>; <code>--overwriteOutput=FALSE</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
+    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for correction; use the base before <code>_allchr</code> or <code>_chrN</code>. Do not pass <code>step2_allchr</code> or <code>step2_chr1</code></td></tr>
+    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Correction scope. Use <code>NULL</code> to target merged <code>step2_allchr_*.txt</code> files, or <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
+    <tr><td><code>--overwriteOutput</code></td><td><code>character</code></td><td><code>"TRUE"</code></td><td>If <code>TRUE</code>, overwrite the selected Step2 scope in place. If <code>FALSE</code>, keep the originals and write corrected copies as <code>&lt;inputPrefix&gt;_corrected_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td></tr>
   </table>
+  <p><strong>Step2.2 examples:</strong></p>
+  <ul>
+    <li>If the selected scope contains files such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code> and <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, set <code>--inputPrefix=example/output/study1/step2</code> and <code>--chrom=NULL</code>. Step2.2 reads all matching <code>step2_allchr_&lt;feature&gt;.txt</code> files and applies correction across those features for each SNP.</li>
+    <li>If the selected scope contains chromosome-specific files such as <code>example/output/study1/step2_chr1_g_Bifidobacterium.txt</code> and <code>example/output/study1/step2_chr1_g_Peptoniphilus_unclassified.txt</code>, use the same <code>--inputPrefix=example/output/study1/step2</code> with <code>--chrom=1</code>. Step2.2 then corrects only the <code>chr1</code> feature files.</li>
+    <li>With <code>--overwriteOutput=TRUE</code>, the corrected values replace the selected input files in place, for example <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>.</li>
+    <li>With <code>--overwriteOutput=FALSE</code>, the original files are kept and corrected copies are written in the same directory, such as <code>example/output/study1/step2_corrected_allchr_g_Bifidobacterium.txt</code> or <code>example/output/study1/step2_corrected_chr1_g_Bifidobacterium.txt</code>.</li>
+  </ul>
 
   <h2 id="step3">Step3: Meta Analysis</h2>
-  <pre><code class="language-bash"># studyDirFile lines: studyID<TAB>dir (e.g., "study1\t${outputFolder}/study1")
+  <pre><code class="language-bash"># studyDirFile lines: studyID<TAB>dir (e.g., "study1\texample/output/study1")
 pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --studyDirFile=${studyDirFile} \
-    --inputPrefix=${step3InputPrefix} \
-    --chrom=${step3MetaChrom} \
-    --featureColList=${step3FeatureColList} \
+    --inputPrefix=${inputPrefix} \
+    --chrom=${chrom} \
+    --featureColList=${featureColList} \
     --metaPrefix=${metaPrefix}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step3_meta.R \
-    --studyDirFile=/work/${studyDirFile} \
-    --inputPrefix=/work/${step3InputPrefix} \
-    --chrom=${step3MetaChrom} \
-    --featureColList=${step3FeatureColList} \
+    --studyDirFile=${studyDirFile} \
+    --inputPrefix=${inputPrefix} \
+    --chrom=${chrom} \
+    --featureColList=${featureColList} \
     --metaPrefix=${metaPrefix}</code></pre>
   <ul>
-    <li><strong>Inputs:</strong> <code>studyDirFile</code> is a text file with two columns per line: <code>studyID</code> and Step2 output directory. <code>--inputPrefix</code> must be the shared Step2 base prefix, and Step3 then appends <code>_allchr</code> or <code>_chrN</code> according to <code>--chrom</code>.</li>
     <li><strong>Outputs:</strong> one file per feature named <code>metaPrefix_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code>, where the scope and feature parts match the selected Step2 input scope. The output contains <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
-    <li><strong>Prefix rule:</strong> <code>--inputPrefix</code> must be the shared Step2 base prefix before <code>_allchr</code> or <code>_chrN</code>; do not pass <code>step2_allchr</code>, <code>step2_chr1</code>, or the removed old <code>--pattern</code>/<code>--features</code> interface. <code>--metaPrefix</code> is the full output prefix including directory and basename, not a complete filename. Step3 removes any trailing <code>_</code>, then automatically appends <code>_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code>. Example: <code>--metaPrefix=example/output/meta/step3_meta</code> with <code>--chrom=NULL</code> writes <code>example/output/meta/step3_meta_allchr_g_Bifidobacterium.txt</code>. Example: with <code>--chrom=1</code> it writes <code>example/output/meta/step3_meta_chr1_g_Bifidobacterium.txt</code>.</li>
-    <li><strong>Single-study mode:</strong> still useful to standardize column names for plotting.</li>
-    <li><strong>Chrom scope:</strong> use <code>--chrom=NULL</code> to meta-analyze merged files such as <code>step2_allchr_g_Bifidobacterium.txt</code>, or <code>--chrom=1</code> to meta-analyze chromosome-specific files such as <code>step2_chr1_g_Bifidobacterium.txt</code>.</li>
-    <li><strong>Feature subset:</strong> use <code>--featureColList=NULL</code> for all features in that Step2 scope, or pass a comma-separated list such as <code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code> to meta-analyze only those features.</li>
-    <li><strong>Current CLI behavior:</strong> the wrapper always keeps <code>keep_het = TRUE</code>; <code>--featureColList</code> controls whether Step3 uses all features or a requested subset.</li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><strong><code>--studyDirFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Study list file mapping study IDs to result directories</td><td><code>--studyDirFile=example/input/study_dirs.txt</code> for local pixi runs; <code>--studyDirFile=example/input/study_dirs_docker.txt</code> for Docker runs</td></tr>
-    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for meta-analysis; do not add a trailing underscore</td><td><code>--inputPrefix=example/output/study1/step2</code></td></tr>
-    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Meta-analysis scope. Use <code>NULL</code> for <code>allchr</code>, or <code>1..22</code> for one chromosome-specific shard</td><td><code>--chrom=NULL</code>; <code>--chrom=1</code></td></tr>
-    <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated feature IDs to meta-analyze; <code>NULL</code> keeps all features in the selected Step2 scope</td><td><code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code>; <code>--featureColList=NULL</code></td></tr>
-    <tr><td><strong><code>--metaPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Full output prefix for meta-analysis tables, including directory and filename prefix; do not add a trailing underscore. Step3 writes files as <code>&lt;metaPrefix&gt;_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td><td><code>--metaPrefix=example/output/meta/step3_meta</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
+    <tr><td><strong><code>--studyDirFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Study list file with two columns per line: <code>studyID</code> and Step2 output directory</td></tr>
+    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for meta-analysis; use the base before <code>_allchr</code> or <code>_chrN</code></td></tr>
+    <tr><td><strong><code>--metaPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Full output prefix for meta-analysis tables, including directory and filename prefix, not a complete filename. Step3 removes any trailing <code>_</code> and writes files as <code>&lt;metaPrefix&gt;_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td></tr>
+    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Meta-analysis scope. Use <code>NULL</code> to meta-analyze merged files such as <code>step2_allchr_*.txt</code>, or <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
+    <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated feature IDs to meta-analyze; <code>NULL</code> keeps all features in the selected Step2 scope</td></tr>
   </table>
+  <p><strong>Step3 examples:</strong></p>
+  <p>Example <code>studyDirFile</code> content:</p>
+  <pre><code>study1  example/output/study1
+study2  example/output/study2
+study3  example/output/study3</code></pre>
+  <ul>
+    <li>Set <code>--studyDirFile=example/input/study_dirs.txt</code>. Step3 will search each listed study directory for matching Step2 files.</li>
+    <li>If each study directory contains all-chromosome files such as <code>step2_allchr_g_Bifidobacterium.txt</code> and <code>step2_allchr_g_Peptoniphilus_unclassified.txt</code>, set <code>--inputPrefix=example/output/study1/step2</code> and <code>--chrom=NULL</code>. Step3 uses the basename <code>step2</code> as the shared prefix and applies it inside every study directory from <code>studyDirFile</code>.</li>
+    <li>If each study directory contains chromosome-specific files such as <code>step2_chr1_g_Bifidobacterium.txt</code>, use the same <code>--inputPrefix=example/output/study1/step2</code> with <code>--chrom=1</code>. Step3 then meta-analyzes only the <code>chr1</code> scope.</li>
+    <li>Use <code>--featureColList=NULL</code> to meta-analyze all discovered features in the selected scope. Use <code>--featureColList=g_Bifidobacterium</code> to meta-analyze only that feature; missing study-feature files are skipped for that feature.</li>
+    <li>With <code>--metaPrefix=example/output/meta/step3_meta</code> and <code>--chrom=NULL</code>, Step3 writes one meta file per feature, such as <code>example/output/meta/step3_meta_allchr_g_Bifidobacterium.txt</code>. With <code>--chrom=1</code>, it writes files such as <code>example/output/meta/step3_meta_chr1_g_Bifidobacterium.txt</code>.</li>
+  </ul>
 
   <h2 id="viz">Step4: Visualization</h2>
   <pre><code class="language-bash"># case 1: combined Manhattan across features
@@ -409,30 +435,40 @@ docker run --rm --platform=linux/amd64 \
     --pCut=${pCut}</code></pre>
   <ul>
     <li><strong>Mode selection:</strong> the plotting mode is determined by whether <code>--feature</code> and <code>--snp</code> are specified. Different combinations produce the following plot types.</li>
-    <li><strong>Case 1:</strong> no <code>--feature</code> and no <code>--snp</code> gives a combined overview in which each SNP is represented by the feature with the smallest p-value for that SNP. Here <code>pCut</code> is used to keep only best-hit SNP/feature pairs with <code>p &lt;= pCut</code> in the printed/listed output; use <code>NA</code> to disable that filtering/reporting.</li>
+    <li><strong>Case 1:</strong> no <code>--feature</code> and no <code>--snp</code> gives a combined overview in which each SNP is represented by the feature with the smallest p-value for that SNP.</li>
     <li><strong>Case 2:</strong> <code>--feature</code> only gives a feature-specific Manhattan plot and QQ plot.</li>
-    <li><strong>Case 3:</strong> <code>--snp</code> only writes one forest plot per feature containing that SNP; here <code>pCut</code> is used to keep only features with <code>p &lt;= pCut</code>, and <code>NA</code> disables that filtering. Each figure now includes study-level columns such as effect, standard error, weight, and effect with 95% confidence interval.</li>
+    <li><strong>Case 3:</strong> <code>--snp</code> only writes one forest plot per feature that contains the requested SNP and passes the <code>--pCut</code> filter, meaning the SNP p-value for that feature is small enough. Set <code>--pCut=NA</code>, <code>NULL</code>, or empty to keep all features containing the SNP. Each figure now includes study-level columns such as effect, standard error, weight, and effect with 95% confidence interval.</li>
     <li><strong>Case 4:</strong> both <code>--feature</code> and <code>--snp</code> give a forest plot for one feature-SNP pair across studies.</li>
     <li><strong>Single-study Step4:</strong> you can run Step4 directly after Step2 by pointing <code>metaDir</code> to one study's Step2 output folder; in that case the plots summarize a single study rather than a meta-analysis.</li>
-    <li><strong>Outputs:</strong> plots saved to <code>--plotDir</code>; if <code>--PlotOutputFile</code> is not provided, the script auto-generates a file name based on mode, feature, and SNP.</li>
-    <li><strong>Input scope:</strong> <code>--metaDir</code> can point to Step3 outputs or any directory of Step2/Step3-like files. Step4 auto-discovers files ending in <code>_allchr_&lt;feature&gt;.txt</code> or <code>_chrN_&lt;feature&gt;.txt</code>. For each feature, it prefers <code>allchr</code> when both <code>allchr</code> and chromosome-specific files are present. If no <code>allchr</code> file exists, one chromosome-specific file is accepted. If multiple chromosome-specific files exist for the same feature and no <code>allchr</code> file exists, Step4 stops with an error instead of choosing arbitrarily.</li>
-    <li><strong>Validation rules:</strong> <code>pCut</code> is only accepted in case 1 and case 3; <code>showMeta</code> and <code>showHet</code> require <code>--snp</code>; <code>plotMinP</code> only affects Manhattan plots.</li>
-    <li><strong>SNP-specific options:</strong> when <code>--snp</code> is supplied, you can additionally pass <code>--showMeta</code> and <code>--showHet</code>.</li>
   </ul>
   <table>
-    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><strong><code>--metaDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory containing Step3 meta files or single-study Step2 files</td><td><code>--metaDir=example/output/meta</code></td></tr>
-    <tr><td><strong><code>--plotDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory where plots will be written</td><td><code>--plotDir=example/output/plot</code></td></tr>
-    <tr><td><code>--feature</code></td><td><code>character</code></td><td><code>NA</code></td><td>(Microbial) feature name; used in case 2 and case 4</td><td><code>--feature=g_Peptoniphilus_unclassified</code>; omit it for case 1 or case 3</td></tr>
-    <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier; used in case 3 and case 4</td><td><code>--snp=chr1:14678191:A:C</code>; omit it for case 1 or case 2</td></tr>
-    <tr><td><code>--PlotOutputFile</code></td><td><code>character</code></td><td><code>NA</code></td><td>Optional explicit output filename; otherwise auto-generated. In case 3 this acts as a base name and the feature suffix is inserted before the extension for each generated forest plot.</td><td><code>--PlotOutputFile=example/output/plot/custom.png</code>; <code>--PlotOutputFile=NA</code>; omit it to auto-name</td></tr>
-    <tr><td><code>--pCut</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>"5e-8"</code></td><td>P-value cutoff used in case 1 printing and case 3 feature filtering; <code>NA</code>, <code>NULL</code>, or empty disables it</td><td><code>--pCut=1e-8</code>; <code>--pCut=NA</code>; <code>--pCut=NULL</code>; <code>--pCut=</code></td></tr>
-    <tr><td><code>--showMeta</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Overlay meta estimates in SNP-based forest plots; valid only when <code>--snp</code> is supplied</td><td><code>--showMeta=TRUE</code>; <code>--showMeta=FALSE</code></td></tr>
-    <tr><td><code>--showHet</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Emphasize heterogeneity information in SNP-based forest plots when available; valid only when <code>--snp</code> is supplied</td><td><code>--showHet=TRUE</code>; <code>--showHet=FALSE</code></td></tr>
-    <tr><td><code>--plotMinP</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Optional Manhattan plotting threshold for p-value compression. Points with <code>P &lt; plotMinP</code> are plotted slightly above <code>-log10(plotMinP)</code> instead of stretching the full y-axis. Use <code>NA</code> to disable compression.</td><td><code>--plotMinP=1e-10</code>; <code>--plotMinP=1e-12</code>; <code>--plotMinP=NA</code></td></tr>
-    <tr><td><code>--width</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Plot width in inches; <code>NA</code> lets the script auto-size</td><td><code>--width=10</code>; <code>--width=NA</code></td></tr>
-    <tr><td><code>--height</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Plot height in inches; <code>NA</code> lets the script auto-size</td><td><code>--height=6</code>; <code>--height=NA</code></td></tr>
+    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
+    <tr><td><strong><code>--metaDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory containing Step3 meta files or single-study Step2 files. Step4 auto-discovers files ending in <code>_allchr_&lt;feature&gt;.txt</code> or <code>_chrN_&lt;feature&gt;.txt</code>, prefers <code>allchr</code> when both scopes exist, accepts one chromosome-specific file if no <code>allchr</code> exists, and stops if multiple chromosome-specific files exist for one feature without an <code>allchr</code> file</td></tr>
+    <tr><td><strong><code>--plotDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory where plots will be written</td></tr>
+    <tr><td><code>--feature</code></td><td><code>character</code></td><td><code>NA</code></td><td>(Microbial) feature name; used in case 2 and case 4</td></tr>
+    <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier; used in case 3 and case 4</td></tr>
+    <tr><td><code>--PlotOutputFile</code></td><td><code>character</code></td><td><code>NA</code></td><td>Optional explicit output filename; otherwise auto-generated. In case 3 this acts as a base name and the feature suffix is inserted before the extension for each generated forest plot.</td></tr>
+    <tr><td><code>--pCut</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>"5e-8"</code></td><td>P-value cutoff used only in case 1 printing and case 3 feature filtering; <code>NA</code>, <code>NULL</code>, or empty disables it</td></tr>
+    <tr><td><code>--showMeta</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Overlay meta estimates in SNP-based forest plots; valid only when <code>--snp</code> is supplied</td></tr>
+    <tr><td><code>--showHet</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Emphasize heterogeneity information in SNP-based forest plots when available; valid only when <code>--snp</code> is supplied</td></tr>
+    <tr><td><code>--plotMinP</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Optional Manhattan plotting threshold for p-value compression. Points with <code>P &lt; plotMinP</code> are plotted slightly above <code>-log10(plotMinP)</code> instead of stretching the full y-axis. Use <code>NA</code> to disable compression.</td></tr>
+    <tr><td><code>--width</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Plot width in inches; <code>NA</code> lets the script auto-size</td></tr>
+    <tr><td><code>--height</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Plot height in inches; <code>NA</code> lets the script auto-size</td></tr>
   </table>
+  <p><strong>Step4 examples:</strong></p>
+  <ul>
+    <li><code>--metaDir=example/output/meta</code></li>
+    <li><code>--plotDir=example/output/plot</code></li>
+    <li><code>--feature=g_Peptoniphilus_unclassified</code>; omit it for case 1 or case 3</li>
+    <li><code>--snp=chr1:14678191:A:C</code>; omit it for case 1 or case 2</li>
+    <li><code>--PlotOutputFile=example/output/plot/custom.png</code>; <code>--PlotOutputFile=NA</code>; omit it to auto-name</li>
+    <li><code>--pCut=1e-8</code>; <code>--pCut=NA</code>; <code>--pCut=NULL</code>; <code>--pCut=</code></li>
+    <li><code>--showMeta=TRUE</code>; <code>--showMeta=FALSE</code></li>
+    <li><code>--showHet=TRUE</code>; <code>--showHet=FALSE</code></li>
+    <li><code>--plotMinP=1e-10</code>; <code>--plotMinP=1e-12</code>; <code>--plotMinP=NA</code></li>
+    <li><code>--width=10</code>; <code>--width=NA</code></li>
+    <li><code>--height=6</code>; <code>--height=NA</code></li>
+  </ul>
 
   <h2 id="exampledata">Example Data in This Repo</h2>
   <p>The repository already contains a small three-study example under <code>example/input/</code> and matching outputs under <code>example/output/</code>. These files are useful for understanding the expected formats before running your own data.</p>
@@ -561,7 +597,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --chrom=NULL \
     --minMAF=0.05 \
     --minMAC=5 \
-    --SnpInfoFile=NULL \
+    --SnpInfoFile=example/output/study1/info_snp.txt \
     --useCluster=FALSE</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
@@ -573,12 +609,12 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --chrom=NULL \
     --minMAF=0.05 \
     --minMAC=5 \
-    --SnpInfoFile=NULL \
+    --SnpInfoFile=/work/example/output/study1/info_snp.txt \
     --useCluster=FALSE</code></pre>
-  <p><strong>Output:</strong> one file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on. If requested, Step2.1 also writes <code>example/output/study1/info_snp.txt</code>.</p>
+  <p><strong>Output:</strong> one file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on. With the <code>--SnpInfoFile</code> value shown above, Step2.1 also writes the genotype summary table <code>example/output/study1/info_snp.txt</code>.</p>
   <p><strong>Current example files:</strong> in this repository the Step2.1 outputs use real feature names, for example <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
 
-  <h3>Merge: the chromosome-split Step2.1 files</h3>
+  <h3>Merge: the chromosome-split files</h3>
   <p><strong>Input:</strong> the shared Step2 base prefix for one feature namespace, for example <code>example/output/study1/step2</code>. Do not add a trailing underscore; the merge step then discovers <code>step2_chr1_*.txt</code> through <code>step2_chr22_*.txt</code> automatically.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step_merge.R \
     --inputPrefix=example/output/study1/step2 \
