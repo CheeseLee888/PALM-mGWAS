@@ -9,7 +9,7 @@ step4MetaDir="${step4MetaDir:-${metaDir:-${outputFolder}/meta}}"
 
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visualization.R \
     --metaDir=${step4MetaDir} \
-    --plotDir=${plotDir:-${outputFolder}/plot} \
+    --plotPrefix=${plotPrefix:-${outputFolder}/plot/} \
     --feature=${feature:-NA} \
     --snp=${snp:-NA} \
     --showMeta=${showMeta:-TRUE} \
@@ -19,7 +19,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visuali
 
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visualization.R \
     --metaDir=${step4MetaDir} \
-    --plotDir=${plotDir:-${outputFolder}/plot} \
+    --plotPrefix=${plotPrefix:-${outputFolder}/plot/} \
     --feature=${feature:-NA} \
     --plotMinP=${plotMinP:-NA} \
     --width=${plotWidth:-NA} \
@@ -27,7 +27,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visuali
 
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visualization.R \
     --metaDir=${step4MetaDir} \
-    --plotDir=${plotDir:-${outputFolder}/plot} \
+    --plotPrefix=${plotPrefix:-${outputFolder}/plot/} \
     --snp=${snp:-NA} \
     --pCut=${pCut1:-5e-8} \
     --showMeta=${showMeta:-TRUE} \
@@ -37,7 +37,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visuali
 
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visualization.R \
     --metaDir=${step4MetaDir} \
-    --plotDir=${plotDir:-${outputFolder}/plot} \
+    --plotPrefix=${plotPrefix:-${outputFolder}/plot/} \
     --pCut=${pCut2:-5e-8} \
     --plotMinP=${plotMinP:-NA} \
     --width=${plotWidth:-NA} \

@@ -2,7 +2,7 @@
 ["pdflatex"] 1776357351.43879 "/Users/peterli/Desktop/PALM-mGWAS/docs/app_note.tex" "app_note.pdf" "app_note" 1776357352.54657 0
   "../simulation/output/plot/forest_g_Acinetobacter_chr4_1682869_G_C.png" 1776355599.0513 147478 fd3e85b8fac2e843d233c2dcbc426ee7 ""
   "../simulation/output/plot/manhattan_g_Acinetobacter.png" 1776355599.0616 332470 ed650da412e0d3a0d247105fd618559b ""
-  "../simulation/output/plot/manhattan_g_Acinetobacter_qq.png" 1776355599.07637 81146 3645dca46ca291fa1d752472f18e342f ""
+  "../simulation/output/plot/qq_g_Acinetobacter.png" 1776355599.07637 81146 3645dca46ca291fa1d752472f18e342f ""
   "/Users/peterli/Desktop/PALM-mGWAS/docs/app_note.tex" 1776357351.20361 13612 97b5cec8cbee6d10b687dd495279fdcc ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc" 1254269338 2375 baa924870cfb487815765f9094cf3728 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc" 1202520719 2405 5dcf2c1b967ee25cc46c58cd52244aed ""

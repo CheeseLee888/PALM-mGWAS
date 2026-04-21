@@ -319,10 +319,10 @@ INPUT ../simulation/output/plot/manhattan_g_Acinetobacter.png
 INPUT ../simulation/output/plot/manhattan_g_Acinetobacter.png
 INPUT ../simulation/output/plot/manhattan_g_Acinetobacter.png
 INPUT ../simulation/output/plot/manhattan_g_Acinetobacter.png
-INPUT ../simulation/output/plot/manhattan_g_Acinetobacter_qq.png
-INPUT ../simulation/output/plot/manhattan_g_Acinetobacter_qq.png
-INPUT ../simulation/output/plot/manhattan_g_Acinetobacter_qq.png
-INPUT ../simulation/output/plot/manhattan_g_Acinetobacter_qq.png
+INPUT ../simulation/output/plot/qq_g_Acinetobacter.png
+INPUT ../simulation/output/plot/qq_g_Acinetobacter.png
+INPUT ../simulation/output/plot/qq_g_Acinetobacter.png
+INPUT ../simulation/output/plot/qq_g_Acinetobacter.png
 INPUT ../simulation/output/plot/forest_g_Acinetobacter_chr4_1682869_G_C.png
 INPUT ../simulation/output/plot/forest_g_Acinetobacter_chr4_1682869_G_C.png
 INPUT ../simulation/output/plot/forest_g_Acinetobacter_chr4_1682869_G_C.png

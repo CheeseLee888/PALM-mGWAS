@@ -398,20 +398,20 @@ study3  example/output/study3</code></pre>
   <pre><code class="language-bash"># case 1: combined Manhattan across features
 pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=${metaDir} \
-    --plotDir=${plotDir} \
+    --plotPrefix=${plotPrefix} \
     --pCut=${pCut}
 
 # case 2: one feature
 pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=${metaDir} \
-    --plotDir=${plotDir} \
+    --plotPrefix=${plotPrefix} \
     --feature=${feature} \
     --plotMinP=${plotMinP:-NA}
 
 # case 3: one SNP across features
 pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=${metaDir} \
-    --plotDir=${plotDir} \
+    --plotPrefix=${plotPrefix} \
     --snp=${snp} \
     --pCut=${pCut} \
     --showMeta=${showMeta:-TRUE} \
@@ -420,7 +420,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
 # case 4: one feature-SNP pair
 pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=${metaDir} \
-    --plotDir=${plotDir} \
+    --plotPrefix=${plotPrefix} \
     --feature=${feature} \
     --snp=${snp} \
     --showMeta=${showMeta:-TRUE} \
@@ -431,7 +431,7 @@ docker run --rm --platform=linux/amd64 \
   cheeselee/palm-mgwas:latest \
   step4_visualization.R \
     --metaDir=${metaDir} \
-    --plotDir=${plotDir} \
+    --plotPrefix=${plotPrefix} \
     --pCut=${pCut}</code></pre>
   <ul>
     <li><strong>Mode selection:</strong> the plotting mode is determined by whether <code>--feature</code> and <code>--snp</code> are specified. Different combinations produce the following plot types.</li>
@@ -444,10 +444,9 @@ docker run --rm --platform=linux/amd64 \
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
     <tr><td><strong><code>--metaDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory containing Step3 meta files or single-study Step2 files. Step4 auto-discovers files ending in <code>_allchr_&lt;feature&gt;.txt</code> or <code>_chrN_&lt;feature&gt;.txt</code>, prefers <code>allchr</code> when both scopes exist, accepts one chromosome-specific file if no <code>allchr</code> exists, and stops if multiple chromosome-specific files exist for one feature without an <code>allchr</code> file</td></tr>
-    <tr><td><strong><code>--plotDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory where plots will be written</td></tr>
+    <tr><td><strong><code>--plotPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Full output prefix for plots, including directory and optional filename prefix. Use a trailing slash to keep the default plot names inside a directory, for example <code>example/output/plot/</code>; use a basename to prefix outputs, for example <code>example/output/plot/step4</code> writes <code>step4_combined_hits.png</code></td></tr>
     <tr><td><code>--feature</code></td><td><code>character</code></td><td><code>NA</code></td><td>(Microbial) feature name; used in case 2 and case 4</td></tr>
     <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier; used in case 3 and case 4</td></tr>
-    <tr><td><code>--PlotOutputFile</code></td><td><code>character</code></td><td><code>NA</code></td><td>Optional explicit output filename; otherwise auto-generated. In case 3 this acts as a base name and the feature suffix is inserted before the extension for each generated forest plot.</td></tr>
     <tr><td><code>--pCut</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>"5e-8"</code></td><td>P-value cutoff used only in case 1 printing and case 3 feature filtering; <code>NA</code>, <code>NULL</code>, or empty disables it</td></tr>
     <tr><td><code>--showMeta</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Overlay meta estimates in SNP-based forest plots; valid only when <code>--snp</code> is supplied</td></tr>
     <tr><td><code>--showHet</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Emphasize heterogeneity information in SNP-based forest plots when available; valid only when <code>--snp</code> is supplied</td></tr>
@@ -458,10 +457,9 @@ docker run --rm --platform=linux/amd64 \
   <p><strong>Step4 examples:</strong></p>
   <ul>
     <li><code>--metaDir=example/output/meta</code></li>
-    <li><code>--plotDir=example/output/plot</code></li>
+    <li><code>--plotPrefix=example/output/plot/</code>; <code>--plotPrefix=example/output/plot/step4</code></li>
     <li><code>--feature=g_Peptoniphilus_unclassified</code>; omit it for case 1 or case 3</li>
     <li><code>--snp=chr1:14678191:A:C</code>; omit it for case 1 or case 2</li>
-    <li><code>--PlotOutputFile=example/output/plot/custom.png</code>; <code>--PlotOutputFile=NA</code>; omit it to auto-name</li>
     <li><code>--pCut=1e-8</code>; <code>--pCut=NA</code>; <code>--pCut=NULL</code>; <code>--pCut=</code></li>
     <li><code>--showMeta=TRUE</code>; <code>--showMeta=FALSE</code></li>
     <li><code>--showHet=TRUE</code>; <code>--showHet=FALSE</code></li>
@@ -684,14 +682,14 @@ chr1:14678191:A:C	1	14678191	0.0579555175251001	0.0252011515059977	0.02146425614
   <h3>Step4 case 1: no <code>--feature</code>, no <code>--snp</code></h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=example/output/meta \
-    --plotDir=example/output/plot \
+    --plotPrefix=example/output/plot/ \
     --pCut=5e-8</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step4_visualization.R \
     --metaDir=/work/example/output/meta \
-    --plotDir=/work/example/output/plot \
+    --plotPrefix=/work/example/output/plot/ \
     --pCut=5e-8</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/combined_hits.png</code> and the filtered hit list <code>example/output/plot/combined_hits_pCut.txt</code>.</p>
   <pre><code class="language-tsv"># file: example/output/plot/combined_hits_pCut.txt
@@ -711,16 +709,16 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   <h3>Step4 case 2: <code>--feature</code> only</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=example/output/meta \
-    --plotDir=example/output/plot \
+    --plotPrefix=example/output/plot/ \
     --feature=g_Peptoniphilus_unclassified</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step4_visualization.R \
     --metaDir=example/output/meta \
-    --plotDir=example/output/plot \
+    --plotPrefix=example/output/plot/ \
     --feature=g_Peptoniphilus_unclassified</code></pre>
-  <p><strong>Output:</strong> <code>example/output/plot/manhattan_g_Peptoniphilus_unclassified.png</code> and the auxiliary QQ plot <code>example/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png</code>.</p>
+  <p><strong>Output:</strong> <code>example/output/plot/manhattan_g_Peptoniphilus_unclassified.png</code> and the auxiliary QQ plot <code>example/output/plot/qq_g_Peptoniphilus_unclassified.png</code>.</p>
   <div class="gallery">
     <figure>
       <img src="../example/output/plot/manhattan_g_Peptoniphilus_unclassified.png" alt="Example Manhattan plot for g_Peptoniphilus_unclassified">
@@ -729,15 +727,15 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   </div>
   <div class="gallery">
     <figure>
-      <img src="../example/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png" alt="Example QQ plot for g_Peptoniphilus_unclassified">
-      <figcaption><code>example/output/plot/manhattan_g_Peptoniphilus_unclassified_qq.png</code>: QQ plot generated alongside the feature-specific Manhattan plot.</figcaption>
+      <img src="../example/output/plot/qq_g_Peptoniphilus_unclassified.png" alt="Example QQ plot for g_Peptoniphilus_unclassified">
+      <figcaption><code>example/output/plot/qq_g_Peptoniphilus_unclassified.png</code>: QQ plot generated alongside the feature-specific Manhattan plot.</figcaption>
     </figure>
   </div>
 
   <h3>Step4 case 3: <code>--snp</code> only</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=example/output/meta \
-    --plotDir=example/output/plot \
+    --plotPrefix=example/output/plot/ \
     --snp=chr1:14678191:A:C \
     --pCut=5e-8</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
@@ -745,7 +743,7 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   cheeselee/palm-mgwas:latest \
   step4_visualization.R \
     --metaDir=example/output/meta \
-    --plotDir=example/output/plot \
+    --plotPrefix=example/output/plot/ \
     --snp=chr1:14678191:A:C \
     --pCut=5e-8</code></pre>
   <p><strong>Output:</strong> this mode writes one file per retained feature. In the current example output, files include <code>example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png</code> and <code>example/output/plot/forest_chr1_14678191_A_C_g_Finegoldia_unclassified.png</code>, both shown below.</p>
@@ -765,7 +763,7 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   <h3>Step4 case 4: both <code>--feature</code> and <code>--snp</code></h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_visualization.R \
     --metaDir=example/output/meta \
-    --plotDir=example/output/plot \
+    --plotPrefix=example/output/plot/ \
     --feature=g_Peptoniphilus_unclassified \
     --snp=chr1:14678191:A:C</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
@@ -773,7 +771,7 @@ chr4:134350906:C:T	4	134350906	4.90728816946313e-13	g_Phascolarctobacterium</cod
   cheeselee/palm-mgwas:latest \
   step4_visualization.R \
     --metaDir=example/output/meta \
-    --plotDir=example/output/plot \
+    --plotPrefix=example/output/plot/ \
     --feature=g_Peptoniphilus_unclassified \
     --snp=chr1:14678191:A:C</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/forest_g_Peptoniphilus_unclassified_chr1_14678191_A_C.png</code>.</p>

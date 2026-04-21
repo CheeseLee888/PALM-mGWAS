@@ -12,7 +12,7 @@ cd "${WORK}"
 
 SIF="${SIF:-${WORK}/PALMmGWAS.sif}"
 META_DIR="${META_DIR:-${WORK}/output/meta}"
-PLOT_DIR="${PLOT_DIR:-${WORK}/output/plot}"
+PLOT_PREFIX="${PLOT_PREFIX:-${WORK}/output/plot/}"
 FEATURE="${FEATURE:-g_Acinetobacter}"
 SNP="${SNP:-chr4:1682869:G:C}"
 PCUT1="${PCUT1:-5e-8}"
@@ -26,7 +26,7 @@ PLOT_HEIGHT="${PLOT_HEIGHT:-NA}"
 echo "step4: work = ${WORK}"
 echo "step4: sif = ${SIF}"
 echo "step4: meta dir = ${META_DIR}"
-echo "step4: plot dir = ${PLOT_DIR}"
+echo "step4: plot prefix = ${PLOT_PREFIX}"
 echo "step4: feature = ${FEATURE}"
 echo "step4: snp = ${SNP}"
 
@@ -34,7 +34,7 @@ echo "step4: running visualization mode 1 (feature + snp)"
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   step4_visualization.R \
   --metaDir="${META_DIR}" \
-  --plotDir="${PLOT_DIR}" \
+  --plotPrefix="${PLOT_PREFIX}" \
   --feature="${FEATURE}" \
   --snp="${SNP}" \
   --showMeta="${SHOW_META}" \
@@ -46,7 +46,7 @@ echo "step4: running visualization mode 2 (feature only)"
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   step4_visualization.R \
   --metaDir="${META_DIR}" \
-  --plotDir="${PLOT_DIR}" \
+  --plotPrefix="${PLOT_PREFIX}" \
   --feature="${FEATURE}" \
   --plotMinP="${PLOT_MIN_P}" \
   --width="${PLOT_WIDTH}" \
@@ -56,7 +56,7 @@ echo "step4: running visualization mode 3 (snp only)"
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   step4_visualization.R \
   --metaDir="${META_DIR}" \
-  --plotDir="${PLOT_DIR}" \
+  --plotPrefix="${PLOT_PREFIX}" \
   --snp="${SNP}" \
   --pCut="${PCUT1}" \
   --showMeta="${SHOW_META}" \
@@ -68,7 +68,7 @@ echo "step4: running visualization mode 4 (combined)"
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   step4_visualization.R \
   --metaDir="${META_DIR}" \
-  --plotDir="${PLOT_DIR}" \
+  --plotPrefix="${PLOT_PREFIX}" \
   --pCut="${PCUT2}" \
   --plotMinP="${PLOT_MIN_P}" \
   --width="${PLOT_WIDTH}" \
