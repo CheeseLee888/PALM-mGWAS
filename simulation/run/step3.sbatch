@@ -7,22 +7,17 @@
 #SBATCH --error=logs/simu_step3_meta_%A_%a.err
 
 set -euo pipefail
-
-if [[ -n "${ENV_FILE:-}" ]]; then
-  # shellcheck disable=SC1090
-  source "${ENV_FILE}"
-fi
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEFAULT_SIMU_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SIMU_ROOT="${SIMU_ROOT:-${DEFAULT_SIMU_ROOT}}"
-SIF="${SIF:-${SIMU_ROOT}/PALMmGWAS.sif}"
-META_PREFIX="${META_PREFIX:-step3_meta_}"
+WORK="${WORK:-${SLURM_SUBMIT_DIR:-$PWD}}"
+SIF="${SIF:-${WORK}/PALMmGWAS.sif}"
+META_DIR="${META_DIR:-${WORK}/output/meta}"
+FEATURE_LIST_FILE="${FEATURE_LIST_FILE:-${WORK}/output/study1/feature_list.txt}"
+STUDY_FILE="${STUDY_FILE:-${META_DIR}/study_dirs.tsv}"
 FEATURE="${FEATURE:-}"
-STEP3_INPUT_PREFIX="${STEP3_INPUT_PREFIX:-step2}"
-STEP3_CHROM="${STEP3_CHROM:-NULL}"
+META_PREFIX="step3_meta_"
+STEP3_INPUT_PREFIX="step2"
+STEP3_CHROM="NULL"
 
-cd "${SIMU_ROOT}"
+cd "${WORK}"
 
 if [[ -n "${SLURM_ARRAY_TASK_ID:-}" && -z "${FEATURE}" ]]; then
   FEATURE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "${FEATURE_LIST_FILE}")
@@ -32,7 +27,7 @@ if [[ -n "${SLURM_ARRAY_TASK_ID:-}" && -z "${FEATURE}" ]]; then
   fi
 fi
 
-echo "run_step3_meta: simulation root = ${SIMU_ROOT}"
+echo "run_step3_meta: WORK = ${WORK}"
 echo "run_step3_meta: study dir file = ${STUDY_FILE}"
 echo "run_step3_meta: meta dir = ${META_DIR}"
 echo "run_step3_meta: input prefix = ${STEP3_INPUT_PREFIX}"
@@ -40,7 +35,7 @@ echo "run_step3_meta: chrom = ${STEP3_CHROM}"
 echo "run_step3_meta: feature = ${FEATURE}"
 
 CMD=(
-  apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}"
+  apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}"
   step3_meta.R
   --studyDirFile="${STUDY_FILE}"
   --inputPrefix="${STEP3_INPUT_PREFIX}"

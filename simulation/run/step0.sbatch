@@ -5,38 +5,13 @@
 #SBATCH --time=02:00:00
 #SBATCH --output=logs/simu_step0_%A_%a.out
 #SBATCH --error=logs/simu_step0_%A_%a.err
-#
-# Usage:
-#   sbatch --export=ALL,ENV_FILE=/path/to/your.env simulation/run/step0.sbatch
-#
-# Simulation root layout:
-#   /mnt/scratch/group/ztang2/pli297/simulation/
-#     ├── input/
-#     ├── output/
-#     ├── provided/
-#     └── PALMmGWAS.sif
-#
-# Optional environment overrides:
-#   ENV_FILE=/path/to/your.env
-#   SIMU_ROOT=/path/to/simulation
-#   SIF=/path/to/PALMmGWAS.sif
-#   STUDY=study1
-#   COVAR_COL_LIST=AGE,SEX,PC01,PC02,PC03,PC04,PC05
-#   DEPTH_COL=NULL
-#   DEPTH_FILTER=0
-#   SEQDEPTH_INFO_FILE=NULL
+# Step0 in the fixed simulation workflow:
+# align abundance/covariate inputs for one study.
 
 set -euo pipefail
-
-if [[ -n "${ENV_FILE:-}" ]]; then
-  # shellcheck disable=SC1090
-  source "${ENV_FILE}"
-fi
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEFAULT_SIMU_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SIMU_ROOT="${SIMU_ROOT:-${DEFAULT_SIMU_ROOT}}"
-SIF="${SIF:-${SIMU_ROOT}/PALMmGWAS.sif}"
-cd "${SIMU_ROOT}"
+WORK="${WORK:-${SLURM_SUBMIT_DIR:-$PWD}}"
+SIF="${SIF:-${WORK}/PALMmGWAS.sif}"
+cd "${WORK}"
 
 STUDY="${STUDY:-study1}"
 COVAR_COL_LIST="${COVAR_COL_LIST:-AGE,SEX,PC01,PC02,PC03,PC04,PC05}"
@@ -44,8 +19,8 @@ DEPTH_COL="${DEPTH_COL:-NULL}"
 DEPTH_FILTER="${DEPTH_FILTER:-0}"
 SEQDEPTH_INFO_FILE="${SEQDEPTH_INFO_FILE:-NULL}"
 
-INPUT_DIR="${SIMU_ROOT}/input/${STUDY}"
-OUTPUT_DIR="${SIMU_ROOT}/output/${STUDY}"
+INPUT_DIR="${WORK}/input/${STUDY}"
+OUTPUT_DIR="${WORK}/output/${STUDY}"
 
 ABD_FILE="${INPUT_DIR}/abd.txt"
 COV_FILE="${INPUT_DIR}/cov.txt"
@@ -53,7 +28,7 @@ GENO_PREFIX="${INPUT_DIR}/geno"
 ABD_ALIGNED_FILE="${INPUT_DIR}/abd_aligned.txt"
 COV_ALIGNED_FILE="${INPUT_DIR}/cov_aligned.txt"
 
-echo "step0_align_inputs: SIMU_ROOT=${SIMU_ROOT}"
+echo "step0_align_inputs: WORK=${WORK}"
 echo "step0_align_inputs: SIF=${SIF}"
 echo "step0_align_inputs: STUDY=${STUDY}"
 echo "step0_align_inputs: running Step0 alignment"
@@ -61,7 +36,7 @@ echo "step0_align_inputs: covarColList=${COVAR_COL_LIST}"
 echo "step0_align_inputs: depthCol=${DEPTH_COL}, depth.filter=${DEPTH_FILTER}"
 echo "step0_align_inputs: SeqDepthInfoFile=${SEQDEPTH_INFO_FILE}"
 
-apptainer exec --cleanenv --bind "${SIMU_ROOT}:${SIMU_ROOT}" "${SIF}" \
+apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   step0_checkInput.R \
   --abdFile="${ABD_FILE}" \
   --covFile="${COV_FILE}" \
