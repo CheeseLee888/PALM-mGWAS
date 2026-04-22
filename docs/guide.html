@@ -40,7 +40,11 @@
   <div class="sidebar">
     <h3>Contents</h3>
     <a href="#env">Environment & Dependencies</a>
-    <a href="#install">Installation (two options)</a>
+    <a href="#install">Installation</a>
+    <a href="#install-pixi" class="sub">Option A: pixi</a>
+    <a href="#install-r" class="sub">Option B: local R</a>
+    <a href="#install-docker" class="sub">Option C: Docker</a>
+    <a href="#sif" class="sub">Option D: SIF for HPC</a>
     <a href="#workflow">Workflow</a>
     <a href="#step0" class="sub">Step0: Check and Align Input IDs</a>
     <a href="#step1" class="sub">Step1: Fit Null Model</a>
@@ -48,6 +52,13 @@
     <a href="#step3" class="sub">Step3: Meta Analysis</a>
     <a href="#reporting" class="sub">Step4: Reporting</a>
     <a href="#exampledata">Example Data in This Repo</a>
+    <a href="#example-input" class="sub">Example Input</a>
+    <a href="#example-workflow" class="sub">Example Workflow</a>
+    <a href="#example-step0" class="sub">Example Step0</a>
+    <a href="#example-step1" class="sub">Example Step1</a>
+    <a href="#example-step2" class="sub">Example Step2</a>
+    <a href="#example-step3" class="sub">Example Step3</a>
+    <a href="#example-step4" class="sub">Example Step4</a>
   </div>
   <div class="content">
   <h1>PALM-mGWAS Usage Guide</h1>
@@ -58,11 +69,11 @@
   <div class="env-grid">
     <div class="card">
       <strong>Recommended runtime</strong><br>
-      Use the repository's <code>pixi</code> environment for local runs. It keeps the R version, BLAS/LAPACK libraries, and package installation path aligned with the scripts in this guide.
+      Use the repository's <code>pixi</code> environment for local source runs. It keeps the R version, BLAS/LAPACK libraries, and package installation path aligned with the scripts in this guide.
     </div>
     <div class="card">
       <strong>Supported alternative</strong><br>
-      Use the published Docker image if you want a prebuilt runtime with PALM-mGWAS, PALM, <code>abess</code>, and PLINK already installed.
+      Use the published Docker image if you want a prebuilt runtime with PALM-mGWAS, PALM, <code>abess</code>, and the R package dependencies already installed.
     </div>
     <div class="card">
       <strong>What to avoid</strong><br>
@@ -71,14 +82,14 @@
   </div>
   <ul>
     <li><strong>R version:</strong> use <code>R &gt;= 4.2</code>. The bundled pixi setup already pins a compatible runtime.</li>
-    <li><strong>Core R packages:</strong> <code>PALM</code>, <code>snpStats</code>, <code>data.table</code>, <code>dplyr</code>, <code>ggplot2</code>, <code>qqman</code>, <code>stringr</code>, and <code>tibble</code>.</li>
+    <li><strong>Core R packages:</strong> <code>PALM</code>, <code>Matrix</code>, <code>data.table</code>, <code>dplyr</code>, <code>ggplot2</code>, <code>metafor</code>, <code>qqman</code>, <code>snpStats</code>, <code>stringr</code>, <code>tibble</code>, <code>optparse</code>, and <code>abess</code>.</li>
     <li><strong>System consistency:</strong> install PALM and PALM-mGWAS into the same library tree that will be used at runtime.</li>
-    <li><strong>If you do not use pixi or Docker:</strong> create a clean isolated R environment yourself and install the required packages there before running the CLI.</li>
+    <li><strong>If you do not use pixi or Docker:</strong> you can run from local R source, but you must create a clean R environment yourself and install all required packages into the same R library before running the CLI.</li>
   </ul>
-  <p>In practice, you should choose exactly one execution mode for a project directory: either local <code>pixi run ...</code> commands or Docker-based commands. Both are documented below; the rest of the workflow examples keep the two styles parallel.</p>
+  <p>In practice, you should choose exactly one execution mode for a project directory: local <code>pixi run ...</code> commands, local system-R commands, or Docker/Apptainer commands. The workflow examples below show pixi and Docker commands because those are the most reproducible modes.</p>
 
-  <h2 id="install">Installation (two options)</h2>
-  <h3>Option A: pixi source installation</h3>
+  <h2 id="install">Installation</h2>
+  <h3 id="install-pixi">Option A: pixi source installation</h3>
   <p>Use this method if you want to run the workflow directly from the source tree with the pixi-managed R environment.</p>
   <pre><code class="language-bash"># install pixi (if not yet)
 curl -fsSL https://pixi.sh/install.sh | bash
@@ -103,7 +114,31 @@ pixi run R CMD INSTALL .</code></pre>
   <p><strong>One-time setup:</strong> <code>pixi install</code> only creates the base environment. Before running the workflow scripts, you should also install <code>abess</code>, the bundled <code>PALM</code> tarball, and the local <code>PALMmGWAS</code> package into that pixi-managed R library.</p>
   <p><strong>Command prefix for routine runs:</strong> after the one-time setup above, most commands in this guide can be run as <code>pixi run Rscript extdata/&lt;script&gt;.R ...</code> from the repository root.</p>
   <p><strong>Do not use the system R for PALM installation:</strong> install <code>PALM</code> through <code>pixi run</code> so that it links against the BLAS/LAPACK libraries inside the pixi environment. On macOS, avoid wrapping the install command in <code>pixi run bash -lc '...'</code> because a login shell can resolve <code>R</code> back to the system binary and trigger errors such as missing <code>libopenblas.0.dylib</code> when <code>library(PALM)</code> is loaded.</p>
-  <h3>Option B: Docker image</h3>
+
+  <h3 id="install-r">Option B: local R source installation without pixi</h3>
+  <p>Use this method only if you want to manage R and compiled libraries yourself. Compared with pixi, this mode requires manual package installation and manual control of BLAS/LAPACK compatibility. Install <code>PALM</code>, <code>PALMmGWAS</code>, and all dependencies into the same R library that will be used when running <code>Rscript</code>.</p>
+  <pre><code class="language-bash"># clone the repository and enter the source tree
+git clone git@github.com:CheeseLee888/PALM-mGWAS.git
+cd PALM-mGWAS
+
+# install CRAN dependencies into your active R library
+Rscript -e 'install.packages(c("Matrix", "data.table", "dplyr", "ggplot2", "metafor", "qqman", "stringr", "tibble", "optparse", "abess"), repos="https://cloud.r-project.org")'
+
+# install Bioconductor dependency snpStats
+Rscript -e 'if (!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager", repos="https://cloud.r-project.org"); BiocManager::install("snpStats", update=FALSE, ask=FALSE)'
+
+# install the bundled PALM source package
+R CMD INSTALL thirdParty/PALM_0.1.0.tar.gz
+
+# install PALM-mGWAS itself
+R CMD INSTALL .
+
+# smoke test that all packages load from the same R library
+Rscript -e 'library(PALM); library(PALMmGWAS); library(snpStats); cat("PALM-mGWAS local R installation OK\n")'</code></pre>
+  <p><strong>Command prefix for routine runs:</strong> with local R source installation, replace the pixi prefix with plain <code>Rscript</code>, for example <code>Rscript extdata/step0_checkInput.R ...</code> from the repository root.</p>
+  <p><strong>When to prefer pixi:</strong> if <code>PALM</code> fails to install or load because of BLAS/LAPACK linking errors, use Option A. Pixi pins the compiler-facing libraries and installs <code>PALM</code> with explicit link flags, which avoids most local system-R library mismatches.</p>
+
+  <h3 id="install-docker">Option C: Docker image</h3>
   <pre><code class="language-bash"># pull the published image
 docker pull --platform=linux/amd64 cheeselee/palm-mgwas:latest
 
@@ -115,7 +150,32 @@ docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work \
   cheeselee/palm-mgwas:latest \
   step1_null.R --help</code></pre>
-  <p>This published Docker image already contains pixi, <code>abess</code>, PALM, <code>PALMmGWAS</code>, and PLINK1.9, so Docker users do not need to repeat the local source installation steps from Option A. Mount your working directory to <code>/work</code> and call the installed wrapper scripts directly.</p>
+  <p>This published Docker image already contains pixi, <code>abess</code>, PALM, <code>PALMmGWAS</code>, and the R package dependencies, so Docker users do not need to repeat the local source installation steps from Option A or Option B. Mount your working directory to <code>/work</code> and call the installed wrapper scripts directly.</p>
+
+  <h3 id="sif">Option D: Build an Apptainer/SIF image for HPC</h3>
+  <p>Use this method when the target cluster runs Apptainer/Singularity instead of Docker. First build or pull the Docker image on a machine with Docker, save it as a Docker archive, then convert the archive to <code>PALMmGWAS.sif</code>.</p>
+  <pre><code class="language-bash"># Option D1: build the Docker image locally from this repository
+DOCKER_DEFAULT_PLATFORM=linux/amd64 \
+docker buildx build --platform linux/amd64 \
+  -t palm-mgwas:latest --load \
+  -f docker/Dockerfile .
+
+# Option D2: or use the published Docker image
+docker pull --platform=linux/amd64 cheeselee/palm-mgwas:latest
+
+# save one of the Docker images as an archive
+docker save cheeselee/palm-mgwas:latest -o PALMmGWAS.tar
+# or, if you built the local image above:
+docker save palm-mgwas:latest -o PALMmGWAS.tar
+
+# convert the Docker archive to an Apptainer/SIF image
+docker run --rm -it --privileged \
+  --platform=linux/amd64 \
+  -v "$PWD":/work ghcr.io/apptainer/apptainer:latest \
+  apptainer build --arch amd64 \
+    /work/PALMmGWAS.sif \
+    docker-archive:///work/PALMmGWAS.tar</code></pre>
+  <p>Copy <code>PALMmGWAS.sif</code> to the cluster project directory and run workflow scripts with <code>apptainer exec</code>. The simulation workflow under <code>simulation/</code> uses this SIF image when submitting the provided <code>.sbatch</code> scripts. Those templates expect the default image path <code>${WORK}/PALMmGWAS.sif</code>, or you can override it by setting <code>SIF=/path/to/PALMmGWAS.sif</code>.</p>
 
   <h2 id="workflow">Workflow</h2>
   <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Step0</code> to <code>Step4</code>.</p>
@@ -477,7 +537,7 @@ docker run --rm --platform=linux/amd64 \
   <h2 id="exampledata">Example Data in This Repo</h2>
   <p>The repository already contains a small three-study example under <code>example/input/</code> and matching outputs under <code>example/output/</code>. These files are useful for understanding the expected formats before running your own data.</p>
 
-  <h3>Example Input: abundance</h3>
+  <h3 id="example-input">Example Input: abundance</h3>
   <pre><code class="language-tsv"># file: example/input/study1/abd.txt
 IID	g_Bifidobacterium	g_Lactobacillus	g_Hungatella	g_Sutterella	g_Anaerostipes	g_Peptoniphilus_unclassified	g_Fusobacterium	g_Terrisporobacter	g_Rothia	f_Atopobiaceae
 ID_001	178	81	59	0	74	32	0	49	0	0
@@ -510,10 +570,10 @@ study3  /work/example/output/study3</code></pre>
   <h3>Example Input: genotype</h3>
   <p>The primary genotype input for each study is stored as a PLINK dataset with prefix <code>example/input/study1/geno</code>, corresponding to the files <code>geno.bed</code>, <code>geno.bim</code>, and <code>geno.fam</code>. The repository also includes an alternative input example under <code>example/input/study1_vcf/</code> for testing Step2 with VCF input.</p>
 
-  <h3>Example Workflow: from input to output</h3>
+  <h3 id="example-workflow">Example Workflow: from input to output</h3>
   <p>The same example data can be read as a concrete workflow: what goes in, which script is called, which parameters matter, and what files come out.</p>
 
-  <h3>Step0: align IDs before modeling</h3>
+  <h3 id="example-step0">Step0: align IDs before modeling</h3>
   <p><strong>Input:</strong> <code>example/input/study1/abd.txt</code>, <code>example/input/study1/cov.txt</code>, and genotype input passed through <code>--genoFile</code>.</p>
   <pre><code class="language-bash"># Step0 filters low-depth samples if requested, then checks IID sets and reorders abd/cov if needed
 pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
@@ -550,7 +610,7 @@ ID_003	716
 ID_004	318</code></pre>
   <p>This optional table is written by Step0 when <code>--SeqDepthInfoFile</code> is set. With <code>--depthCol=NULL</code>, <code>SeqDepth</code> values are computed from row sums of <code>abdFile</code>.</p>
 
-  <h3>Step1: fit the null model</h3>
+  <h3 id="example-step1">Step1: fit the null model</h3>
   <p><strong>Input:</strong> aligned abundance and covariate tables from the previous step.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R \
     --abdFile=example/input/study1/abd_aligned.txt \
@@ -585,7 +645,7 @@ g_Sutterella	0.5	0.0847280424401774
 g_Anaerostipes	0.65	0.10380372336141</code></pre>
   <p>This optional table is written by Step1 when <code>--FeatureInfoFile</code> is set. Behavior definition: <code>FeatureInfo</code> is computed from the Step1 input abundance table before <code>prev.filter</code> removes low-prevalence features.</p>
 
-  <h3>Step2.1: null model + genotype to per-feature association files</h3>
+  <h3 id="example-step2">Step2.1: null model + genotype to per-feature association files</h3>
   <p><strong>Input:</strong> genotype input passed through <code>--genoFile</code> and null model <code>example/output/study1/step1_allpheno.rda</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_1_summary.R \
     --genoFile=example/input/study1/geno \
@@ -652,7 +712,7 @@ chr1:14678191:A:C	1	14678191	-0.168034991615697	0.14650635973983	0.2514036338554
 chr1:14985097:C:T	1	14985097	-0.304412765212626	0.21761687778736	0.161858801801411</code></pre>
   <p>Each Step2 file corresponds to one feature. Here, <code>g_Peptoniphilus_unclassified</code> has one file containing association statistics for all tested SNPs. Merge preserves the row schema while combining chromosome shards, and Step2.2 then updates the <code>est</code>, <code>stderr</code>, and <code>pval</code> columns after median or tune correction.</p>
 
-  <h3>Step3: multiple Step2 folders to meta-analysis tables</h3>
+  <h3 id="example-step3">Step3: multiple Step2 folders to meta-analysis tables</h3>
   <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code> for local pixi runs or <code>example/input/study_dirs_docker.txt</code> for Docker runs, plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --studyDirFile=example/input/study_dirs.txt \
@@ -679,7 +739,7 @@ chr1:2261200:G:C	1	2261200	0.0186514007640848	0.0335784191165953	0.5785814458104
 chr1:14678191:A:C	1	14678191	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	0.160049944677326	-0.256659587735654	0.0620614677990631	-0.0919276003603556	0.0619685211533294	-0.199103972089476	0.0512963524903636</code></pre>
   <p>The meta file keeps the combined estimate in <code>meta_*</code> columns and also carries study-specific estimates, which is why the downstream forest plots can show both overall and per-study effects.</p>
 
-  <h3>Step4: meta tables to figures</h3>
+  <h3 id="example-step4">Step4: meta tables to figures</h3>
   <p><strong>Input:</strong> meta result files in <code>example/output/meta</code>. The example below shows all four Step4 plotting modes separately.</p>
 
   <h3>Step4 case 1: no <code>--feature</code>, no <code>--snp</code></h3>

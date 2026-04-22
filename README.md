@@ -11,4 +11,6 @@ Basic package information:
 - Language: `R`
 - License: `GPL (>= 2)`
 
-For usage instructions and workflow documentation, see [`docs/guide.html`](./docs/guide.html).
+## Documentation
+
+Usage guide: <https://cheeselee888.github.io/PALM-mGWAS/>
