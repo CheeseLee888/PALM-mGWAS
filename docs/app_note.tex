@@ -46,7 +46,7 @@ Peter Li$^{1,\ast}$ \and Zhengzheng Tang$^{1}$
 \begin{abstract}
 \noindent
 \textbf{Summary:}
-Microbiome genome-wide association studies require software that can generate cohort-level summary statistics, combine results across studies, and return interpretable outputs without extensive custom scripting. We present \software, an R package and command-line workflow for microbiome GWAS based on the PALM framework. \software\ performs input checking, taxon-level and sequencing-depth summarization, PALM-based null model fitting, per-study genome-wide summary statistic generation, fixed-effect meta-analysis across studies, and downstream visualization. The workflow accepts PLINK and VCF genotype inputs, writes standardized file-per-taxon results, and is designed for both local and high-performance computing environments.
+Microbiome genome-wide association studies require software that can generate cohort-level summary statistics, combine results across studies, and return interpretable outputs without extensive custom scripting. We present \software, an R package and command-line workflow for microbiome GWAS based on the PALM framework. \software\ performs input checking, taxon-level and sequencing-depth summarization, PALM-based null model fitting, per-study genome-wide summary statistic generation, fixed-effect meta-analysis across studies, and downstream reporting. The workflow accepts PLINK and VCF genotype inputs, writes standardized file-per-taxon results, and is designed for both local and high-performance computing environments.
 
 \noindent
 \textbf{Availability and implementation:}
@@ -57,9 +57,9 @@ Microbiome genome-wide association studies require software that can generate co
 \end{abstract}
 
 \section{Introduction}
-Microbiome genome-wide association studies analyze host genetic effects on microbial abundance traits. In multi-cohort settings, association testing is only one part of the problem. Practical analyses also require input validation, cohort-level standardization of summary statistics, cross-study aggregation and result visualization. Existing application notes have typically emphasized either microbiome-focused single-study analysis or efficient meta-analysis of genetic score statistics. \software\ was developed to connect these steps in one workflow.
+Microbiome genome-wide association studies analyze host genetic effects on microbial abundance traits. In multi-cohort settings, association testing is only one part of the problem. Practical analyses also require input validation, cohort-level standardization of summary statistics, cross-study aggregation and result reporting. Existing application notes have typically emphasized either microbiome-focused single-study analysis or efficient meta-analysis of genetic score statistics. \software\ was developed to connect these steps in one workflow.
 
-\software\ implements a PALM-based mGWAS pipeline with five stages: auxiliary summary generation, null model fitting, per-study score-based association testing, fixed-effect meta-analysis and visualization. The package is designed to produce standardized outputs that can be reused across cohorts and downstream reports.
+\software\ implements a PALM-based mGWAS pipeline with five stages: auxiliary summary generation, null model fitting, per-study score-based association testing, fixed-effect meta-analysis and reporting. The package is designed to produce standardized outputs that can be reused across cohorts and downstream reports.
 
 \section{Methods}
 
@@ -70,8 +70,8 @@ Microbiome genome-wide association studies analyze host genetic effects on micro
 \subsection{Performance}
 Performance was characterized using the simulation workflow in \texttt{simulation/}, which generates three studies with 430--610 samples, 89--92 features, 212,389--219,975 SNPs across 22 chromosomes, and 7 covariates per study. Under this configuration, \texttt{step1} completes in about 5 seconds with 4 CPUs. When \texttt{step2} is parallelized so that each job handles one feature on one chromosome, each job completes in about 20 seconds with 8 CPUs. In \texttt{step3}, when each job handles one feature, each job completes in about 10 seconds with 4 CPUs.
 
-\subsection{Visualization outputs}
-The visualization module summarizes meta-analysis results in forms suitable for downstream reporting. For a selected taxon, \software\ generates a Manhattan plot together with the corresponding QQ plot. For a selected SNP, the workflow renders one forest plot per retained taxon, with each plot reporting cohort-specific effect estimates together with the combined meta-analysis estimate. At the global level, the package also produces a combined significant-hit summary that reports the top associated taxon for each lead SNP passing the requested threshold.
+\subsection{Reporting outputs}
+The reporting module summarizes meta-analysis results in forms suitable for downstream reporting. For a selected taxon, \software\ generates a Manhattan plot together with the corresponding QQ plot. For a selected SNP, the workflow renders one forest plot per retained taxon, with each plot reporting cohort-specific effect estimates together with the combined meta-analysis estimate. At the global level, the package also produces a combined significant-hit summary that reports the top associated taxon for each lead SNP passing the requested threshold.
 
 \begin{figure*}[t]
 \centering
@@ -134,7 +134,7 @@ The visualization module summarizes meta-analysis results in forms suitable for 
 \begin{minipage}[c]{0.58\textwidth}
 \vspace{0pt}
 \centering
-{\sffamily\bfseries\normalsize Reporting and visualization\par}
+{\sffamily\bfseries\normalsize Reporting\par}
 \vspace{0.25em}
 \includegraphics[width=0.90\textwidth]{manhattan_g_Acinetobacter.png}
 
@@ -169,7 +169,7 @@ SNP & pval & est & feature \\
 \end{figure*}
 
 \subsection{Comparison with existing software}
-\textit{mbQTL} provides a practical point of comparison because it is designed for microbial quantitative trait locus estimation, that is, host variant--taxon association analysis within individual cohorts. A further difference is workflow structure. \textit{mbQTL} operates more directly from the original abundance, covariate, and genotype inputs, whereas \software\ is organized as a staged mGWAS pipeline in which downstream analyses consume intermediate summary-statistic tables produced by earlier steps. In particular, visualization in \software\ is driven by cohort-level and meta-analysis summary-statistic outputs rather than by the raw input tables. Under this framing, \textit{mbQTL} ran faster on datasets of the same scale, which is consistent with the fact that its core computation is simpler. \textit{mbQTL} focuses on within-cohort association estimation, whereas \software\ adds the overhead of PALM-based summary generation together with downstream standardization, meta-analysis, and visualization.
+\textit{mbQTL} provides a practical point of comparison because it is designed for microbial quantitative trait locus estimation, that is, host variant--taxon association analysis within individual cohorts. A further difference is workflow structure. \textit{mbQTL} operates more directly from the original abundance, covariate, and genotype inputs, whereas \software\ is organized as a staged mGWAS pipeline in which downstream analyses consume intermediate summary-statistic tables produced by earlier steps. In particular, reporting in \software\ is driven by cohort-level and meta-analysis summary-statistic outputs rather than by the raw input tables. Under this framing, \textit{mbQTL} ran faster on datasets of the same scale, which is consistent with the fact that its core computation is simpler. \textit{mbQTL} focuses on within-cohort association estimation, whereas \software\ adds the overhead of PALM-based summary generation together with downstream standardization, meta-analysis, and reporting.
 
 % \begin{table*}[t]
 % \centering
@@ -190,7 +190,7 @@ SNP & pval & est & feature \\
 % \end{table*}
 
 \section{Discussion}
-\software\ provides a compact implementation for microbiome GWAS that links cohort-level PALM analysis to cross-study meta-analysis and visualization. The main strength of the package is workflow integration: the same framework handles preprocessing, null model fitting, genome-wide summary-statistic generation, study aggregation and reporting. This makes the software practical for consortium-scale analyses where standardized outputs are required across cohorts.
+\software\ provides a compact implementation for microbiome GWAS that links cohort-level PALM analysis to cross-study meta-analysis and reporting. The main strength of the package is workflow integration: the same framework handles preprocessing, null model fitting, genome-wide summary-statistic generation, study aggregation and reporting. This makes the software practical for consortium-scale analyses where standardized outputs are required across cohorts.
 
 Because the package combines stages that are often handled separately, total runtime should be interpreted as the sum of preprocessing, cohort analysis and downstream synthesis rather than as the cost of association testing alone. The observed \texttt{step2} results show that runtime and memory scale sharply with cohort size and variant count: the largest cohort examined here, INSPIRE, required roughly three times the median elapsed time and more than five times the median memory of WISC. Relative to \textit{mbQTL}, \software\ required more memory in the cohort-level testing stage, but completed successfully across all three cohorts and produced directly meta-analyzable outputs. Under this framing, \software\ can be evaluated directly against alternative tools in terms of implementation efficiency and workflow scope.
 

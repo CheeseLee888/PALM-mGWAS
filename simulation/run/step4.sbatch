@@ -30,9 +30,9 @@ echo "step4: plot prefix = ${PLOT_PREFIX}"
 echo "step4: feature = ${FEATURE}"
 echo "step4: snp = ${SNP}"
 
-echo "step4: running visualization mode 1 (feature + snp)"
+echo "step4: running reporting mode 1 (feature + snp)"
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
-  step4_visualization.R \
+  step4_reporting.R \
   --metaDir="${META_DIR}" \
   --plotPrefix="${PLOT_PREFIX}" \
   --feature="${FEATURE}" \
@@ -42,9 +42,9 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-echo "step4: running visualization mode 2 (feature only)"
+echo "step4: running reporting mode 2 (feature only)"
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
-  step4_visualization.R \
+  step4_reporting.R \
   --metaDir="${META_DIR}" \
   --plotPrefix="${PLOT_PREFIX}" \
   --feature="${FEATURE}" \
@@ -52,9 +52,9 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-echo "step4: running visualization mode 3 (snp only)"
+echo "step4: running reporting mode 3 (snp only)"
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
-  step4_visualization.R \
+  step4_reporting.R \
   --metaDir="${META_DIR}" \
   --plotPrefix="${PLOT_PREFIX}" \
   --snp="${SNP}" \
@@ -64,9 +64,9 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   --width="${PLOT_WIDTH}" \
   --height="${PLOT_HEIGHT}"
 
-echo "step4: running visualization mode 4 (combined)"
+echo "step4: running reporting mode 4 (combined)"
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
-  step4_visualization.R \
+  step4_reporting.R \
   --metaDir="${META_DIR}" \
   --plotPrefix="${PLOT_PREFIX}" \
   --pCut="${PCUT2}" \

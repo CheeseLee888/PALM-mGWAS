@@ -7,7 +7,7 @@ args_all <- commandArgs(trailingOnly = FALSE)
 file_arg <- grep("^--file=", args_all, value = TRUE)
 if (length(file_arg)) {
   script_path <- normalizePath(sub("^--file=", "", file_arg[[1L]]), mustWork = FALSE)
-  local_impl <- file.path(dirname(script_path), "..", "R", "visualization.R")
+  local_impl <- file.path(dirname(script_path), "..", "R", "reporting.R")
   if (file.exists(local_impl)) {
     source(local_impl)
   }
@@ -149,7 +149,7 @@ if (is.null(feature) && is.null(snp)) {
   outFile <- prefixed_out("combined_hits.png")
   dir.create(dirname(outFile), recursive = TRUE, showWarnings = FALSE)
   msg("Output file/base: %s", outFile)
-  msg("Visualization mode: combined Manhattan across phenotypes.")
+  msg("Reporting mode: combined Manhattan across phenotypes.")
   msg("Mode A behavior: pCut %s", if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)))
   mode_big_combined(
     metaIndex = metaIndex,
@@ -168,7 +168,7 @@ if (is.null(feature) && is.null(snp)) {
   dir.create(dirname(qq_out), recursive = TRUE, showWarnings = FALSE)
   msg("Output file/base: %s", outFile)
   msg("QQ output file: %s", qq_out)
-  msg("Visualization mode: Manhattan and qq for feature %s.", feature)
+  msg("Reporting mode: Manhattan and qq for feature %s.", feature)
   msg("Mode B behavior: pCut is ignored in this mode.")
   # keep auxiliary outputs aligned with main outFile
   base_no_ext <- sub("\\.[^.]+$", "", outFile)
@@ -190,7 +190,7 @@ if (is.null(feature) && is.null(snp)) {
   outFile <- prefixed_out(paste0("forest_", sanitize_filename(snp), ".png"))
   dir.create(dirname(outFile), recursive = TRUE, showWarnings = FALSE)
   msg("Output file/base: %s", outFile)
-  msg("Visualization mode: per-phenotype forest plots for SNP %s.", snp)
+  msg("Reporting mode: per-phenotype forest plots for SNP %s.", snp)
   msg("Mode C behavior: pCut %s; showMeta=%s; showHet=%s; one file is generated for each retained phenotype.",
       if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)),
       opt$showMeta, opt$showHet)
@@ -213,7 +213,7 @@ if (is.null(feature) && is.null(snp)) {
   outFile <- prefixed_out(paste0("forest_", sanitize_filename(feature), "_", sanitize_filename(snp), ".png"))
   dir.create(dirname(outFile), recursive = TRUE, showWarnings = FALSE)
   msg("Output file/base: %s", outFile)
-  msg("Visualization mode: forest for feature %s and SNP %s.", feature, snp)
+  msg("Reporting mode: forest for feature %s and SNP %s.", feature, snp)
   msg("Mode D behavior: showMeta=%s; showHet=%s; pCut is ignored in this mode.", opt$showMeta, opt$showHet)
   if (!is.na(plot_min_p)) {
     msg("Mode D behavior: plotMinP is ignored in this mode.")

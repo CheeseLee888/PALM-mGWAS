@@ -4,10 +4,10 @@ source "$WORK/config.sh"
 
 
 ################################# workflow below (do not modify) #################################
-echo "Start: Step4 visualization."
+echo "Start: Step4 reporting."
 step4MetaDir="${step4MetaDir:-${metaDir:-${outputFolder}/meta}}"
 
-pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visualization.R \
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_reporting.R \
     --metaDir=${step4MetaDir} \
     --plotPrefix=${plotPrefix:-${outputFolder}/plot/} \
     --feature=${feature:-NA} \
@@ -17,7 +17,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visuali
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
 
-pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visualization.R \
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_reporting.R \
     --metaDir=${step4MetaDir} \
     --plotPrefix=${plotPrefix:-${outputFolder}/plot/} \
     --feature=${feature:-NA} \
@@ -25,7 +25,7 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visuali
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
 
-pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visualization.R \
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_reporting.R \
     --metaDir=${step4MetaDir} \
     --plotPrefix=${plotPrefix:-${outputFolder}/plot/} \
     --snp=${snp:-NA} \
@@ -35,11 +35,11 @@ pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visuali
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
 
-pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_visualization.R \
+pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step4_reporting.R \
     --metaDir=${step4MetaDir} \
     --plotPrefix=${plotPrefix:-${outputFolder}/plot/} \
     --pCut=${pCut2:-5e-8} \
     --plotMinP=${plotMinP:-NA} \
     --width=${plotWidth:-NA} \
     --height=${plotHeight:-NA}
-echo "Finish: Step4 visualization."
+echo "Finish: Step4 reporting."

@@ -119,4 +119,4 @@ sbatch run/step4.sbatch
 
 ## Outputs
 
-For routine inspection, users only need to look at `output/plot/`, which contains the downstream visualization outputs from the simulation workflow.
+For routine inspection, users only need to look at `output/plot/`, which contains the downstream reporting outputs from the simulation workflow.

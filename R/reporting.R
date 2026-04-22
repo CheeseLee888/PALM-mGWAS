@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Step4 visualization helpers used by extdata/step4_visualization.R
+# Step4 reporting helpers used by extdata/step4_reporting.R
 #
 # Modes:
 #   1) no --pheno and no --snp  -> one big combined plot (significant points across any pheno & snp)
