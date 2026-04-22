@@ -18,16 +18,24 @@
 #' @param overwriteOutput Logical; if `TRUE` overwrite the original Step2 files.
 #'   If `FALSE`, keep the originals and write new files as
 #'   `<inputPrefix>_corrected_<allchr|chrN>_<feature>.txt`.
+#' @param correct Correction method. Supported values are `"median"` and
+#'   `"tune"`.
+#' @param NULLmodelFile Optional Step1 NULL model `.rda` containing `modglmm`.
+#'   Required when `correct = "tune"`; the sample size is inferred from
+#'   `nrow(modglmm[[1]]$Y_I)`.
 #'
 #' @return Invisibly returns the corrected file paths.
 #' @export
 correctSummary <- function(inputPrefix,
                            chrom = NULL,
-                           overwriteOutput = TRUE) {
+                           overwriteOutput = TRUE,
+                           correct = c("median", "tune"),
+                           NULLmodelFile = NULL) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
   }
 
+  correct <- match.arg(correct)
   if (missing(inputPrefix) || !nzchar(inputPrefix)) {
     stop("'inputPrefix' must be provided.")
   }
@@ -36,6 +44,27 @@ correctSummary <- function(inputPrefix,
   }
   if (!is.logical(overwriteOutput) || length(overwriteOutput) != 1L || is.na(overwriteOutput)) {
     stop("'overwriteOutput' must be a single TRUE/FALSE value.")
+  }
+  tuneN <- NULL
+  if (!is.null(NULLmodelFile)) {
+    if (!file.exists(NULLmodelFile)) {
+      stop("NULL model file not found: ", NULLmodelFile)
+    }
+    env <- new.env()
+    load(NULLmodelFile, envir = env)
+    if (!exists("modglmm", envir = env)) {
+      stop("Object 'modglmm' not found in ", NULLmodelFile)
+    }
+    modglmm <- env$modglmm
+    if (identical(correct, "tune")) {
+      tuneN <- nrow(modglmm[[1]]$Y_I)
+      message("Inferred tuneN from NULL model: ", tuneN)
+    }
+  }
+  if (identical(correct, "tune")) {
+    if (is.null(tuneN)) {
+      stop("'NULLmodelFile' must be supplied when correct='tune' so tuneN can be inferred.")
+    }
   }
 
   escape_regex <- function(x) {
@@ -172,7 +201,27 @@ correctSummary <- function(inputPrefix,
     stderr_mat[feat, idx] <- dat$stderr
   }
 
-  delta <- apply(est_mat, 2, function(x) stats::median(-x, na.rm = TRUE))
+  if (identical(correct, "median")) {
+    delta <- apply(est_mat, 2, function(x) stats::median(-x, na.rm = TRUE))
+  } else {
+    palm_tune <- getFromNamespace("palm_tune", "PALM")
+    delta <- rep(NA_real_, length(snp_ids))
+    names(delta) <- snp_ids
+    for (snp in snp_ids) {
+      tune_res <- palm_tune(
+        summary.stats = list(
+          Study1 = list(
+            est = est_mat[, snp, drop = FALSE],
+            stderr = stderr_mat[, snp, drop = FALSE],
+            n = tuneN
+          )
+        ),
+        output.best.one = TRUE,
+        verbose = FALSE
+      )
+      delta[[snp]] <- unname(tune_res[[1]]$delta[[1]])
+    }
+  }
 
   adjust_part <- vapply(snp_ids, function(snp) {
     se <- stderr_mat[, snp]
@@ -211,8 +260,8 @@ correctSummary <- function(inputPrefix,
   }
 
   message(
-    "Step2 correction finished for scope ", requested_scope, ": wrote ",
-    length(out_paths), " corrected file(s)"
+    "Step2 ", correct, " correction finished for scope ", requested_scope,
+    ": wrote ", length(out_paths), " corrected file(s)"
   )
   invisible(unname(out_paths))
 }

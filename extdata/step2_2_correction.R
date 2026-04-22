@@ -27,6 +27,14 @@ option_list <- list(
   make_option("--overwriteOutput",
     type = "character", default = "TRUE",
     help = ""
+  ),
+  make_option("--correct",
+    type = "character", default = "median",
+    help = ""
+  ),
+  make_option("--NULLmodelFile",
+    type = "character", default = "NULL",
+    help = ""
   )
 )
 
@@ -40,18 +48,28 @@ if (!overwrite_flag %in% c("TRUE", "FALSE")) {
   stop("--overwriteOutput must be TRUE or FALSE.")
 }
 opt$overwriteOutput <- identical(overwrite_flag, "TRUE")
+opt$correct <- tolower(trimws(opt$correct))
+if (!opt$correct %in% c("median", "tune")) {
+  stop("--correct must be median or tune.")
+}
+if (is.null(opt$NULLmodelFile) || !nzchar(opt$NULLmodelFile) || toupper(opt$NULLmodelFile) == "NULL") {
+  opt$NULLmodelFile <- NULL
+}
 
 ptm <- proc.time()
 message("step2.2: correction started.")
 message("step2.2: input prefix = ", opt$inputPrefix)
 message("step2.2: chromosome scope = ", if (is.null(opt$chrom)) "NULL" else opt$chrom)
 message("step2.2: overwrite output = ", opt$overwriteOutput)
-message("step2.2: correction mode = median")
+message("step2.2: correction mode = ", opt$correct)
+message("step2.2: NULL model file = ", if (is.null(opt$NULLmodelFile)) "NULL" else opt$NULLmodelFile)
 
 correctSummary(
   inputPrefix = opt$inputPrefix,
   chrom = opt$chrom,
-  overwriteOutput = opt$overwriteOutput
+  overwriteOutput = opt$overwriteOutput,
+  correct = opt$correct,
+  NULLmodelFile = opt$NULLmodelFile
 )
 
 elapsed <- proc.time() - ptm

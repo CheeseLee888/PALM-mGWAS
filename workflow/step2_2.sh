@@ -10,5 +10,7 @@ echo "Start: Perform step2.2 compositional correction."
 pixi run --manifest-path=${WORK}/pixi.toml Rscript ${WORK}/extdata/step2_2_correction.R \
     --inputPrefix=${step2InputPrefix} \
     --chrom=${step2CorrectChrom:-NULL} \
-    --overwriteOutput=${overwriteOutput:-TRUE}
+    --overwriteOutput=${overwriteOutput:-TRUE} \
+    --correct=${step2CorrectMode:-median} \
+    --NULLmodelFile=${NULLObjPrefix}.rda
 echo "Finish: Perform step2.2 compositional correction."
