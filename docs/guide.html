@@ -239,7 +239,7 @@ docker run --rm -it --privileged \
     <li><code>--abdAlignedFile=example/output/study1/abd_aligned.txt</code></li>
     <li><code>--covAlignedFile=example/output/study1/cov_aligned.txt</code></li>
     <li><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></li>
-    <li><code>--covarColList=AGE,SEX,PC01</code>; <code>--covarColList=NULL</code></li>
+    <li><code>--covarColList=NULL</code> uses all covariate columns from <code>covFile</code>; use <code>--covarColList=AGE,SEX,PC01</code> only when selecting specific covariates</li>
     <li><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></li>
     <li><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></li>
     <li><code>--SeqDepthInfoFile=example/output/study1/info_seqdepth.txt</code>; <code>--SeqDepthInfoFile=NULL</code></li>
@@ -288,7 +288,7 @@ docker run --rm -it --privileged \
     <li><code>--abdFile=example/output/study1/abd_aligned.txt</code></li>
     <li><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code> writes <code>example/output/study1/step1_allpheno.rda</code></li>
     <li><code>--covFile=example/output/study1/cov_aligned.txt</code>; <code>--covFile=NULL</code></li>
-    <li><code>--covarColList=AGE,SEX,PC01</code>; <code>--covarColList=NULL</code></li>
+    <li><code>--covarColList=NULL</code> uses all covariate columns from <code>covFile</code>; use <code>--covarColList=AGE,SEX,PC01</code> only when selecting specific covariates</li>
     <li><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></li>
     <li><code>--prev.filter=0.1</code>; <code>--prev.filter=0</code></li>
     <li><code>--FeatureInfoFile=example/output/study1/info_feature.txt</code>; <code>--FeatureInfoFile=NULL</code></li>
@@ -615,7 +615,7 @@ ID_004	318</code></pre>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R \
     --abdFile=example/input/study1/abd_aligned.txt \
     --covFile=example/input/study1/cov_aligned.txt \
-    --covarColList=AGE,SEX,PC01 \
+    --covarColList=NULL \
     --depthCol=NULL \
     --prev.filter=0.1 \
     --FeatureInfoFile=example/output/study1/info_feature.txt \
@@ -627,7 +627,7 @@ ID_004	318</code></pre>
   step1_null.R \
     --abdFile=example/input/study1/abd_aligned.txt \
     --covFile=example/input/study1/cov_aligned.txt \
-    --covarColList=AGE,SEX,PC01 \
+    --covarColList=NULL \
     --depthCol=NULL \
     --prev.filter=0.1 \
     --FeatureInfoFile=example/output/study1/info_feature.txt \
