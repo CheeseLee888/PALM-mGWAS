@@ -33,7 +33,7 @@ meta-analyze one chromosome-specific shard across all studies.}
 
 \item{out_dir}{If not NULL, write per-feature meta files to this directory.}
 
-\item{out_prefix}{Output meta file prefix, e.g. "step3_meta". A trailing underscore is ignored. Output filenames are written as `<out_prefix>_<allchr|chrN>_<feature>.txt`.}
+\item{out_prefix}{Output meta file prefix, e.g. "step3_meta". A trailing underscore is ignored.}
 
 \item{out_suffix}{Output file suffix, default ".txt"}
 

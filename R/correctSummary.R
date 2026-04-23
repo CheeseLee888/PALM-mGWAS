@@ -204,7 +204,7 @@ correctSummary <- function(inputPrefix,
   if (identical(correct, "median")) {
     delta <- apply(est_mat, 2, function(x) stats::median(-x, na.rm = TRUE))
   } else {
-    palm_tune <- getFromNamespace("palm_tune", "PALM")
+    palm_tune <- utils::getFromNamespace("palm_tune", "PALM")
     delta <- rep(NA_real_, length(snp_ids))
     names(delta) <- snp_ids
     for (snp in snp_ids) {

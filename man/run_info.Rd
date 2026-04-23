@@ -26,9 +26,8 @@ VCF file that will be read directly.}
 \item{output_seqdepth}{Output path for sequencing depth info.}
 
 \item{vcf_field}{Optional VCF FORMAT field override. By default the reader
-auto-detects and prefers \code{"DS"} when present, otherwise falls back to
-\code{"GT"}.}
-
+auto-detects and prefers `"DS"` when present, otherwise falls back to
+`"GT"`.}
 }
 \value{
 Invisibly returns a list of output paths.

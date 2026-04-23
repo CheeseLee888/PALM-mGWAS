@@ -96,3 +96,8 @@ read_named_vector <- function(file, column = NULL, numeric = FALSE) {
 
   values
 }
+
+utils::globalVariables(c(
+  ".env", "Study", "est", "lower", "raw_ymax", "raw_ymin", "se", "upper",
+  "y", "y_center", "y_num", "ymax", "ymin"
+))

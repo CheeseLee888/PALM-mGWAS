@@ -16,7 +16,8 @@ mode_pheno_manhattan(
   qq_width = NA_real_,
   qq_height = NA_real_,
   topOutFile = NULL,
-  top_n = 10
+  top_n = 10,
+  plotMinP = NA_real_
 )
 }
 \arguments{
@@ -33,9 +34,14 @@ result files (as produced by step3).}
 
 \item{qqOutFile}{Optional output path for QQ plot.}
 
+\item{qq_width, qq_height}{Optional QQ plot device width and height.}
+
 \item{topOutFile}{Optional output path for top-N hits (ordered by p-value).}
 
 \item{top_n}{How many hits to keep if `topOutFile` is provided.}
+
+\item{plotMinP}{Optional Manhattan plotting threshold for p-value
+compression.}
 }
 \description{
 Manhattan plot for a single phenotype

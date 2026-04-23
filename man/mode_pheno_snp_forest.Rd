@@ -41,6 +41,8 @@ result files (as produced by step3).}
 \item{width, height, dpi}{Graphics device parameters passed to `ggsave`.}
 
 \item{show_meta}{If TRUE, overlay meta-effect in black.}
+
+\item{show_het}{If TRUE, draw heterogeneity annotations when available.}
 }
 \description{
 Forest plot for a given phenotype/SNP across studies

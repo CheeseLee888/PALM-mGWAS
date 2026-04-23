@@ -13,7 +13,8 @@ mode_big_combined(
   width = NA_real_,
   height = NA_real_,
   dpi = 300,
-  pCut = 1e-05
+  pCut = 5e-08,
+  plotMinP = NA_real_
 )
 }
 \arguments{
@@ -29,6 +30,10 @@ result files (as produced by step3).}
 \item{pCut}{Optional cutoff. When using the combined mode, SNP/phenotype
 pairs with best p below this value are printed to the console and written
 to `<outFile>_pCut.txt`.}
+
+\item{plotMinP}{Optional Manhattan plotting threshold for p-value
+compression. Points with `P < plotMinP` are drawn slightly above
+`-log10(plotMinP)` instead of stretching the full y-axis.}
 }
 \value{
 Invisibly returns the data frame passed to `qqman::manhattan()`.

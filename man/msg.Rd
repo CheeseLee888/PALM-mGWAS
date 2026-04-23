@@ -6,6 +6,9 @@
 \usage{
 msg(...)
 }
+\arguments{
+\item{...}{Arguments passed to `sprintf()`.}
+}
 \description{
 Print a formatted message with newline
 }

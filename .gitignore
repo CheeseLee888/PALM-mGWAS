@@ -5,6 +5,8 @@
 *.Rproj*
 *.sif
 *.tar
+*.Rcheck/
+.*.Rcheck/
 *.swp
 thirdParty/*.R
 thirdParty/*.cpp

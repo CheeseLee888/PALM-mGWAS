@@ -13,6 +13,8 @@
 # ----------------------------- utilities -----------------------------
 
 #' Print a formatted message with newline
+#'
+#' @param ... Arguments passed to `sprintf()`.
 #' @export
 msg <- function(...) cat(sprintf(...), "\n")
 
@@ -963,8 +965,11 @@ mode_big_combined <- function(metaIndex, outFile,
 #' @inheritParams mode_big_combined
 #' @param phenoName Phenotype name matching a row in `metaIndex$pheno`.
 #' @param qqOutFile Optional output path for QQ plot.
+#' @param qq_width,qq_height Optional QQ plot device width and height.
 #' @param topOutFile Optional output path for top-N hits (ordered by p-value).
 #' @param top_n How many hits to keep if `topOutFile` is provided.
+#' @param plotMinP Optional Manhattan plotting threshold for p-value
+#'   compression.
 #'
 #' @export
 mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
@@ -1019,6 +1024,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
 #' @param studyLabels Optional labels replacing study IDs in the legend.
 #' @param xlim_str Optional comma-separated numeric limits for the x-axis.
 #' @param show_meta If TRUE, overlay meta-effect in black.
+#' @param show_het If TRUE, draw heterogeneity annotations when available.
 #'
 #' @export
 mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,

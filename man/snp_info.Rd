@@ -4,20 +4,16 @@
 \alias{snp_info}
 \title{Compute SNP counts and allele frequency from genotype input}
 \usage{
-snp_info(
-  genoFile,
-  vcf_field = NULL
-)
+snp_info(genoFile, vcf_field = NULL)
 }
 \arguments{
-\item{genoFile}{Genotype input path. If the value ends with \code{.vcf},
-\code{.vcf.gz}, or \code{.vcf.bgz}, VCF input is assumed. Otherwise it is
-treated as a PLINK prefix without \code{.bed/.bim/.fam}.}
+\item{genoFile}{Genotype input path. If the value ends with `.vcf`,
+`.vcf.gz`, or `.vcf.bgz`, VCF input is assumed. Otherwise it is treated as
+a PLINK prefix without `.bed/.bim/.fam`.}
 
 \item{vcf_field}{Optional VCF FORMAT field override. By default the reader
-auto-detects and prefers \code{"DS"} when present, otherwise falls back to
-\code{"GT"}. Supported explicit values are \code{"DS"} and \code{"GT"}.}
-
+auto-detects and prefers `"DS"` when present, otherwise falls back to
+`"GT"`. Supported explicit values are `"DS"` and `"GT"`.}
 }
 \value{
 Data frame with CHR, SNP, POS, A1, A2, N, AF.

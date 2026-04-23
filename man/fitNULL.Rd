@@ -46,7 +46,7 @@ retained in the fitted Step1 null model after prevalence filtering. Use
 `NULL` (default) to skip writing this file.}
 
 \item{NULLObjPrefix}{Output prefix for the saved null model object. The
-function writes `${NULLObjPrefix}.rda`.}
+function writes `<NULLObjPrefix>.rda`.}
 }
 \value{
 Invisibly returns the fitted PALM null model object.

@@ -24,7 +24,7 @@
 #'   retained in the fitted Step1 null model after prevalence filtering. Use
 #'   `NULL` (default) to skip writing this file.
 #' @param NULLObjPrefix Output prefix for the saved null model object. The
-#'   function writes `${NULLObjPrefix}.rda`.
+#'   function writes `<NULLObjPrefix>.rda`.
 #'
 #' @return Invisibly returns the fitted PALM null model object.
 #' @export

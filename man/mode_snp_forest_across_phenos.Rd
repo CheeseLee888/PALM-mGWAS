@@ -8,7 +8,7 @@ mode_snp_forest_across_phenos(
   metaIndex,
   snp,
   outFile,
-  pCut = 1e-05,
+  pCut = 5e-08,
   ciMult = 1.96,
   studyLabels = NULL,
   sep = "\\t",
@@ -26,8 +26,7 @@ result files (as produced by step3).}
 
 \item{snp}{SNP ID to plot.}
 
-\item{outFile}{Output file path or basename. A phenotype suffix is inserted
-before the extension for each generated file.}
+\item{outFile}{Path to the output JPEG.}
 
 \item{pCut}{P-value cutoff used to filter phenotypes for this SNP. Use `NA`
 to disable filtering and keep all phenotypes containing the SNP.}
@@ -43,6 +42,8 @@ to disable filtering and keep all phenotypes containing the SNP.}
 \item{width, height, dpi}{Graphics device parameters passed to `ggsave`.}
 
 \item{show_meta}{If TRUE, overlay meta-effect in black.}
+
+\item{show_het}{If TRUE, draw heterogeneity annotations when available.}
 }
 \description{
 Forest plots for a SNP across all phenotypes, one file per phenotype
