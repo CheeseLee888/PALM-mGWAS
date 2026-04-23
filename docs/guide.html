@@ -150,7 +150,7 @@ docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step1_null.R --help</code></pre>
-  <p>This published Docker image already contains pixi, <code>abess</code>, PALM, <code>PALMmGWAS</code>, and the R package dependencies, so Docker users do not need to repeat the local source installation steps from Option A or Option B. Mount your local project directory to <code>/work</code>, set the container working directory to <code>/work</code>, and pass local project-relative input/output paths such as <code>example/input/study1/abd.txt</code>. The Docker image supplies the scripts and runtime; the data files are read from and written to your mounted local directory.</p>
+  <p>This published Docker image already contains pixi, <code>abess</code>, PALM, <code>PALMmGWAS</code>, and the R package dependencies, so Docker users do not need to repeat the local source installation steps from Option A or Option B. Mount your local project directory to <code>/work</code> and pass paths under <code>/work</code>, such as <code>/work/example/input/study1/abd.txt</code>. The Docker image supplies the scripts and runtime; the data files are read from and written to your mounted local directory.</p>
 
   <h3 id="sif">Option D: Build an Apptainer/SIF image for HPC</h3>
   <p>Use this method when the target cluster runs Apptainer/Singularity instead of Docker. First build or pull the Docker image on a machine with Docker, save it as a Docker archive, then convert the archive to <code>PALMmGWAS.sif</code>.</p>
@@ -178,7 +178,7 @@ docker run --rm -it --privileged \
   <p>Copy <code>PALMmGWAS.sif</code> to the cluster project directory and run workflow scripts with <code>apptainer exec</code>. The simulation workflow under <code>simulation/</code> uses this SIF image when submitting the provided <code>.sbatch</code> scripts. Those templates expect the default image path <code>${WORK}/PALMmGWAS.sif</code>, or you can override it by setting <code>SIF=/path/to/PALMmGWAS.sif</code>.</p>
 
   <h2 id="workflow">Workflow</h2>
-  <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Step0</code> to <code>Step4</code>. Docker commands use the same local project-relative input and output paths as pixi commands; only the executable script comes from the container.</p>
+  <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Step0</code> to <code>Step4</code>. Pixi commands use local project-relative paths. Docker commands mount the same local project at <code>/work</code>, so their input and output arguments use <code>/work/...</code> paths.</p>
   <p>In the parameter tables below, parameter names shown in bold are required.</p>
   <div class="steps">
     <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> optionally filters low-depth samples, checks IID consistency across abundance, covariates, and genotype input, reorders tables to match genotype sample order, and can write sequencing-depth summaries.</div>
@@ -492,7 +492,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
     --snp=${snp} \
     --showMeta=${showMeta:-TRUE} \
     --showHet=${showHet:-TRUE}</code></pre>
-  <pre><code class="language-bash"># Docker commands use the same local relative paths when the project is mounted at /work
+  <pre><code class="language-bash"># Docker commands access the mounted local project under /work
 docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
@@ -561,7 +561,12 @@ ID_004	-0.848477219368992	1	0.0108307	-0.00694051	-0.000638697	-0.0077418	0.0011
 study1  example/output/study1
 study2  example/output/study2
 study3  example/output/study3</code></pre>
-  <p>This file lists the studies included in the example meta-analysis and the location of each study's result directory. Each line maps one study ID to one local project-relative folder; whitespace separation is accepted by the current CLI. Use the same <code>study_dirs.txt</code> for pixi and Docker runs.</p>
+  <p>This file lists the studies included in the example meta-analysis and the location of each study's result directory. Each line maps one study ID to one local project-relative folder; whitespace separation is accepted by the current CLI.</p>
+  <pre><code class="language-tsv"># file: example/input/study_dirs_docker.txt
+study1  /work/example/output/study1
+study2  /work/example/output/study2
+study3  /work/example/output/study3</code></pre>
+  <p>Use <code>study_dirs_docker.txt</code> for Docker runs because the container sees the mounted local project under <code>/work</code>.</p>
 
   <h3>Example Input: genotype</h3>
   <p>The primary genotype input for each study is stored as a PLINK dataset with prefix <code>example/input/study1/geno</code>, corresponding to the files <code>geno.bed</code>, <code>geno.bim</code>, and <code>geno.fam</code>. The repository also includes an alternative input example under <code>example/input/study1_vcf/</code> for testing Step2 with VCF input.</p>
@@ -586,14 +591,14 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step0_checkInput.R \
-    --abdFile=example/input/study1/abd.txt \
-    --covFile=example/input/study1/cov.txt \
-    --abdAlignedFile=example/input/study1/abd_aligned.txt \
-    --covAlignedFile=example/input/study1/cov_aligned.txt \
+    --abdFile=/work/example/input/study1/abd.txt \
+    --covFile=/work/example/input/study1/cov.txt \
+    --abdAlignedFile=/work/example/input/study1/abd_aligned.txt \
+    --covAlignedFile=/work/example/input/study1/cov_aligned.txt \
     --covarColList=NULL \
     --depthCol=NULL \
     --depth.filter=0 \
-    --genoFile=example/input/study1/geno \
+    --genoFile=/work/example/input/study1/geno \
     --SeqDepthInfoFile=NULL</code></pre>
   <p><strong>Output:</strong> Step0 writes aligned files such as <code>example/input/study1/abd_aligned.txt</code> and <code>example/input/study1/cov_aligned.txt</code>. The original input files are not overwritten.</p>
 
@@ -621,14 +626,14 @@ ID_004	318</code></pre>
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step1_null.R \
-    --abdFile=example/input/study1/abd_aligned.txt \
-    --covFile=example/input/study1/cov_aligned.txt \
+    --abdFile=/work/example/input/study1/abd_aligned.txt \
+    --covFile=/work/example/input/study1/cov_aligned.txt \
     --covarColList=NULL \
     --depthCol=NULL \
     --prev.filter=0.1 \
-    --FeatureInfoFile=example/output/study1/info_feature.txt \
+    --FeatureInfoFile=/work/example/output/study1/info_feature.txt \
     --FeatureNameListFile=NULL \
-    --NULLObjPrefix=example/output/study1/step1_allpheno</code></pre>
+    --NULLObjPrefix=/work/example/output/study1/step1_allpheno</code></pre>
   <p><strong>Output:</strong> <code>example/output/study1/step1_allpheno.rda</code>, which is then passed into Step2 as <code>--NULLObjPrefix=example/output/study1/step1_allpheno</code>. If requested, Step1 also writes <code>example/output/study1/info_feature.txt</code>.</p>
 
   <h3>Example Output: Step1 feature summary</h3>
@@ -656,9 +661,9 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step2_1_summary.R \
-    --genoFile=example/input/study1/geno \
-    --NULLObjPrefix=example/output/study1/step1_allpheno \
-    --SummaryPrefix=example/output/study1/step2 \
+    --genoFile=/work/example/input/study1/geno \
+    --NULLObjPrefix=/work/example/output/study1/step1_allpheno \
+    --SummaryPrefix=/work/example/output/study1/step2 \
     --chrom=NULL \
     --minMAF=0.05 \
     --minMAC=5 \
@@ -676,8 +681,8 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step_merge.R \
-    --inputPrefix=example/output/study1/step2 \
-    --outputPrefix=example/output/study1/step2</code></pre>
+    --inputPrefix=/work/example/output/study1/step2 \
+    --outputPrefix=/work/example/output/study1/step2</code></pre>
   <p><strong>Output:</strong> one merged file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>. The merged file preserves one header row and concatenates chromosome shards in numeric chromosome order.</p>
 
   <h3>Step2.2: apply compositional correction to one Step2 scope</h3>
@@ -692,11 +697,11 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step2_2_correction.R \
-    --inputPrefix=example/output/study1/step2 \
+    --inputPrefix=/work/example/output/study1/step2 \
     --chrom=NULL \
     --overwriteOutput=TRUE \
     --correct=median \
-    --NULLmodelFile=example/output/study1/step1_allpheno.rda</code></pre>
+    --NULLmodelFile=/work/example/output/study1/step1_allpheno.rda</code></pre>
   <p><strong>Output:</strong> corrected per-feature files with the same columns <code>SNP, CHR, POS, est, stderr, pval</code>. With <code>--overwriteOutput=TRUE</code>, the corrected values replace the selected Step2 scope in place. With <code>--overwriteOutput=FALSE</code>, the script writes files such as <code>step2_corrected_allchr_g_Peptoniphilus_unclassified.txt</code> or <code>step2_corrected_chr1_g_Peptoniphilus_unclassified.txt</code>.</p>
 
   <h3>Example Output: Step2.1/Merge/Step2.2 per-feature summary</h3>
@@ -709,7 +714,7 @@ chr1:14985097:C:T	1	14985097	-0.304412765212626	0.21761687778736	0.1618588018014
   <p>Each Step2 file corresponds to one feature. Here, <code>g_Peptoniphilus_unclassified</code> has one file containing association statistics for all tested SNPs. Merge preserves the row schema while combining chromosome shards, and Step2.2 then updates the <code>est</code>, <code>stderr</code>, and <code>pval</code> columns after median or tune correction.</p>
 
   <h3 id="example-step3">Step3: multiple Step2 folders to meta-analysis tables</h3>
-  <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code>, plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>. The same local relative paths are used for pixi and Docker runs.</p>
+  <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code> for pixi runs or <code>example/input/study_dirs_docker.txt</code> for Docker runs, plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --studyDirFile=example/input/study_dirs.txt \
     --inputPrefix=example/output/study1/step2 \
@@ -720,11 +725,11 @@ chr1:14985097:C:T	1	14985097	-0.304412765212626	0.21761687778736	0.1618588018014
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step3_meta.R \
-    --studyDirFile=example/input/study_dirs.txt \
-    --inputPrefix=example/output/study1/step2 \
+    --studyDirFile=/work/example/input/study_dirs_docker.txt \
+    --inputPrefix=/work/example/output/study1/step2 \
     --chrom=NULL \
     --featureColList=NULL \
-    --metaPrefix=example/output/meta/meta</code></pre>
+    --metaPrefix=/work/example/output/meta/meta</code></pre>
   <p><strong>Output:</strong> one meta file per feature, such as <code>example/output/meta/meta_allchr_g_Bifidobacterium.txt</code> or <code>example/output/meta/meta_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
 
   <h3>Example Output: Step3 meta-analysis</h3>
@@ -747,8 +752,8 @@ chr1:14678191:A:C	1	14678191	-0.184697893992603	0.0333318764894014	3.00441911000
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step4_reporting.R \
-    --metaDir=example/output/meta \
-    --plotPrefix=example/output/plot/ \
+    --metaDir=/work/example/output/meta \
+    --plotPrefix=/work/example/output/plot/ \
     --pCut=5e-8</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/combined_hits.png</code> and the filtered hit list <code>example/output/plot/combined_hits_pCut.txt</code>.</p>
   <pre><code class="language-tsv"># file: example/output/plot/combined_hits_pCut.txt
@@ -770,8 +775,8 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step4_reporting.R \
-    --metaDir=example/output/meta \
-    --plotPrefix=example/output/plot/ \
+    --metaDir=/work/example/output/meta \
+    --plotPrefix=/work/example/output/plot/ \
     --feature=g_Bifidobacterium</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/manhattan_g_Bifidobacterium.png</code> and the auxiliary QQ plot <code>example/output/plot/qq_g_Bifidobacterium.png</code>.</p>
   <div class="gallery">
@@ -797,8 +802,8 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step4_reporting.R \
-    --metaDir=example/output/meta \
-    --plotPrefix=example/output/plot/ \
+    --metaDir=/work/example/output/meta \
+    --plotPrefix=/work/example/output/plot/ \
     --snp=chr1:14678191:A:C \
     --pCut=5e-8</code></pre>
   <p><strong>Output:</strong> this mode writes one file per retained feature. In the current example output, files include <code>example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png</code> and <code>example/output/plot/forest_chr1_14678191_A_C_g_Fusobacterium.png</code>, both shown below.</p>
@@ -825,8 +830,8 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
   step4_reporting.R \
-    --metaDir=example/output/meta \
-    --plotPrefix=example/output/plot/ \
+    --metaDir=/work/example/output/meta \
+    --plotPrefix=/work/example/output/plot/ \
     --feature=g_Bifidobacterium \
     --snp=chr1:14678191:A:C</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/forest_g_Bifidobacterium_chr1_14678191_A_C.png</code>.</p>
