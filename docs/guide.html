@@ -402,14 +402,14 @@ docker run --rm -it --privileged \
     --NULLmodelFile=${NULLObjPrefix}.rda</code></pre>
   <ul>
     <li><strong>Why separate:</strong> Step2.1 can test multiple features in one run when <code>--featureColList=NULL</code>, but it still writes one result file per feature. Compositional correction must be applied across all feature result files for each SNP, so Step2.2 is kept as a separate step that runs after the selected scope has all feature files available. That scope can be one chromosome or <code>allchr</code>.</li>
-    <li><strong>Correction method:</strong> Step2.2 supports <code>median</code> and <code>tune</code>. For <code>tune</code>, Step2.2 infers the sample size from <code>--NULLmodelFile</code>.</li>
+    <li><strong>Correction method:</strong> Step2.2 supports <code>median</code> and <code>tune</code>. For <code>tune</code>, Step2.2 infers the sample size from <code>--NULLmodelFile</code>. The <code>tune</code> mode is very slow, so use it only for small runs or when sufficient compute time is available.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
     <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for correction; use the base before <code>_allchr</code> or <code>_chrN</code>. Do not pass <code>step2_allchr</code> or <code>step2_chr1</code></td></tr>
     <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Correction scope. Use <code>NULL</code> to target merged <code>step2_allchr_*.txt</code> files, or <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
     <tr><td><code>--overwriteOutput</code></td><td><code>character</code></td><td><code>"TRUE"</code></td><td>If <code>TRUE</code>, overwrite the selected Step2 scope in place. If <code>FALSE</code>, keep the originals and write corrected copies as <code>&lt;inputPrefix&gt;_corrected_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td></tr>
-    <tr><td><code>--correct</code></td><td><code>character</code></td><td><code>"median"</code></td><td>Correction method. Use <code>median</code> for median-based correction or <code>tune</code> for PALM tuning-based correction</td></tr>
+    <tr><td><code>--correct</code></td><td><code>character</code></td><td><code>"median"</code></td><td>Correction method. Use <code>median</code> for median-based correction or <code>tune</code> for PALM tuning-based correction. <code>tune</code> is very slow compared with <code>median</code></td></tr>
     <tr><td><code>--NULLmodelFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional Step1 NULL model file. When <code>--correct=tune</code>, Step2.2 uses it to infer <code>tuneN = nrow(modglmm[[1]]$Y_I)</code></td></tr>
   </table>
   <p><strong>Step2.2 examples:</strong></p>

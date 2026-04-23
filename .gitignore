@@ -1,7 +1,3 @@
-/archived
-configure
-R/*.log
-R/*.lo
 .DS_Store
 .Rhistory
 .RData
@@ -12,21 +8,19 @@ R/*.lo
 *.swp
 thirdParty/*.R
 thirdParty/*.cpp
-.vscode/
 *.rda
-bin/
-# guide/
-guide/*.aux
-guide/*.fdb_latexmk
-guide/*.fls
-guide/*.log
-guide/*.out
-guide/*.pdf
-guide/*.synctex.gz
+
+# docs/
+docs/*.aux
+docs/*.fdb_latexmk
+docs/*.fls
+docs/*.log
+docs/*.out
+docs/*.tex
+docs/*.pdf
+
 mytest/
-example_old/
 config.sh
-workflow/*.sbatch
-log*
+workflow/
 simulation/input/
 simulation/output/
