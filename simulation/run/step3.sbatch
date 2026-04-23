@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=simu_step3_meta
-#SBATCH --cpus-per-task=4
+#SBATCH --job-name=step3
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
 #SBATCH --time=04:00:00
-#SBATCH --output=logs/simu_step3_meta_%A_%a.out
-#SBATCH --error=logs/simu_step3_meta_%A_%a.err
+#SBATCH --output=logs/step3_%A_%a.out
+#SBATCH --error=logs/step3_%A_%a.err
 
 set -euo pipefail
 WORK="${WORK:-${SLURM_SUBMIT_DIR:-$PWD}}"

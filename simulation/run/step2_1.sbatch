@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=simu_step2_1
-#SBATCH --cpus-per-task=8
+#SBATCH --job-name=step2_1
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=32G
 #SBATCH --time=12:00:00
-#SBATCH --output=logs/simu_step2_1_%A_%a.out
-#SBATCH --error=logs/simu_step2_1_%A_%a.err
+#SBATCH --output=logs/step2_1_%A_%a.out
+#SBATCH --error=logs/step2_1_%A_%a.err
 # Step2.1 in the fixed simulation workflow:
 # one Slurm array task per chromosome, fixed as task 1..22 -> chr1..22.
 

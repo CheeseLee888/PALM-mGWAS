@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=simu_step1
-#SBATCH --cpus-per-task=4
+#SBATCH --job-name=step1
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
 #SBATCH --time=04:00:00
-#SBATCH --output=logs/simu_step1_%A_%a.out
-#SBATCH --error=logs/simu_step1_%A_%a.err
+#SBATCH --output=logs/step1_%A_%a.out
+#SBATCH --error=logs/step1_%A_%a.err
 # Step1 in the fixed simulation workflow:
 # fit the null model and write feature_list.txt for one study.
 

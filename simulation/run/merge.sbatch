@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=simu_merge
-#SBATCH --cpus-per-task=2
+#SBATCH --job-name=merge
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
 #SBATCH --time=02:00:00
-#SBATCH --output=logs/simu_merge_%A_%a.out
-#SBATCH --error=logs/simu_merge_%A_%a.err
+#SBATCH --output=logs/merge_%A_%a.out
+#SBATCH --error=logs/merge_%A_%a.err
 
 set -euo pipefail
 WORK="${WORK:-${SLURM_SUBMIT_DIR:-$PWD}}"

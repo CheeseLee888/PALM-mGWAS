@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=simu_step0
-#SBATCH --cpus-per-task=4
+#SBATCH --job-name=step0
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
 #SBATCH --time=02:00:00
-#SBATCH --output=logs/simu_step0_%A_%a.out
-#SBATCH --error=logs/simu_step0_%A_%a.err
+#SBATCH --output=logs/step0_%A_%a.out
+#SBATCH --error=logs/step0_%A_%a.err
 # Step0 in the fixed simulation workflow:
 # align abundance/covariate inputs for one study.
 
