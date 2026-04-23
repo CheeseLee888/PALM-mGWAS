@@ -1,19 +1,16 @@
 # R session cache
-.Rproj.user
+.DS_Store
 .Rhistory
 .RData
+.pixi
+*.Rproj*
 .Ruserdata
 .rda
-
-# pixi virtual env
-.pixi
-
-# VSCode settings
-.vscode/
 
 # compiled / temp
 *.sif
 *.tar
+config.sh
 
 # folders
 example/*
@@ -21,3 +18,4 @@ mytest/*
 simulation/*
 logs/*
 docs/*
+workflow/*

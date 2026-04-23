@@ -704,14 +704,23 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --NULLmodelFile=/work/example/output/study1/step1_allpheno.rda</code></pre>
   <p><strong>Output:</strong> corrected per-feature files with the same columns <code>SNP, CHR, POS, est, stderr, pval</code>. With <code>--overwriteOutput=TRUE</code>, the corrected values replace the selected Step2 scope in place. With <code>--overwriteOutput=FALSE</code>, the script writes files such as <code>step2_corrected_allchr_g_Peptoniphilus_unclassified.txt</code> or <code>step2_corrected_chr1_g_Peptoniphilus_unclassified.txt</code>.</p>
 
-  <h3>Example Output: Step2.1/Merge/Step2.2 per-feature summary</h3>
-  <pre><code class="language-tsv"># file: example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt
+  <h3>Example Output: Step2.1/Merge per-feature summary</h3>
+  <pre><code class="language-tsv"># file: example/output/study1/step2_allchr_g_Bifidobacterium.txt
 SNP	CHR	POS	est	stderr	pval
-chr1:1837340:C:T	1	1837340	0.008709338808321	0.324797834660817	0.97860757196747
-chr1:2261200:G:C	1	2261200	0.0679858259048113	0.18209627634609	0.708887227401813
-chr1:14678191:A:C	1	14678191	-0.168034991615697	0.14650635973983	0.251403633855438
-chr1:14985097:C:T	1	14985097	-0.304412765212626	0.21761687778736	0.161858801801411</code></pre>
-  <p>Each Step2 file corresponds to one feature. Here, <code>g_Peptoniphilus_unclassified</code> has one file containing association statistics for all tested SNPs. Merge preserves the row schema while combining chromosome shards, and Step2.2 then updates the <code>est</code>, <code>stderr</code>, and <code>pval</code> columns after median or tune correction.</p>
+chr1:1837340:C:T	1	1837340	-0.0344752267456601	0.114517097035553	0.763377335109293
+chr1:2261200:G:C	1	2261200	0.00897107253479205	0.0721884879491203	0.901099205907974
+chr1:14678191:A:C	1	14678191	-0.256659587735654	0.0620614677990631	3.54073582389258e-05
+chr1:14985097:C:T	1	14985097	0.0656422784880947	0.0936705492924953	0.483441447738228</code></pre>
+  <p>Each Step2.1 file corresponds to one feature. Here, <code>g_Bifidobacterium</code> has one file containing association statistics for all tested SNPs from <code>example/output/study1</code>. Merge preserves the row schema while combining chromosome shards.</p>
+
+  <h3>Example Output: Step2.2 median-corrected per-feature summary</h3>
+  <pre><code class="language-tsv"># file: example/output/study1_median/step2_allchr_g_Bifidobacterium.txt
+SNP	CHR	POS	est	stderr	pval
+chr1:1837340:C:T	1	1837340	-0.0302132137027892	0.140527543478789	0.829768473361115
+chr1:2261200:G:C	1	2261200	-0.00667706231733082	0.08877645144887	0.9400459664181
+chr1:14678191:A:C	1	14678191	-0.312467938050473	0.0777694491541759	5.87252931414373e-05
+chr1:14985097:C:T	1	14985097	0.111742358350986	0.113523070073392	0.324961099726517</code></pre>
+  <p>The <code>example/output/study1_median</code> directory contains the same per-feature file layout after Step2.2 median correction. Step2.2 keeps the <code>SNP, CHR, POS, est, stderr, pval</code> schema and updates the association statistics for the selected correction scope.</p>
 
   <h3 id="example-step3">Step3: multiple Step2 folders to meta-analysis tables</h3>
   <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code> for pixi runs or <code>example/input/study_dirs_docker.txt</code> for Docker runs, plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>.</p>
