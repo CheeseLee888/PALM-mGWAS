@@ -41,7 +41,8 @@ result files (as produced by step3).}
 \item{top_n}{How many hits to keep if `topOutFile` is provided.}
 
 \item{plotMinP}{Optional Manhattan plotting threshold for p-value
-compression.}
+compression. Points with `P < plotMinP` are drawn slightly above
+`-log10(plotMinP)` in red instead of stretching the full y-axis.}
 }
 \description{
 Manhattan plot for a single phenotype

@@ -440,11 +440,17 @@ plot_manhattan <- function(df, outFile, title = NULL,
     plot_min_p_logp <- -log10(plotMinP)
     cap_bump <- max(0.2, plot_min_p_logp * 0.02)
     man <- man |>
-      dplyr::mutate(PLOT_P = dplyr::if_else(.data$P < plotMinP, plot_min_p_logp + cap_bump, .data$logp))
+      dplyr::mutate(
+        ABOVE_PLOT_MIN = .data$P < plotMinP,
+        PLOT_P = dplyr::if_else(.data$ABOVE_PLOT_MIN, plot_min_p_logp + cap_bump, .data$logp)
+      )
   } else {
     cap_bump <- 0
     man <- man |>
-      dplyr::mutate(PLOT_P = .data$logp)
+      dplyr::mutate(
+        ABOVE_PLOT_MIN = FALSE,
+        PLOT_P = .data$logp
+      )
   }
 
   auto_width <- if (is.na(width)) {
@@ -476,6 +482,27 @@ plot_manhattan <- function(df, outFile, title = NULL,
     suggestiveline = FALSE,
     genomewideline = FALSE
   )
+
+  if (any(man$ABOVE_PLOT_MIN, na.rm = TRUE)) {
+    red_points <- man |>
+      dplyr::arrange(.data$CHR, .data$BP) |>
+      dplyr::mutate(index = match(.data$CHR, unique(.data$CHR)), pos = as.numeric(.data$BP))
+
+    lastbase <- 0
+    for (i in unique(red_points$index)) {
+      if (i > 1) {
+        lastbase <- lastbase + max(red_points$BP[red_points$index == (i - 1)], na.rm = TRUE)
+        curr_min_bp <- min(red_points$BP[red_points$index == i], na.rm = TRUE)
+        red_points$BP[red_points$index == i] <- red_points$BP[red_points$index == i] - curr_min_bp + 1
+      }
+      red_points$pos[red_points$index == i] <- red_points$BP[red_points$index == i] + lastbase
+    }
+
+    red_points <- red_points |>
+      dplyr::filter(.data$ABOVE_PLOT_MIN)
+
+    graphics::points(red_points$pos, red_points$PLOT_P, pch = 20, cex = 0.55, col = "red")
+  }
 
   graphics::abline(h = -log10(5e-8), lty = 2, lwd = 1, col = "red")
 
@@ -812,11 +839,20 @@ forest_plot_single_pheno <- function(r, pheno, snp, outFile,
     xlab = "Effect",
     annotate = FALSE,
     header = FALSE,
-    pch = 15,
-    psize = 0.9 + 1.6 * sqrt(weights_pct / max(weights_pct)),
+    pch = 16,
+    psize = 1.3,
     efac = c(0, 1),
     cex = 0.9
   )
+
+  if (0 >= alim[1] && 0 <= alim[2]) {
+    zero_line_rows <- c(rows, if (meta_ok) meta_row)
+    graphics::segments(
+      x0 = 0, y0 = min(zero_line_rows) - 0.35,
+      x1 = 0, y1 = max(zero_line_rows) + 0.35,
+      lty = 2, lwd = 1, col = "grey45"
+    )
+  }
 
   if (meta_ok) {
     meta_col <- if (show_het && !is.na(het_p)) "#8B0000" else "#000000"
@@ -867,7 +903,7 @@ forest_plot_single_pheno <- function(r, pheno, snp, outFile,
 #'   to `<outFile>_pCut.txt`.
 #' @param plotMinP Optional Manhattan plotting threshold for p-value
 #'   compression. Points with `P < plotMinP` are drawn slightly above
-#'   `-log10(plotMinP)` instead of stretching the full y-axis.
+#'   `-log10(plotMinP)` in red instead of stretching the full y-axis.
 #'
 #' @return Invisibly returns the data frame passed to `qqman::manhattan()`.
 #' @export
@@ -969,7 +1005,8 @@ mode_big_combined <- function(metaIndex, outFile,
 #' @param topOutFile Optional output path for top-N hits (ordered by p-value).
 #' @param top_n How many hits to keep if `topOutFile` is provided.
 #' @param plotMinP Optional Manhattan plotting threshold for p-value
-#'   compression.
+#'   compression. Points with `P < plotMinP` are drawn slightly above
+#'   `-log10(plotMinP)` in red instead of stretching the full y-axis.
 #'
 #' @export
 mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,

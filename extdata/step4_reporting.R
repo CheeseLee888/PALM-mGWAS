@@ -51,7 +51,7 @@ option_list <- list(
   make_option(c("--height"), type = "character", default = NA_character_,
               help = "Plot height inches; NA lets the script auto-size"),
   make_option(c("--plotMinP"), type = "character", default = "NA",
-              help = "Optional Manhattan plotting threshold for p-value compression; points with P < plotMinP are compressed near the threshold instead of stretching the full y-axis. Use NA to disable compression")
+              help = "Optional Manhattan plotting threshold for p-value compression; points with P < plotMinP are compressed near the threshold and colored red instead of stretching the full y-axis. Use NA to disable compression")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
