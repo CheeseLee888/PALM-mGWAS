@@ -79,6 +79,14 @@ fitNULL <- function(abdFile,
     }
     x
   }
+  format_name_list <- function(x, max_show = 20L) {
+    if (!length(x)) {
+      return("<none>")
+    }
+    shown <- utils::head(x, max_show)
+    suffix <- if (length(x) > max_show) paste0(", ... (+", length(x) - max_show, " more)") else ""
+    paste0(paste(shown, collapse = ", "), suffix)
+  }
 
   abd <- read_firstcol_as_rownames(abdFile)
   phenoColList <- normalize_col_list(phenoColList, "phenoColList")
@@ -122,6 +130,27 @@ fitNULL <- function(abdFile,
       stop("'covFile' does not exist: ", covFile)
     }
     cov <- read_firstcol_as_rownames(covFile)
+    message(
+      "Input covariate table: ", nrow(cov), " samples x ", ncol(cov),
+      " covariate column(s)."
+    )
+    message("Covariate columns in covFile: ", format_name_list(colnames(cov)))
+    missing_cov_ids <- setdiff(rownames(abd), rownames(cov))
+    extra_cov_ids <- setdiff(rownames(cov), rownames(abd))
+    same_sample_order <- identical(rownames(abd), rownames(cov))
+    message(
+      "Covariate sample match: matched=", nrow(abd) - length(missing_cov_ids),
+      "/", nrow(abd),
+      ", missing=", length(missing_cov_ids),
+      ", extra=", length(extra_cov_ids),
+      ", same_order=", same_sample_order
+    )
+    if (length(missing_cov_ids) > 0L) {
+      message("Covariate missing sample IDs: ", format_name_list(missing_cov_ids, max_show = 5L))
+    }
+    if (length(extra_cov_ids) > 0L) {
+      message("Covariate extra sample IDs: ", format_name_list(extra_cov_ids, max_show = 5L))
+    }
   }
 
   depthCol <- normalize_col_list(depthCol, "depthCol")
@@ -161,6 +190,7 @@ fitNULL <- function(abdFile,
   } else {
     covarColList <- normalize_col_list(covarColList, "covarColList")
     if (!is.null(covarColList)) {
+      message("Requested covariate columns from covarColList: ", format_name_list(covarColList))
       missing_cols <- setdiff(covarColList, colnames(cov))
       if (length(missing_cols) > 0) {
         stop(
@@ -169,11 +199,19 @@ fitNULL <- function(abdFile,
         )
       }
       cov <- cov[, covarColList, drop = FALSE]
+      message("Covariate columns after covarColList selection: ", format_name_list(colnames(cov)))
+    } else {
+      message("covarColList is NULL: starting from all covariate columns in covFile.")
     }
     if (!is.null(depthCol) && depthCol %in% colnames(cov)) {
       cov <- cov[, setdiff(colnames(cov), depthCol), drop = FALSE]
       message("Excluding depthCol '", depthCol, "' from covariate.adjust.")
+    } else if (!is.null(depthCol)) {
+      message("depthCol '", depthCol, "' is not in selected covariate columns; no covariate exclusion needed.")
+    } else {
+      message("depthCol is NULL: no covariate column is excluded as sequencing depth.")
     }
+    message("Final covariate.adjust columns: ", format_name_list(colnames(cov)))
     if (ncol(cov) == 0L) {
       message("covFile provided, but no covariate columns remain after excluding depthCol.")
       modglmm <- PALM::palm.null.model(
