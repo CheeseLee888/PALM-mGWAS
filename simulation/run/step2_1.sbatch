@@ -17,6 +17,7 @@ STUDY="${STUDY:-study1}"
 MIN_MAF="${MIN_MAF:-0.05}"
 MIN_MAC="${MIN_MAC:-5}"
 USE_CLUSTER="${USE_CLUSTER:-FALSE}"
+CLUSTER_FILE="${CLUSTER_FILE:-NULL}"
 
 INPUT_DIR="${WORK}/input/${STUDY}"
 OUTPUT_DIR="${WORK}/output/${STUDY}"
@@ -47,6 +48,7 @@ echo "step2_1_run_array: step2.1 mode=chrom_all_features"
 echo "step2_1_run_array: chrom=${CHROM}"
 echo "step2_1_run_array: feature list=${FEATURE_FILE}"
 echo "step2_1_run_array: SummaryPrefix=${STEP2_SUMMARY_PREFIX}"
+echo "step2_1_run_array: cluster file=${CLUSTER_FILE}"
 
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   step2_1_summary.R \
@@ -58,4 +60,5 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   --minMAF="${MIN_MAF}" \
   --minMAC="${MIN_MAC}" \
   --SnpInfoFile=NULL \
-  --useCluster="${USE_CLUSTER}"
+  --useCluster="${USE_CLUSTER}" \
+  --clusterFile="${CLUSTER_FILE}"

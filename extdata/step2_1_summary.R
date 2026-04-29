@@ -40,6 +40,9 @@ option_list <- list(
     ),
     make_option("--useCluster",
         type = "logical", default = FALSE,
+        help = ""),
+    make_option("--clusterFile",
+        type = "character", default = "NULL",
         help = "")
 )
 
@@ -49,6 +52,9 @@ if (is.null(opt$SnpInfoFile) || !nzchar(opt$SnpInfoFile) || toupper(opt$SnpInfoF
 }
 if (is.null(opt$featureColList) || !nzchar(opt$featureColList) || toupper(opt$featureColList) == "NULL") {
   opt$featureColList <- NULL
+}
+if (is.null(opt$clusterFile) || !nzchar(opt$clusterFile) || toupper(opt$clusterFile) == "NULL") {
+  opt$clusterFile <- NULL
 }
 
 message("step2.1: PALM summary started.")
@@ -72,5 +78,6 @@ getSummary(
   minMAF = opt$minMAF,
   minMAC = opt$minMAC,
   SnpInfoFile = opt$SnpInfoFile,
-  useCluster = opt$useCluster
+  useCluster = opt$useCluster,
+  clusterFile = opt$clusterFile
 )

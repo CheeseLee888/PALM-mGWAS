@@ -32,8 +32,13 @@
 #'   alignment and optional chromosome subsetting, but before minMAF/minMAC
 #'   filtering. Use `NULL` (default) to skip writing this file.
 #' @param correct Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.
-#' @param useCluster Logical; if `TRUE`, uses FID from `.fam` as cluster
-#'   information when available. Defaults to `FALSE`.
+#' @param useCluster Logical; if `TRUE`, uses clustering in Step2.1. When
+#'   `clusterFile` is not provided, PLINK input falls back to FID from `.fam`.
+#'   Defaults to `FALSE`.
+#' @param clusterFile Optional two-column cluster file. The first column is
+#'   sample IID and the second column is cluster ID. A header row with
+#'   `IID` and `cluster` is accepted but not required. When provided, this
+#'   enables clustering and overrides the PLINK FID fallback.
 #'
 #' @return Invisibly returns a character vector of written file paths.
 #' @export
@@ -47,7 +52,8 @@ getSummary <- function(genoFile,
                        minMAC = 5,
                        SnpInfoFile = NULL,
                        correct = NULL,
-                       useCluster = FALSE) {
+                       useCluster = FALSE,
+                       clusterFile = NULL) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
   }
@@ -160,6 +166,53 @@ getSummary <- function(genoFile,
     NULL
   }
 
+  read_cluster_file <- function(path) {
+    if (is.null(path) || !nzchar(path)) {
+      return(NULL)
+    }
+    if (!file.exists(path)) {
+      stop("Cluster file not found: ", path)
+    }
+
+    first_line <- readLines(path, n = 1L, warn = FALSE)
+    if (!length(first_line)) {
+      stop("Cluster file is empty: ", path)
+    }
+    first_fields <- strsplit(trimws(first_line), "\\s+")[[1]]
+    has_header <- length(first_fields) >= 2L &&
+      identical(toupper(first_fields[1]), "IID") &&
+      identical(toupper(first_fields[2]), "CLUSTER")
+
+    cluster_data <- utils::read.table(
+      path,
+      header = has_header,
+      stringsAsFactors = FALSE,
+      check.names = FALSE,
+      comment.char = "",
+      quote = "\""
+    )
+    if (ncol(cluster_data) != 2L) {
+      stop("Cluster file must contain exactly two columns: IID and cluster. File: ", path)
+    }
+    colnames(cluster_data) <- c("IID", "cluster")
+    cluster_data$IID <- as.character(cluster_data$IID)
+    cluster_data$cluster <- as.character(cluster_data$cluster)
+    if (any(!nzchar(cluster_data$IID)) || any(!nzchar(cluster_data$cluster))) {
+      stop("Cluster file contains empty IID or cluster values: ", path)
+    }
+    duplicated_iid <- unique(cluster_data$IID[duplicated(cluster_data$IID)])
+    if (length(duplicated_iid) > 0L) {
+      stop(
+        "Cluster file contains duplicated IID(s): ",
+        paste(utils::head(duplicated_iid, 5), collapse = ", ")
+      )
+    }
+
+    cluster <- cluster_data$cluster
+    names(cluster) <- cluster_data$IID
+    cluster
+  }
+
   null_sample_ids <- extract_null_sample_ids(modglmm)
   if (is.null(null_sample_ids)) {
     message("Could not infer sample IDs from NULL model; using genotype rows as-is.")
@@ -208,12 +261,20 @@ getSummary <- function(genoFile,
   } else {
     message("Compositional correction enabled: correct=", correct)
   }
+  if (!is.null(clusterFile) && (!nzchar(clusterFile) || toupper(clusterFile) == "NULL")) {
+    clusterFile <- NULL
+  }
+  if (!is.null(clusterFile)) {
+    message("Cluster file provided: ", clusterFile)
+    useCluster <- TRUE
+  }
   message("Cluster option requested: useCluster=", useCluster)
 
-  if (!identical(genoFormat, "plink") && isTRUE(useCluster)) {
-    stop("`useCluster=TRUE` is only supported for native PLINK input.")
+  if (!identical(genoFormat, "plink") && isTRUE(useCluster) && is.null(clusterFile)) {
+    stop("`useCluster=TRUE` without `clusterFile` is only supported for native PLINK input.")
   }
-  cluster <- NULL
+  cluster <- read_cluster_file(clusterFile)
+  cluster_source <- if (!is.null(cluster)) "clusterFile" else NULL
   chr_map <- NULL
   if (identical(genoFormat, "vcf")) {
     vcf_input <- read_vcf_genotypes(genoFile, vcfField = vcfField)
@@ -234,16 +295,18 @@ getSummary <- function(genoFile,
     fam <- paste0(genoPrefix, ".fam")
     for (f in c(bed, bim, fam)) if (!file.exists(f)) stop("Missing PLINK file: ", f)
 
-    if (useCluster) {
+    if (useCluster && is.null(cluster)) {
       message("Reading PLINK .fam file for cluster info.")
       fam_data <- utils::read.table(fam, stringsAsFactors = FALSE)
       colnames(fam_data) <- c("FID", "IID", "PID", "MID", "SEX", "PHENO")
       cluster <- fam_data$FID
       names(cluster) <- fam_data$IID
+      cluster_source <- "PLINK FID"
       if (all(cluster == 0)) {
         message("All FID values are 0. No valid cluster information detected. Setting useCluster = FALSE.")
         useCluster <- FALSE
         cluster <- NULL
+        cluster_source <- NULL
       }
     }
 
@@ -269,9 +332,31 @@ getSummary <- function(genoFile,
     }
     geno <- geno[null_sample_ids, , drop = FALSE]
     if (!is.null(cluster)) {
+      missing_cluster_ids <- setdiff(null_sample_ids, names(cluster))
+      if (length(missing_cluster_ids) > 0L) {
+        stop(
+          "Some NULL-model samples are missing from cluster data: ",
+          paste(utils::head(missing_cluster_ids, 5), collapse = ", ")
+        )
+      }
       cluster <- cluster[null_sample_ids]
+      if (any(is.na(cluster))) {
+        stop("Cluster data contains NA values after aligning to NULL-model samples.")
+      }
     }
     message("Genotype matrix after aligning to NULL model samples: ", nrow(geno), " samples x ", ncol(geno), " SNPs.")
+  } else if (!is.null(cluster)) {
+    missing_cluster_ids <- setdiff(rownames(geno), names(cluster))
+    if (length(missing_cluster_ids) > 0L) {
+      stop(
+        "Some genotype samples are missing from cluster data: ",
+        paste(utils::head(missing_cluster_ids, 5), collapse = ", ")
+      )
+    }
+    cluster <- cluster[rownames(geno)]
+    if (any(is.na(cluster))) {
+      stop("Cluster data contains NA values after aligning to genotype samples.")
+    }
   }
 
   # Subset for quick testing (every 10th SNP)
@@ -362,10 +447,14 @@ getSummary <- function(genoFile,
       correct = correct
     )
   } else {
-    message("Cluster provided; running palm.get.summary with cluster (FID in PLINK file).")
+    message(
+      "Cluster provided; running palm.get.summary with cluster",
+      if (!is.null(cluster_source)) paste0(" (", cluster_source, ")") else "",
+      "."
+    )
     # print some cluster IDs
     uclust <- unique(cluster)
-    message("Unique cluster IDs (FID): ", length(uclust))
+    message("Unique cluster IDs: ", length(uclust))
     max_print <- 10
     if (length(uclust) <= max_print) {
       print(uclust)

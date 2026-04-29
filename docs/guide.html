@@ -306,7 +306,8 @@ docker run --rm -it --privileged \
     --minMAF=${minMAF} \
     --minMAC=${minMAC} \
     --SnpInfoFile=${SnpInfoFile} \
-    --useCluster=${useCluster}</code></pre>
+    --useCluster=${useCluster} \
+    --clusterFile=${clusterFile}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
@@ -319,7 +320,8 @@ docker run --rm -it --privileged \
     --minMAF=${minMAF} \
     --minMAC=${minMAC} \
     --SnpInfoFile=${SnpInfoFile} \
-    --useCluster=${useCluster}</code></pre>
+    --useCluster=${useCluster} \
+    --clusterFile=${clusterFile}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>.</li>
     <li><strong>Outputs:</strong> generates many per-feature <code>.txt</code> files, one file for each tested feature, with columns <code>SNP, CHR, POS, est, stderr, pval</code>.</li>
@@ -336,7 +338,8 @@ docker run --rm -it --privileged \
     <tr><td><code>--minMAF</code></td><td><code>double</code></td><td><code>0.05</code></td><td>Optional minimum minor allele frequency threshold for SNP filtering; <code>0</code> disables this filter</td></tr>
     <tr><td><code>--minMAC</code></td><td><code>integer</code></td><td><code>5</code></td><td>Optional minimum minor allele count threshold for SNP filtering; <code>0</code> disables this filter</td></tr>
     <tr><td><code>--SnpInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for genotype/SNP summary. <code>SNPInfo</code> is computed from the Step2.1 genotype matrix after NULL-model sample alignment and optional chromosome filtering, but before <code>minMAF</code>/<code>minMAC</code> remove SNPs</td></tr>
-    <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether to use FID-based clustering from the PLINK <code>.fam</code> file. Only supported for native PLINK input; all-zero FIDs still disable clustering</td></tr>
+    <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether to use clustering in Step2.1. If no <code>--clusterFile</code> is provided, native PLINK input falls back to FID from the <code>.fam</code> file; all-zero FIDs still disable clustering</td></tr>
+    <tr><td><code>--clusterFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional two-column cluster file. The first column is sample IID and the second column is cluster ID. A header row <code>IID cluster</code> is accepted but not required. Providing this file enables clustering and overrides the PLINK FID fallback</td></tr>
   </table>
   <p><strong>Step2.1 examples:</strong></p>
   <ul>
@@ -349,6 +352,7 @@ docker run --rm -it --privileged \
     <li><code>--minMAC=5</code>; <code>--minMAC=0</code></li>
     <li><code>--SnpInfoFile=example/output/study1/info_snp.txt</code>; <code>--SnpInfoFile=NULL</code></li>
     <li><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></li>
+    <li><code>--clusterFile=example/input/study1/cluster.txt</code>; <code>--clusterFile=NULL</code>. The file must contain two columns: <code>IID</code> and <code>cluster</code></li>
   </ul>
 
   <h3>Step2.2: compositional correction on one Step2 scope</h3>
@@ -623,7 +627,8 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --minMAF=0.05 \
     --minMAC=5 \
     --SnpInfoFile=NULL \
-    --useCluster=FALSE</code></pre>
+    --useCluster=FALSE \
+    --clusterFile=NULL</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
@@ -635,7 +640,8 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --minMAF=0.05 \
     --minMAC=5 \
     --SnpInfoFile=NULL \
-    --useCluster=FALSE</code></pre>
+    --useCluster=FALSE \
+    --clusterFile=NULL</code></pre>
   <p><strong>Output:</strong> one file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on.</p>
   <p><strong>Current example files:</strong> in this repository the Step2.1 outputs use real feature names, for example <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
 

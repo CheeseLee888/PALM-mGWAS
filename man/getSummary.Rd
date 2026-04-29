@@ -15,7 +15,8 @@ getSummary(
   minMAC = 5,
   SnpInfoFile = NULL,
   correct = NULL,
-  useCluster = FALSE
+  useCluster = FALSE,
+  clusterFile = NULL
 )
 }
 \arguments{
@@ -57,8 +58,14 @@ filtering. Use `NULL` (default) to skip writing this file.}
 
 \item{correct}{Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.}
 
-\item{useCluster}{Logical; if `TRUE`, uses FID from `.fam` as cluster
-information when available. Defaults to `FALSE`.}
+\item{useCluster}{Logical; if `TRUE`, uses clustering in Step2.1. When
+`clusterFile` is not provided, PLINK input falls back to FID from `.fam`.
+Defaults to `FALSE`.}
+
+\item{clusterFile}{Optional two-column cluster file. The first column is
+sample IID and the second column is cluster ID. A header row with
+`IID` and `cluster` is accepted but not required. When provided, this
+enables clustering and overrides the PLINK FID fallback.}
 }
 \value{
 Invisibly returns a character vector of written file paths.
