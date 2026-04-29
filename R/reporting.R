@@ -475,7 +475,7 @@ plot_manhattan <- function(df, outFile, title = NULL,
     snp = "SNP",
     logp = FALSE,
     col = c("grey20", "grey70"),
-    cex = 0.55,
+    cex = 1.0,
     main = title %||% "",
     ylab = expression(-log[10](italic(P))),
     ylim = c(0, max(man$PLOT_P, na.rm = TRUE) + max(0.15, cap_bump * 0.5)),
@@ -501,7 +501,7 @@ plot_manhattan <- function(df, outFile, title = NULL,
     red_points <- red_points |>
       dplyr::filter(.data$ABOVE_PLOT_MIN)
 
-    graphics::points(red_points$pos, red_points$PLOT_P, pch = 20, cex = 0.55, col = "red")
+    graphics::points(red_points$pos, red_points$PLOT_P, pch = 20, cex = 1.0, col = "red")
   }
 
   graphics::abline(h = -log10(5e-8), lty = 2, lwd = 1, col = "red")
