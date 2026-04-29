@@ -28,7 +28,8 @@ Use `NULL` (default) to fit without covariates.}
 
 \item{covarColList}{Optional covariate column names to keep from `covFile`.
 Accepts either a character vector or a single comma-separated string.
-By default, all non-ID columns in `covFile` are used.}
+By default, all non-ID columns in `covFile` are used. If `depthCol` is
+provided, it is excluded from the covariate-adjustment matrix.}
 
 \item{depthCol}{Optional column name in `covFile` to use as sequencing depth.
 If not provided, `depth = NULL` is passed to PALM so sequencing depth is

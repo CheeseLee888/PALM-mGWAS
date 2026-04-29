@@ -11,7 +11,8 @@
 #'   Use `NULL` (default) to fit without covariates.
 #' @param covarColList Optional covariate column names to keep from `covFile`.
 #'   Accepts either a character vector or a single comma-separated string.
-#'   By default, all non-ID columns in `covFile` are used.
+#'   By default, all non-ID columns in `covFile` are used. If `depthCol` is
+#'   provided, it is excluded from the covariate-adjustment matrix.
 #' @param depthCol Optional column name in `covFile` to use as sequencing depth.
 #'   If not provided, `depth = NULL` is passed to PALM so sequencing depth is
 #'   computed from row sums of `abdFile`.
@@ -169,15 +170,28 @@ fitNULL <- function(abdFile,
       }
       cov <- cov[, covarColList, drop = FALSE]
     }
-    message(
-      "covFile provided: fitting PALM null model with ", ncol(cov), " covariate column(s) from ", covFile
-    )
-    modglmm <- PALM::palm.null.model(
-      rel.abd = abd,
-      covariate.adjust = cov,
-      depth = depth,
-      prev.filter = prev.filter
-    )
+    if (!is.null(depthCol) && depthCol %in% colnames(cov)) {
+      cov <- cov[, setdiff(colnames(cov), depthCol), drop = FALSE]
+      message("Excluding depthCol '", depthCol, "' from covariate.adjust.")
+    }
+    if (ncol(cov) == 0L) {
+      message("covFile provided, but no covariate columns remain after excluding depthCol.")
+      modglmm <- PALM::palm.null.model(
+        rel.abd = abd,
+        depth = depth,
+        prev.filter = prev.filter
+      )
+    } else {
+      message(
+        "covFile provided: fitting PALM null model with ", ncol(cov), " covariate column(s) from ", covFile
+      )
+      modglmm <- PALM::palm.null.model(
+        rel.abd = abd,
+        covariate.adjust = cov,
+        depth = depth,
+        prev.filter = prev.filter
+      )
+    }
   }
 
   dir.create(dirname(null_model_file), recursive = TRUE, showWarnings = FALSE)
