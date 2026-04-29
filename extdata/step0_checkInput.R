@@ -56,7 +56,6 @@ default_covariate_cols <- function(df) {
 read_abd_table <- function(path) {
   df <- fread(path, data.table = FALSE, check.names = FALSE)
   if (ncol(df) < 1) stop("File has no columns: ", path)
-  if (anyNA(df)) stop("Missing values detected in abundance file: ", path)
   ids <- as.character(df[[1]])
   if (anyNA(ids) || any(!nzchar(ids))) stop("Missing/empty IID detected in abundance file: ", path)
   if (anyDuplicated(ids)) stop("Duplicated IID in file: ", path)
@@ -151,6 +150,37 @@ if (length(required_cov_cols) > 0L) {
 }
 
 filtered <- FALSE
+
+if (ncol(abd_df) > 1L) {
+  keep_abd_complete <- stats::complete.cases(abd_df[, -1, drop = FALSE])
+  removed_n <- sum(!keep_abd_complete)
+  cat("Removing ", removed_n, " sample(s) with missing values in abundance columns.\n", sep = "")
+  if (removed_n > 0L) {
+    keep_ids <- as.character(abd_df[[1]])[keep_abd_complete]
+    abd_df <- abd_df[keep_abd_complete, , drop = FALSE]
+    cov_df <- cov_df[as.character(cov_df[[1]]) %in% keep_ids, , drop = FALSE]
+    filtered <- TRUE
+  }
+  if (nrow(abd_df) == 0L) {
+    stop("No samples remain after removing samples with missing abundance values.")
+  }
+}
+
+if (length(required_cov_cols) > 0L) {
+  keep_cov_complete <- stats::complete.cases(cov_df[, required_cov_cols, drop = FALSE])
+  removed_n <- sum(!keep_cov_complete)
+  cat("Removing ", removed_n, " sample(s) with missing values in Step1-required covariates/depth columns.\n", sep = "")
+  if (removed_n > 0L) {
+    keep_ids <- as.character(cov_df[[1]])[keep_cov_complete]
+    cov_df <- cov_df[keep_cov_complete, , drop = FALSE]
+    abd_df <- abd_df[as.character(abd_df[[1]]) %in% keep_ids, , drop = FALSE]
+    filtered <- TRUE
+  }
+  if (nrow(cov_df) == 0L || nrow(abd_df) == 0L) {
+    stop("No samples remain after removing samples with missing Step1-required covariate/depth values.")
+  }
+}
+
 abd_ids_all <- as.character(abd_df[[1]])
 if (is.null(opt$depthCol)) {
   depth <- rowSums(as.matrix(abd_df[, -1, drop = FALSE]), na.rm = TRUE)
@@ -194,18 +224,6 @@ if (opt$depth.filter > 0) {
   abd_df <- abd_df[as.character(abd_df[[1]]) %in% keep_ids, , drop = FALSE]
   cov_df <- cov_df[as.character(cov_df[[1]]) %in% keep_ids, , drop = FALSE]
   filtered <- filtered || removed_n > 0L
-}
-
-if (length(required_cov_cols) > 0L) {
-  keep_cov_complete <- stats::complete.cases(cov_df[, required_cov_cols, drop = FALSE])
-  removed_n <- sum(!keep_cov_complete)
-  cat("Removing ", removed_n, " sample(s) with missing values in Step1-required covariates/depth columns.\n", sep = "")
-  if (removed_n > 0L) {
-    keep_ids <- as.character(cov_df[[1]])[keep_cov_complete]
-    cov_df <- cov_df[keep_cov_complete, , drop = FALSE]
-    abd_df <- abd_df[as.character(abd_df[[1]]) %in% keep_ids, , drop = FALSE]
-    filtered <- TRUE
-  }
 }
 
 abd_ids <- as.character(abd_df[[1]])

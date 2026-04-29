@@ -181,7 +181,7 @@ docker run --rm -it --privileged \
   <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Step0</code> to <code>Step4</code>. Pixi commands use local project-relative paths. Docker commands mount the same local project at <code>/work</code>, so their input and output arguments use <code>/work/...</code> paths.</p>
   <p>In the parameter tables below, parameter names shown in bold are required.</p>
   <div class="steps">
-    <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> optionally filters low-depth samples, checks IID consistency across abundance, covariates, and genotype input, reorders tables to match genotype sample order, and can write sequencing-depth summaries.</div>
+    <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> removes samples with missing abundance or required covariate values, optionally filters low-depth samples, checks IID consistency across abundance, covariates, and genotype input, reorders tables to match genotype sample order, and can write sequencing-depth summaries.</div>
     <div class="card"><strong>Step1 Null</strong><br><code>step1_null.R</code> fits the PALM null model from the Step0-aligned abundance and covariate tables and can write feature summaries.</div>
     <div class="card"><strong>Step2.1 Summary</strong><br><code>step2_1_summary.R</code> reads genotype input, runs PALM score tests without compositional correction, writes one association file per feature, and can write genotype/SNP summaries.</div>
     <div class="card"><strong>Step2.2 Correction</strong><br><code>step2_2_correction.R</code> reads one Step2 scope at a time and applies median- or tune-based compositional correction across features for each SNP.</div>
@@ -214,22 +214,23 @@ docker run --rm -it --privileged \
     --genoFile=${genoFile} \
     --SeqDepthInfoFile=${SeqDepthInfoFile}</code></pre>
   <ul>
-    <li><strong>Purpose:</strong> optionally filter low-depth samples, then verify that abundance, covariates, and genotype input remain aligned before modeling.</li>
-    <li><strong>Alignment rule:</strong> the step keeps samples matched across <code>abdFile</code>, <code>covFile</code>, and genotype input, then writes aligned abundance and covariate tables in genotype sample order.</li>
+    <li><strong>Purpose:</strong> remove samples with missing values needed by Step1, optionally filter low-depth samples, then verify that abundance, covariates, and genotype input remain aligned before modeling.</li>
+    <li><strong>Missingness rule:</strong> samples with missing values in any abundance column are removed. Samples with missing values in Step1-required covariate/depth columns are also removed. When a sample is removed from one table, the matching IID is removed from the other table before ID matching.</li>
+    <li><strong>Alignment rule:</strong> after missingness and depth filtering, the step keeps samples matched across <code>abdFile</code>, <code>covFile</code>, and genotype input, then writes aligned abundance and covariate tables in genotype sample order.</li>
     <li><strong>Covariate columns:</strong> <code>--covarColList</code> is used only to decide which covariate columns must be non-missing for sample filtering before Step1. It does not subset columns in the aligned covariate output; <code>covAlignedFile</code> keeps all columns from <code>covFile</code>.</li>
     <li><strong>Genotype sample count:</strong> genotype input may contain extra samples, but it must not miss any sample retained from <code>abdFile</code>/<code>covFile</code> after filtering.</li>
-    <li><strong>Failure cases:</strong> duplicated IDs, missing values, or non-identical IID sets.</li>
+    <li><strong>Failure cases:</strong> missing/empty or duplicated IDs, requested covariate/depth columns not found, non-numeric depth values, no samples left after filtering, or genotype input missing retained samples.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose sample order will be checked/reordered</td></tr>
-    <tr><td><strong><code>--covFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Covariate table whose sample order will be checked/reordered</td></tr>
+    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose sample order will be checked/reordered; samples with missing values in any abundance column are removed</td></tr>
+    <tr><td><strong><code>--covFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Covariate table whose sample order will be checked/reordered; samples with missing values in required covariate/depth columns are removed</td></tr>
     <tr><td><strong><code>--abdAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned abundance table; original input is not overwritten</td></tr>
     <tr><td><strong><code>--covAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned covariate table; original input is not overwritten</td></tr>
     <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the sample-order reference. Accepted values are a PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code>. For VCF, Step0 reads sample IDs from the sample columns in the <code>#CHROM</code> header line, checks that every retained abundance/covariate IID is present, ignores extra VCF-only samples, and reorders the aligned abundance/covariate outputs to that VCF sample-column order</td></tr>
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated covariate columns required by Step1. Step0 uses these columns only for missingness-based sample filtering before ID matching. It does not remove other columns from <code>covAlignedFile</code>. If omitted or set to <code>NULL</code>, all non-ID columns in <code>covFile</code> are checked for missingness</td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td></tr>
-    <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Sample-level depth threshold applied before genotype ID matching; samples with depth <code>&lt;=</code> this value are removed</td></tr>
+    <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Sample-level depth threshold applied after missingness filtering and before genotype ID matching; samples with depth <code>&lt;=</code> this value are removed</td></tr>
     <tr><td><code>--SeqDepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>DepthInfo</code>, using the exact depth values Step0 uses for sample filtering. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
   </table>
   <p><strong>Step0 examples:</strong></p>
@@ -547,7 +548,7 @@ study3  /work/example/output/study3</code></pre>
 
   <h3 id="example-step0">Step0: align IDs before modeling</h3>
   <p><strong>Input:</strong> <code>example/input/study1/abd.txt</code>, <code>example/input/study1/cov.txt</code>, and genotype input passed through <code>--genoFile</code>.</p>
-  <pre><code class="language-bash"># Step0 filters low-depth samples if requested, then checks IID sets and reorders abd/cov if needed
+  <pre><code class="language-bash"># Step0 removes samples with missing required values, filters low-depth samples if requested, then checks IID sets and reorders abd/cov if needed
 pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --abdFile=example/input/study1/abd.txt \
     --covFile=example/input/study1/cov.txt \
