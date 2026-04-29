@@ -184,7 +184,6 @@ docker run --rm -it --privileged \
     <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> optionally filters low-depth samples, checks IID consistency across abundance, covariates, and genotype input, reorders tables to match genotype sample order, and can write sequencing-depth summaries.</div>
     <div class="card"><strong>Step1 Null</strong><br><code>step1_null.R</code> fits the PALM null model from the Step0-aligned abundance and covariate tables and can write feature summaries.</div>
     <div class="card"><strong>Step2.1 Summary</strong><br><code>step2_1_summary.R</code> reads genotype input, runs PALM score tests without compositional correction, writes one association file per feature, and can write genotype/SNP summaries.</div>
-    <div class="card"><strong>Merge</strong><br><code>step_merge.R</code> merges chromosome-split files into per-feature all-chromosome files when later stages need <code>allchr</code> inputs.</div>
     <div class="card"><strong>Step2.2 Correction</strong><br><code>step2_2_correction.R</code> reads one Step2 scope at a time and applies median- or tune-based compositional correction across features for each SNP.</div>
     <div class="card"><strong>Step3 Meta</strong><br><code>step3_meta.R</code> meta-analyzes multiple studies and adds <code>meta_*</code> columns.</div>
     <div class="card"><strong>Step4 Reporting</strong><br><code>step4_reporting.R</code> generates Manhattan and forest plots.</div>
@@ -352,38 +351,6 @@ docker run --rm -it --privileged \
     <li><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></li>
   </ul>
 
-  <h3>Merge: chromosome-split files into per-feature all-chromosome files</h3>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step_merge.R \
-    --inputPrefix=${inputPrefix} \
-    --featureColList=${featureColList} \
-    --outputPrefix=${outputPrefix}</code></pre>
-  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
-  -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
-  step_merge.R \
-    --inputPrefix=${inputPrefix} \
-    --featureColList=${featureColList} \
-    --outputPrefix=${outputPrefix}</code></pre>
-  <ul>
-    <li><strong>Purpose:</strong> merge groups files by feature name and concatenates all chromosome shards into one <code>step2_allchr_*.txt</code> file per feature.</li>
-    <li><strong>Placement:</strong> merge can be run after Step2.1, Step2.2, or Step3. It just combines chromosome-split files from <code>chr1</code> through <code>chr22</code>, so if those files do not exist, merge will not work.</li>
-    <li><strong>Ordering:</strong> chromosome files are merged in numeric order, so <code>chr2</code> comes before <code>chr11</code>.</li>
-    <li><strong>Header handling:</strong> the merged file keeps the first header row and drops repeated headers from later chromosome files.</li>
-  </ul>
-  <table>
-    <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 prefix used to discover <code>chr1..chr22</code> or <code>allchr</code> files for one study. Do not add a trailing underscore; accidental suffixes like <code>_chr1</code> or <code>_allchr</code> are normalized back to the shared base prefix</td></tr>
-    <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated feature IDs to merge; <code>NULL</code> keeps all discovered features</td></tr>
-    <tr><td><code>--outputPrefix</code></td><td><code>character</code></td><td><code>"NULL"</code> (auto-derived)</td><td>Base output prefix for merged files, not a complete filename. The script writes one matched feature per <code>&lt;outputPrefix&gt;_allchr_*.txt</code> file, and stops with an error if no chromosome-split input files match</td></tr>
-  </table>
-  <p><strong>Merge examples:</strong></p>
-  <ul>
-    <li>If the input directory contains chromosome-split files such as <code>example/output/study1/step2_chr1_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_chr22_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_chr1_g_Peptoniphilus_unclassified.txt</code>, and <code>example/output/study1/step2_chr22_g_Peptoniphilus_unclassified.txt</code>, set <code>--inputPrefix=example/output/study1/step2</code>. The prefix is the shared part before <code>_chrN_&lt;feature&gt;.txt</code>.</li>
-    <li>Use <code>--featureColList=NULL</code> to merge all discovered features. With <code>--outputPrefix=example/output/study1/step2</code>, this writes one all-chromosome file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code> and <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</li>
-    <li>Use <code>--featureColList=g_Bifidobacterium</code> to merge only that feature. With <code>--outputPrefix=example/output/study1/merged/step2</code>, the output is <code>example/output/study1/merged/step2_allchr_g_Bifidobacterium.txt</code>.</li>
-    <li>If <code>--outputPrefix=NULL</code>, the merge output prefix is auto-derived from <code>--inputPrefix</code>, so the merged files are written next to the input files using the same base prefix.</li>
-  </ul>
-
   <h3>Step2.2: compositional correction on one Step2 scope</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_2_correction.R \
     --inputPrefix=${inputPrefix} \
@@ -407,7 +374,7 @@ docker run --rm -it --privileged \
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
     <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for correction; use the base before <code>_allchr</code> or <code>_chrN</code>. Do not pass <code>step2_allchr</code> or <code>step2_chr1</code></td></tr>
-    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Correction scope. Use <code>NULL</code> to target merged <code>step2_allchr_*.txt</code> files, or <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
+    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Correction scope. Use <code>NULL</code> to target <code>step2_allchr_*.txt</code> files, or <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
     <tr><td><code>--overwriteOutput</code></td><td><code>character</code></td><td><code>"TRUE"</code></td><td>If <code>TRUE</code>, overwrite the selected Step2 scope in place. If <code>FALSE</code>, keep the originals and write corrected copies as <code>&lt;inputPrefix&gt;_corrected_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td></tr>
     <tr><td><code>--correct</code></td><td><code>character</code></td><td><code>"median"</code></td><td>Correction method. Use <code>median</code> for median-based correction or <code>tune</code> for PALM tuning-based correction. <code>tune</code> is very slow compared with <code>median</code></td></tr>
     <tr><td><code>--NULLmodelFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional Step1 NULL model file. When <code>--correct=tune</code>, Step2.2 uses it to infer <code>tuneN = nrow(modglmm[[1]]$Y_I)</code></td></tr>
@@ -445,7 +412,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     <tr><td><strong><code>--studyDirFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Study list file with two columns per line: <code>studyID</code> and Step2 output directory</td></tr>
     <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for meta-analysis; use the base before <code>_allchr</code> or <code>_chrN</code></td></tr>
     <tr><td><strong><code>--metaPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Full output prefix for meta-analysis tables, including directory and filename prefix, not a complete filename. Step3 removes any trailing <code>_</code> and writes files as <code>&lt;metaPrefix&gt;_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td></tr>
-    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Meta-analysis scope. Use <code>NULL</code> to meta-analyze merged files such as <code>step2_allchr_*.txt</code>, or <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
+    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Meta-analysis scope. Use <code>NULL</code> to meta-analyze <code>step2_allchr_*.txt</code> files, or run Step3 once per chromosome with <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
     <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated feature IDs to meta-analyze; <code>NULL</code> keeps all features in the selected Step2 scope</td></tr>
   </table>
   <p><strong>Step3 examples:</strong></p>
@@ -455,7 +422,7 @@ study2  example/output/study2
 study3  example/output/study3</code></pre>
   <ul>
     <li>Set <code>--studyDirFile=example/input/study_dirs.txt</code>. Step3 will search each listed study directory for matching Step2 files.</li>
-    <li>If each study directory contains all-chromosome files such as <code>step2_allchr_g_Bifidobacterium.txt</code> and <code>step2_allchr_g_Peptoniphilus_unclassified.txt</code>, set <code>--inputPrefix=example/output/study1/step2</code> and <code>--chrom=NULL</code>. Step3 uses the basename <code>step2</code> as the shared prefix and applies it inside every study directory from <code>studyDirFile</code>.</li>
+    <li>If each study directory contains all-chromosome files such as <code>step2_allchr_g_Bifidobacterium.txt</code> and <code>step2_allchr_g_Peptoniphilus_unclassified.txt</code>, set <code>--inputPrefix=example/output/study1/step2</code> and <code>--chrom=NULL</code>. If each study directory contains chromosome-specific files, run Step3 separately for each chromosome with <code>--chrom=1</code> through <code>--chrom=22</code>. Step3 uses the basename <code>step2</code> as the shared prefix and applies it inside every study directory from <code>studyDirFile</code>.</li>
     <li>If each study directory contains chromosome-specific files such as <code>step2_chr1_g_Bifidobacterium.txt</code>, use the same <code>--inputPrefix=example/output/study1/step2</code> with <code>--chrom=1</code>. Step3 then meta-analyzes only the <code>chr1</code> scope.</li>
     <li>Use <code>--featureColList=NULL</code> to meta-analyze all discovered features in the selected scope. Use <code>--featureColList=g_Bifidobacterium</code> to meta-analyze only that feature; missing study-feature files are skipped for that feature.</li>
     <li>With <code>--metaPrefix=example/output/meta/meta</code> and <code>--chrom=NULL</code>, Step3 writes one meta file per feature, such as <code>example/output/meta/meta_allchr_g_Bifidobacterium.txt</code>. With <code>--chrom=1</code>, it writes files such as <code>example/output/meta/meta_chr1_g_Bifidobacterium.txt</code>.</li>
@@ -510,7 +477,7 @@ docker run --rm --platform=linux/amd64 \
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--metaDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory containing Step3 meta files or single-study Step2 files. Step4 auto-discovers files ending in <code>_allchr_&lt;feature&gt;.txt</code> or <code>_chrN_&lt;feature&gt;.txt</code>, prefers <code>allchr</code> when both scopes exist, accepts one chromosome-specific file if no <code>allchr</code> exists, and stops if multiple chromosome-specific files exist for one feature without an <code>allchr</code> file</td></tr>
+    <tr><td><strong><code>--metaDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory containing Step3 meta files or single-study Step2 files. Step4 auto-discovers files ending in <code>_allchr_&lt;feature&gt;.txt</code> or <code>_chrN_&lt;feature&gt;.txt</code>. If any chromosome-specific files exist for a feature, Step4 reads those files in chromosome order and ignores the matching <code>allchr</code> file; otherwise it reads the single <code>allchr</code> file. Files that do not match this naming convention are ignored unless no valid result files are found</td></tr>
     <tr><td><strong><code>--plotPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Full output prefix for plots, including directory and optional filename prefix. Use a trailing slash to keep the default plot names inside a directory, for example <code>example/output/plot/</code>; use a basename to prefix outputs, for example <code>example/output/plot/step4</code> writes <code>step4_combined_hits.png</code></td></tr>
     <tr><td><code>--feature</code></td><td><code>character</code></td><td><code>NA</code></td><td>(Microbial) feature name. Used only in case 2 (<code>--feature</code> without <code>--snp</code>) and case 4 (<code>--feature</code> with <code>--snp</code>)</td></tr>
     <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier. Used only in case 3 (<code>--snp</code> without <code>--feature</code>) and case 4 (<code>--feature</code> with <code>--snp</code>)</td></tr>
@@ -672,21 +639,8 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
   <p><strong>Output:</strong> one file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on.</p>
   <p><strong>Current example files:</strong> in this repository the Step2.1 outputs use real feature names, for example <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
 
-  <h3>Merge: the chromosome-split files</h3>
-  <p><strong>Input:</strong> the shared Step2 base prefix for one feature namespace, for example <code>example/output/study1/step2</code>. Do not add a trailing underscore; the merge step then discovers <code>step2_chr1_*.txt</code> through <code>step2_chr22_*.txt</code> automatically.</p>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step_merge.R \
-    --inputPrefix=example/output/study1/step2 \
-    --outputPrefix=example/output/study1/step2</code></pre>
-  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
-  -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
-  step_merge.R \
-    --inputPrefix=/work/example/output/study1/step2 \
-    --outputPrefix=/work/example/output/study1/step2</code></pre>
-  <p><strong>Output:</strong> one merged file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>. The merged file preserves one header row and concatenates chromosome shards in numeric chromosome order.</p>
-
   <h3>Step2.2: apply compositional correction to one Step2 scope</h3>
-  <p><strong>Input:</strong> the full set of Step2 files for one correction scope. Pass the shared base prefix such as <code>example/output/study1/step2</code>, then choose <code>--chrom=NULL</code> for merged <code>step2_allchr_*.txt</code> or <code>--chrom=1</code> for chromosome-specific <code>step2_chr1_*.txt</code>.</p>
+  <p><strong>Input:</strong> the full set of Step2 files for one correction scope. Pass the shared base prefix such as <code>example/output/study1/step2</code>, then choose <code>--chrom=NULL</code> for <code>step2_allchr_*.txt</code> or <code>--chrom=1</code> for chromosome-specific <code>step2_chr1_*.txt</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_2_correction.R \
     --inputPrefix=example/output/study1/step2 \
     --chrom=NULL \
@@ -704,14 +658,14 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --NULLmodelFile=/work/example/output/study1/step1_allpheno.rda</code></pre>
   <p><strong>Output:</strong> corrected per-feature files with the same columns <code>SNP, CHR, POS, est, stderr, pval</code>. With <code>--overwriteOutput=TRUE</code>, the corrected values replace the selected Step2 scope in place. With <code>--overwriteOutput=FALSE</code>, the script writes files such as <code>step2_corrected_allchr_g_Peptoniphilus_unclassified.txt</code> or <code>step2_corrected_chr1_g_Peptoniphilus_unclassified.txt</code>.</p>
 
-  <h3>Example Output: Step2.1/Merge per-feature summary</h3>
+  <h3>Example Output: Step2.1 per-feature summary</h3>
   <pre><code class="language-tsv"># file: example/output/study1/step2_allchr_g_Bifidobacterium.txt
 SNP	CHR	POS	est	stderr	pval
 chr1:1837340:C:T	1	1837340	-0.0344752267456601	0.114517097035553	0.763377335109293
 chr1:2261200:G:C	1	2261200	0.00897107253479205	0.0721884879491203	0.901099205907974
 chr1:14678191:A:C	1	14678191	-0.256659587735654	0.0620614677990631	3.54073582389258e-05
 chr1:14985097:C:T	1	14985097	0.0656422784880947	0.0936705492924953	0.483441447738228</code></pre>
-  <p>Each Step2.1 file corresponds to one feature. Here, <code>g_Bifidobacterium</code> has one file containing association statistics for all tested SNPs from <code>example/output/study1</code>. Merge preserves the row schema while combining chromosome shards.</p>
+  <p>Each Step2.1 file corresponds to one feature and one scope. Here, <code>g_Bifidobacterium</code> has one <code>allchr</code> file containing association statistics for all tested SNPs from <code>example/output/study1</code>. Chromosome-specific runs use the same row schema in files such as <code>step2_chr1_g_Bifidobacterium.txt</code>.</p>
 
   <h3>Example Output: Step2.2 median-corrected per-feature summary</h3>
   <pre><code class="language-tsv"># file: example/output/study1_median/step2_allchr_g_Bifidobacterium.txt

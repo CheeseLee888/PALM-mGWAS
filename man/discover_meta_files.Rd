@@ -10,8 +10,21 @@ discover_meta_files(metaDir)
 \item{metaDir}{Directory containing meta files.}
 }
 \value{
-A data frame with columns `pheno`, `scope`, and `file`.
+A data frame with columns `pheno`, `scope`, `file`, and `files`.
+`file` contains the first selected file for backward compatibility;
+`files` is a list column containing all selected files for the feature.
 }
 \description{
-Utility to list meta files and extract phenotype names from filenames.
+Utility to list Step3 meta-analysis files or single-study Step2 files and
+extract phenotype names from filenames. Files must be named as
+`<prefix>_allchr_<feature>.txt` or `<prefix>_chrN_<feature>.txt`, where
+`N` is 1..22.
+}
+\details{
+For each feature, chromosome-specific files are preferred over `allchr`
+files. If one or more `_chrN_` files exist for a feature, all matched
+chromosome files are stored in chromosome order and the matching `allchr`
+file, if present, is ignored. If no chromosome-specific file exists, the
+single `allchr` file is used. Text files that do not match either naming
+convention are ignored unless no valid result files are found.
 }

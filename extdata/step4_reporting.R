@@ -138,7 +138,7 @@ if (arg_supplied("showHet") && is.null(snp)) {
 
 msg("MetaDir: %s", metaDir)
 msg("PlotPrefix: %s", plotPrefix)
-msg("Found %d files.", nrow(metaIndex))
+msg("Found %d feature(s) across %d result file(s).", nrow(metaIndex), sum(lengths(metaIndex$files)))
 msg("Resolved pCut: %s", if (is.na(p_cut)) "NA" else format(p_cut, scientific = TRUE))
 msg("Resolved plotMinP: %s", if (is.na(plot_min_p)) "NA" else format(plot_min_p, scientific = TRUE))
 msg("Resolved width x height: %s x %s", if (is.na(width_in)) "auto" else as.character(width_in), if (is.na(height_in)) "auto" else as.character(height_in))

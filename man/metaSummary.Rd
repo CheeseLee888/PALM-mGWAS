@@ -24,8 +24,8 @@ metaSummary(
 `<inputPrefix>_allchr_<feature>.txt` when `chrom` is `NULL`. An optional
 trailing underscore is ignored.}
 
-\item{chrom}{Optional chromosome selector. Use `NULL` to meta-analyze the
-merged `_allchr` files. Use `1`..`22` or strings like `"chr1"` to
+\item{chrom}{Optional chromosome selector. Use `NULL` to meta-analyze
+`_allchr` files. Use `1`..`22` or strings like `"chr1"` to
 meta-analyze one chromosome-specific shard across all studies.}
 
 \item{featureColList}{Optional feature names (without prefix/suffix). If

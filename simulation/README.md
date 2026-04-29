@@ -72,7 +72,7 @@ STUDY=study2 sbatch run/step1.sbatch
 STUDY=study3 sbatch run/step1.sbatch
 ```
 
-For each study, submit `Step2.1 -> Step2.2 -> merge` only after the previous stage has finished.
+For each study, submit `Step2.1 -> Step2.2` only after the previous stage has finished.
 If you want to reproduce the same results currently stored under `output/`, skip `step2.2`.
 
 ```bash
@@ -83,24 +83,15 @@ STUDY=study3 sbatch --array=1-22 run/step2_1.sbatch
 STUDY=study1 sbatch --array=1-22 run/step2_2.sbatch
 STUDY=study2 sbatch --array=1-22 run/step2_2.sbatch
 STUDY=study3 sbatch --array=1-22 run/step2_2.sbatch
-
-n_feature_study1=$(wc -l < output/study1/feature_list.txt)
-n_feature_study2=$(wc -l < output/study2/feature_list.txt)
-n_feature_study3=$(wc -l < output/study3/feature_list.txt)
-
-STUDY=study1 sbatch --array=1-${n_feature_study1} run/merge.sbatch
-STUDY=study2 sbatch --array=1-${n_feature_study2} run/merge.sbatch
-STUDY=study3 sbatch --array=1-${n_feature_study3} run/merge.sbatch
 ```
 
 This means:
 
 - `run/step2_1.sbatch` runs as a one-chromosome-per-task array
 - `run/step2_2.sbatch` runs as a one-chromosome-per-task array
-- `run/merge.sbatch` runs as a one-feature-per-task array
 
 
-After all three study-level merge stages have completed, write `study_dirs.tsv`, then submit `step3`. Wait for `step3` to finish before submitting `step4`.
+After all three study-level Step2 stages have completed, write `study_dirs.tsv`, then submit `step3`. The provided Step3 script runs one chromosome per array task and meta-analyzes all features in that chromosome. Wait for `step3` to finish before submitting `step4`.
 
 ```bash
 mkdir -p output/meta
@@ -111,11 +102,15 @@ study2	${PWD}/output/study2
 study3	${PWD}/output/study3
 EOF
 
-n_feature_meta=$(wc -l < output/study1/feature_list.txt)
-sbatch --array=1-${n_feature_meta} run/step3.sbatch
+sbatch --array=1-22 run/step3.sbatch
 
 sbatch run/step4.sbatch
 ```
+
+This means:
+
+- `run/step3.sbatch` runs as a one-chromosome-per-task array
+- each Step3 task uses `--featureColList=NULL`, so it meta-analyzes all discovered features for that chromosome
 
 ## Outputs
 

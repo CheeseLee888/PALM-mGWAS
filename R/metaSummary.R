@@ -5,8 +5,8 @@
 #'   `<inputPrefix>_chr<chrom>_<feature>.txt` when `chrom` is set, or
 #'   `<inputPrefix>_allchr_<feature>.txt` when `chrom` is `NULL`. An optional
 #'   trailing underscore is ignored.
-#' @param chrom Optional chromosome selector. Use `NULL` to meta-analyze the
-#'   merged `_allchr` files. Use `1`..`22` or strings like `"chr1"` to
+#' @param chrom Optional chromosome selector. Use `NULL` to meta-analyze
+#'   `_allchr` files. Use `1`..`22` or strings like `"chr1"` to
 #'   meta-analyze one chromosome-specific shard across all studies.
 #' @param featureColList Optional feature names (without prefix/suffix). If
 #'   `NULL`, infer all features from the selected Step2 scope.
@@ -158,7 +158,7 @@ metaSummary <- function(study_dirs,
       stop(
         "No Step2 files found for meta-analysis scope 'allchr' under base prefix: ", inputPrefix,
         ". Expected to see files like ", expected,
-        ". If only chromosome-split files exist, run merge first or use --chrom=1..22."
+        ". If only chromosome-split files exist, run Step3 once per chromosome with --chrom=1..22."
       )
     }
     stop(

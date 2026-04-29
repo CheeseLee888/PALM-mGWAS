@@ -6,13 +6,13 @@
 #' from `thirdParty/palm.get.summary.R` across features for each SNP. This is
 #' intended for a post-processing "Step2.2" stage after all feature-level Step2
 #' jobs have completed. It can operate on either one chromosome suffix
-#' (`_chr1`..`_chr22`) or the merged `_allchr` files.
+#' (`_chr1`..`_chr22`) or `_allchr` files.
 #'
 #' @param inputPrefix Shared Step2 base prefix. Files are expected at
 #'   `<inputPrefix>_chr<chrom>_<feature>.txt` when `chrom` is set, or
 #'   `<inputPrefix>_allchr_<feature>.txt` when `chrom` is `NULL`. An optional
 #'   trailing underscore is ignored.
-#' @param chrom Optional chromosome selector. Use `NULL` to correct the merged
+#' @param chrom Optional chromosome selector. Use `NULL` to correct
 #'   `_allchr` files. Use `1`..`22` or strings like `"chr1"` to correct one
 #'   chromosome-specific shard across all features.
 #' @param overwriteOutput Logical; if `TRUE` overwrite the original Step2 files.

@@ -74,13 +74,44 @@ read_result_file <- function(path, sep = "\t", study_id = NULL) {
   standardize_meta_df(df, study_id = study_id)
 }
 
+# Read one or more result shards for the same feature.
+read_result_files <- function(paths, sep = "\t", study_id = NULL) {
+  paths <- unlist(paths, use.names = FALSE)
+  paths <- paths[nzchar(paths)]
+  if (length(paths) == 0) stop("No result file path supplied.")
+
+  pieces <- lapply(paths, read_result_file, sep = sep, study_id = study_id)
+  if (length(pieces) == 1L) return(pieces[[1L]])
+
+  dplyr::bind_rows(pieces)
+}
+
+index_files <- function(metaIndex, i) {
+  if ("files" %in% names(metaIndex)) {
+    return(metaIndex$files[[i]])
+  }
+  metaIndex$file[i]
+}
+
 #' Discover meta-analysis result files
 #'
-#' Utility to list meta files and extract phenotype names from filenames.
+#' Utility to list Step3 meta-analysis files or single-study Step2 files and
+#' extract phenotype names from filenames. Files must be named as
+#' `<prefix>_allchr_<feature>.txt` or `<prefix>_chrN_<feature>.txt`, where
+#' `N` is 1..22.
+#'
+#' For each feature, chromosome-specific files are preferred over `allchr`
+#' files. If one or more `_chrN_` files exist for a feature, all matched
+#' chromosome files are stored in chromosome order and the matching `allchr`
+#' file, if present, is ignored. If no chromosome-specific file exists, the
+#' single `allchr` file is used. Text files that do not match either naming
+#' convention are ignored unless no valid result files are found.
 #'
 #' @param metaDir Directory containing meta files.
 #'
-#' @return A data frame with columns `pheno`, `scope`, and `file`.
+#' @return A data frame with columns `pheno`, `scope`, `file`, and `files`.
+#'   `file` contains the first selected file for backward compatibility;
+#'   `files` is a list column containing all selected files for the feature.
 #' @export
 discover_meta_files <- function(metaDir) {
   message("discover_meta_files: scanning ", metaDir)
@@ -118,38 +149,44 @@ discover_meta_files <- function(metaDir) {
     file = files[idx],
     base = base_names[idx],
     scope = vapply(pieces[idx], `[`, character(1), 3),
+    chrom = suppressWarnings(as.integer(vapply(pieces[idx], `[`, character(1), 4))),
     pheno = vapply(pieces[idx], `[`, character(1), 5),
     stringsAsFactors = FALSE
   )
 
   choose_one_feature <- function(df) {
-    allchr_rows <- df[df$scope == "allchr", , drop = FALSE]
-    if (nrow(allchr_rows) >= 1L) {
-      if (nrow(allchr_rows) > 1L) {
+    chr_rows <- df[df$scope != "allchr", , drop = FALSE]
+    if (nrow(chr_rows) > 0L) {
+      dup_scope <- chr_rows$scope[duplicated(chr_rows$scope)]
+      if (length(dup_scope) > 0L) {
         stop(
-          "discover_meta_files: duplicated allchr files for feature ", df$pheno[[1L]], ": ",
-          paste(basename(allchr_rows$file), collapse = ", ")
+          "discover_meta_files: duplicated chromosome files for feature ", df$pheno[[1L]],
+          " and scope(s) ", paste(unique(dup_scope), collapse = ", "), ": ",
+          paste(basename(chr_rows$file[chr_rows$scope %in% unique(dup_scope)]), collapse = ", ")
         )
       }
-      return(allchr_rows[1, , drop = FALSE])
+
+      chr_rows <- chr_rows[order(chr_rows$chrom, chr_rows$file), , drop = FALSE]
+      return(data.frame(
+        pheno = df$pheno[[1L]],
+        scope = if (nrow(chr_rows) == 1L) chr_rows$scope[[1L]] else "chr_split",
+        file = paste(chr_rows$file, collapse = "\n"),
+        stringsAsFactors = FALSE
+      ))
     }
 
-    unique_scopes <- unique(df$scope)
-    if (length(unique_scopes) == 1L && nrow(df) == 1L) {
-      return(df)
-    }
-    if (length(unique_scopes) == 1L && nrow(df) > 1L) {
+    allchr_rows <- df[df$scope == "allchr", , drop = FALSE]
+    if (nrow(allchr_rows) > 1L) {
       stop(
-        "discover_meta_files: duplicated files for feature ", df$pheno[[1L]], " and scope ",
-        unique_scopes[[1L]], ": ", paste(basename(df$file), collapse = ", ")
+        "discover_meta_files: duplicated allchr files for feature ", df$pheno[[1L]], ": ",
+        paste(basename(allchr_rows$file), collapse = ", ")
       )
     }
-
-    stop(
-      "discover_meta_files: feature ", df$pheno[[1L]],
-      " has multiple chromosome-specific files but no allchr file: ",
-      paste(basename(df$file), collapse = ", "),
-      ". Keep one chromosome-specific file per feature or provide allchr outputs."
+    data.frame(
+      pheno = allchr_rows$pheno[[1L]],
+      scope = allchr_rows$scope[[1L]],
+      file = allchr_rows$file[[1L]],
+      stringsAsFactors = FALSE
     )
   }
 
@@ -158,8 +195,10 @@ discover_meta_files <- function(metaDir) {
     dplyr::bind_rows() |>
     dplyr::arrange(.data$pheno)
 
-  message("discover_meta_files: matched ", nrow(out), " file(s) after scope resolution.")
-  out[, c("pheno", "scope", "file")]
+  out$files <- strsplit(out$file, "\n", fixed = TRUE)
+  out$file <- vapply(out$files, function(x) x[[1L]], character(1))
+  message("discover_meta_files: matched ", nrow(out), " feature(s) after scope resolution.")
+  out[, c("pheno", "scope", "file", "files")]
 }
 
 # Detect study columns (est/stderr) in a meta result data frame
@@ -916,11 +955,11 @@ mode_big_combined <- function(metaIndex, outFile,
 
   for (i in seq_len(nrow(metaIndex))) {
     ph <- metaIndex$pheno[i]
-    f <- metaIndex$file[i]
-    df <- read_result_file(f, sep = sep, study_id = ph)
+    f <- index_files(metaIndex, i)
+    df <- read_result_files(f, sep = sep, study_id = ph)
 
     if (!("meta_pval" %in% names(df))) {
-      stop("Missing meta_pval column in meta file: ", f)
+      stop("Missing meta_pval column in meta file: ", paste(f, collapse = ", "))
     }
     pcol <- "meta_pval"
 
@@ -1018,7 +1057,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
   row <- metaIndex |> dplyr::filter(.data$pheno == .env$phenoName)
   if (nrow(row) == 0) stop("Cannot find meta file for feature: ", phenoName)
 
-  df <- read_result_file(row$file[1], sep = sep, study_id = phenoName)
+  df <- read_result_files(index_files(row, 1), sep = sep, study_id = phenoName)
   plot_manhattan(
     df = df,
     outFile = outFile,
@@ -1077,8 +1116,8 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
 
   for (i in seq_len(nrow(metaIndex))) {
     ph <- metaIndex$pheno[i]
-    f <- metaIndex$file[i]
-    df <- read_result_file(f, sep = sep, study_id = ph)
+    f <- index_files(metaIndex, i)
+    df <- read_result_files(f, sep = sep, study_id = ph)
 
     if (!("SNP" %in% names(df))) next
     r <- df[df$SNP == snp, , drop = FALSE]
@@ -1159,7 +1198,7 @@ mode_pheno_snp_forest <- function(metaIndex, pheno, snp, outFile,
   row <- metaIndex |> dplyr::filter(.data$pheno == .env$pheno)
   if (nrow(row) == 0) stop("Cannot find meta file for feature: ", pheno)
 
-  df <- read_result_file(row$file[1], sep = sep, study_id = pheno)
+  df <- read_result_files(index_files(row, 1), sep = sep, study_id = pheno)
   r <- df[df$SNP == snp, , drop = FALSE]
   if (nrow(r) == 0) stop("SNP not found in this feature file: ", snp)
 
