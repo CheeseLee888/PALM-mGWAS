@@ -13,6 +13,11 @@ instructions, see the full guide:
 
 <https://cheeselee888.github.io/PALM-mGWAS/>
 
+## Feedback
+
+For questions, bug reports, or user feedback, please contact:
+<cheese.lee.888@gmail.com>
+
 ## Package Information
 
 - R package name: `PALMmGWAS`
