@@ -39,7 +39,7 @@ computed from row sums of `abdFile`.}
 prevalence less than or equal to this threshold are removed. Defaults to `0.1`.}
 
 \item{FeatureInfoFile}{Optional output path for feature prevalence and
-average proportion computed from the Step1 abundance input before
+average proportion computed from the final Step1 modeled feature set after
 prevalence filtering. Use `NULL` (default) to skip writing this file.}
 
 \item{FeatureNameListFile}{Optional output path for the modeled feature IDs

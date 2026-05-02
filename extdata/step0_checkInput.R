@@ -200,20 +200,6 @@ cat(
   ", max=", max(depth), ".\n",
   sep = ""
 )
-if (!is.null(opt$SeqDepthInfoFile)) {
-  cat("Generating DepthInfo from the exact depth values used by Step0 sample filtering...\n")
-  seqdepth_df <- PALMmGWAS:::seqdepth_info_from_values(names(depth), depth)
-  dir.create(dirname(opt$SeqDepthInfoFile), recursive = TRUE, showWarnings = FALSE)
-  fwrite(seqdepth_df, file = opt$SeqDepthInfoFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
-  cat(
-    "DepthInfo finished: ", nrow(seqdepth_df),
-    " sample(s) written to ", opt$SeqDepthInfoFile, ".\n",
-    sep = ""
-  )
-} else {
-  cat("DepthInfo skipped: --SeqDepthInfoFile is NULL.\n")
-}
-
 if (opt$depth.filter > 0) {
   keep_ids <- names(depth)[depth > opt$depth.filter]
   removed_n <- length(depth) - length(keep_ids)
@@ -293,6 +279,24 @@ cov_ids2 <- as.character(cov_df[[1]])
 
 if (!identical(abd_ids2, ref_ids)) stop("After reorder, abdFile IID order still mismatched.")
 if (!identical(cov_ids2, ref_ids)) stop("After reorder, covFile IID order still mismatched.")
+
+if (!is.null(opt$SeqDepthInfoFile)) {
+  cat("Generating DepthInfo from the final Step0 filtered/aligned sample set...\n")
+  final_depth <- depth[ref_ids]
+  if (anyNA(final_depth)) {
+    stop("Internal error: final retained sample(s) missing depth values.")
+  }
+  seqdepth_df <- PALMmGWAS:::seqdepth_info_from_values(ref_ids, final_depth)
+  dir.create(dirname(opt$SeqDepthInfoFile), recursive = TRUE, showWarnings = FALSE)
+  fwrite(seqdepth_df, file = opt$SeqDepthInfoFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
+  cat(
+    "DepthInfo finished: ", nrow(seqdepth_df),
+    " final sample(s) written to ", opt$SeqDepthInfoFile, ".\n",
+    sep = ""
+  )
+} else {
+  cat("DepthInfo skipped: --SeqDepthInfoFile is NULL.\n")
+}
 
 dir.create(dirname(opt$abdAlignedFile), recursive = TRUE, showWarnings = FALSE)
 dir.create(dirname(opt$covAlignedFile), recursive = TRUE, showWarnings = FALSE)

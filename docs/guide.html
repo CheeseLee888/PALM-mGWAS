@@ -231,7 +231,7 @@ docker run --rm -it --privileged \
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated covariate columns required by Step1. Step0 uses these columns only for missingness-based sample filtering before ID matching. It does not remove other columns from <code>covAlignedFile</code>. If omitted or set to <code>NULL</code>, all non-ID columns in <code>covFile</code> are checked for missingness</td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td></tr>
     <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Sample-level depth threshold applied after missingness filtering and before genotype ID matching; samples with depth <code>&lt;=</code> this value are removed</td></tr>
-    <tr><td><code>--SeqDepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>DepthInfo</code>, using the exact depth values Step0 uses for sample filtering. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
+    <tr><td><code>--SeqDepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>DepthInfo</code>, written for the final Step0 filtered/aligned sample set in genotype order. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
   </table>
   <p><strong>Step0 examples:</strong></p>
   <ul>
@@ -281,7 +281,7 @@ docker run --rm -it --privileged \
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code>; names must match the header exactly. If omitted or set to <code>NULL</code> while <code>covFile</code> is provided, Step1 uses all covariate columns in <code>covFile</code> except <code>depthCol</code>. If <code>covFile=NULL</code>, Step1 fits the null model without covariates</td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as PALM <code>depth</code>; if omitted, PALM uses row sums of <code>abdFile</code>. This column is excluded from <code>covariate.adjust</code></td></tr>
     <tr><td><code>--prev.filter</code></td><td><code>double</code></td><td><code>0.1</code></td><td>Feature prevalence threshold forwarded to <code>PALM::palm.null.model()</code></td></tr>
-    <tr><td><code>--FeatureInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>FeatureInfo</code>, computed from the Step1 input abundance table before <code>prev.filter</code> removes low-prevalence features</td></tr>
+    <tr><td><code>--FeatureInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>FeatureInfo</code>, computed from the final Step1 modeled feature set after <code>prev.filter</code> removes low-prevalence features</td></tr>
     <tr><td><code>--FeatureNameListFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for modeled feature IDs retained after prevalence filtering</td></tr>
   </table>
   <p><strong>Step1 examples:</strong></p>
@@ -590,7 +590,7 @@ ID_001	473
 ID_002	294
 ID_003	716
 ID_004	318</code></pre>
-  <p>This optional table is written by Step0 when <code>--SeqDepthInfoFile</code> is set. With <code>--depthCol=NULL</code>, <code>SeqDepth</code> values are computed from row sums of <code>abdFile</code>.</p>
+  <p>This optional table is written by Step0 when <code>--SeqDepthInfoFile</code> is set. It contains the final filtered/aligned sample set in genotype order. With <code>--depthCol=NULL</code>, <code>SeqDepth</code> values are computed from row sums of <code>abdFile</code>.</p>
 
   <h3 id="example-step1">Step1: fit the null model</h3>
   <p><strong>Input:</strong> aligned abundance and covariate tables from the previous step.</p>
@@ -625,7 +625,7 @@ g_Lactobacillus	0.74	0.125068707867456
 g_Hungatella	0.54	0.0835005688809989
 g_Sutterella	0.5	0.0847280424401774
 g_Anaerostipes	0.65	0.10380372336141</code></pre>
-  <p>This optional table is written by Step1 when <code>--FeatureInfoFile</code> is set. Behavior definition: <code>FeatureInfo</code> is computed from the Step1 input abundance table before <code>prev.filter</code> removes low-prevalence features.</p>
+  <p>This optional table is written by Step1 when <code>--FeatureInfoFile</code> is set. Behavior definition: <code>FeatureInfo</code> is computed from the final modeled feature set after <code>prev.filter</code> removes low-prevalence features.</p>
 
   <h3 id="example-step2">Step2.1: null model + genotype to per-feature association files</h3>
   <p><strong>Input:</strong> genotype input passed through <code>--genoFile</code> and null model <code>example/output/study1/step1_allpheno.rda</code>.</p>

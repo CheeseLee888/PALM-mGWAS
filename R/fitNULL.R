@@ -19,7 +19,7 @@
 #' @param prev.filter Passed to `PALM::palm.null.model()`; features with
 #'   prevalence less than or equal to this threshold are removed. Defaults to `0.1`.
 #' @param FeatureInfoFile Optional output path for feature prevalence and
-#'   average proportion computed from the Step1 abundance input before
+#'   average proportion computed from the final Step1 modeled feature set after
 #'   prevalence filtering. Use `NULL` (default) to skip writing this file.
 #' @param FeatureNameListFile Optional output path for the modeled feature IDs
 #'   retained in the fitted Step1 null model after prevalence filtering. Use
@@ -105,25 +105,6 @@ fitNULL <- function(abdFile,
   message(
     "Input abundance matrix: ", nrow(abd), " samples x ", ncol(abd), " features."
   )
-  if (!is.null(FeatureInfoFile) && nzchar(FeatureInfoFile)) {
-    message(
-      "Generating FeatureInfo from the Step1 input abundance matrix before prev.filter. ",
-      "Output path: ", FeatureInfoFile
-    )
-    feature_stats <- feature_info_from_matrix(abd, feature_ids = colnames(abd))
-    dir.create(dirname(FeatureInfoFile), recursive = TRUE, showWarnings = FALSE)
-    data.table::fwrite(
-      feature_stats,
-      file = FeatureInfoFile,
-      sep = "\t",
-      quote = FALSE,
-      na = "NA"
-    )
-    message("FeatureInfo finished: ", nrow(feature_stats), " feature(s) written to ", FeatureInfoFile)
-  } else {
-    message("FeatureInfo skipped: FeatureInfoFile is NULL.")
-  }
-
   cov <- NULL
   if (!is.null(covFile)) {
     if (!file.exists(covFile)) {
@@ -236,11 +217,38 @@ fitNULL <- function(abdFile,
   save(modglmm, file = null_model_file)
   message("Done. PALM null model saved to ", null_model_file)
 
-  if (!is.null(FeatureNameListFile) && nzchar(FeatureNameListFile)) {
-    feature_ids <- unique(unlist(lapply(modglmm, function(x) colnames(x$Y_I)), use.names = FALSE))
-    if (!length(feature_ids)) {
-      stop("No modeled features found in fitted null model; cannot write FeatureNameListFile.")
+  feature_ids <- unique(unlist(lapply(modglmm, function(x) colnames(x$Y_I)), use.names = FALSE))
+  if (!length(feature_ids)) {
+    stop("No modeled features found in fitted null model.")
+  }
+
+  if (!is.null(FeatureInfoFile) && nzchar(FeatureInfoFile)) {
+    missing_modeled_features <- setdiff(feature_ids, colnames(abd))
+    if (length(missing_modeled_features) > 0L) {
+      stop(
+        "Modeled feature(s) not found in Step1 abundance input: ",
+        paste(utils::head(missing_modeled_features, 5), collapse = ", ")
+      )
     }
+    message(
+      "Generating FeatureInfo from the final Step1 modeled feature set after prev.filter. ",
+      "Output path: ", FeatureInfoFile
+    )
+    feature_stats <- feature_info_from_matrix(abd[, feature_ids, drop = FALSE], feature_ids = feature_ids)
+    dir.create(dirname(FeatureInfoFile), recursive = TRUE, showWarnings = FALSE)
+    data.table::fwrite(
+      feature_stats,
+      file = FeatureInfoFile,
+      sep = "\t",
+      quote = FALSE,
+      na = "NA"
+    )
+    message("FeatureInfo finished: ", nrow(feature_stats), " modeled feature(s) written to ", FeatureInfoFile)
+  } else {
+    message("FeatureInfo skipped: FeatureInfoFile is NULL.")
+  }
+
+  if (!is.null(FeatureNameListFile) && nzchar(FeatureNameListFile)) {
     dir.create(dirname(FeatureNameListFile), recursive = TRUE, showWarnings = FALSE)
     writeLines(feature_ids, FeatureNameListFile, useBytes = TRUE)
     message(
