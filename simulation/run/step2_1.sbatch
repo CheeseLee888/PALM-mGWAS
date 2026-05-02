@@ -16,6 +16,8 @@ cd "${WORK}"
 STUDY="${STUDY:-study1}"
 MIN_MAF="${MIN_MAF:-0.05}"
 MIN_MAC="${MIN_MAC:-5}"
+MAX_MISSING="${MAX_MISSING:-0.15}"
+IMPUTE_METHOD="${IMPUTE_METHOD:-best_guess}"
 USE_CLUSTER="${USE_CLUSTER:-FALSE}"
 CLUSTER_FILE="${CLUSTER_FILE:-NULL}"
 
@@ -59,6 +61,8 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   --featureColList=NULL \
   --minMAF="${MIN_MAF}" \
   --minMAC="${MIN_MAC}" \
+  --maxMissing="${MAX_MISSING}" \
+  --impute_method="${IMPUTE_METHOD}" \
   --SnpInfoFile=NULL \
   --useCluster="${USE_CLUSTER}" \
   --clusterFile="${CLUSTER_FILE}"

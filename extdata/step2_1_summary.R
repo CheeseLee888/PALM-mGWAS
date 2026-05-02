@@ -34,6 +34,14 @@ option_list <- list(
         type = "integer", default = 5,
         help = ""
     ),
+    make_option("--maxMissing",
+        type = "double", default = 0.15,
+        help = ""
+    ),
+    make_option("--impute_method",
+        type = "character", default = "best_guess",
+        help = ""
+    ),
     make_option("--SnpInfoFile",
         type = "character", default = "NULL",
         help = ""
@@ -77,6 +85,8 @@ getSummary(
   featureColList = opt$featureColList,
   minMAF = opt$minMAF,
   minMAC = opt$minMAC,
+  maxMissing = opt$maxMissing,
+  impute_method = opt$impute_method,
   SnpInfoFile = opt$SnpInfoFile,
   useCluster = opt$useCluster,
   clusterFile = opt$clusterFile

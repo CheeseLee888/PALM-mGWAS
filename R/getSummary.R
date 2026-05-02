@@ -27,10 +27,21 @@
 #' @param minMAC Optional minimum minor allele count threshold used to filter
 #'   SNPs before running `PALM::palm.get.summary()`. Defaults to `5`. Use `0`
 #'   to disable MAC filtering.
+#' @param maxMissing Maximum per-SNP missing genotype rate. SNPs above this
+#'   threshold are removed before imputation and association testing. Defaults
+#'   to `0.15`. Use `1` to disable missingness filtering.
+#' @param impute_method Missing genotype imputation method for SNPs that pass
+#'   `maxMissing`. Supported values are `"best_guess"` (most frequent observed
+#'   genotype, with mean dosage tie-break), `"mean"` (mean observed dosage), and
+#'   `"minor"` (homozygous minor-allele genotype inferred from observed allele
+#'   frequency). Use `"false"` to skip imputation. Defaults to `"best_guess"`.
 #' @param SnpInfoFile Optional output path for SNP sample count and allele
 #'   frequency computed from the Step2 genotype matrix after NULL-model sample
-#'   alignment and optional chromosome subsetting, but before minMAF/minMAC
-#'   filtering. Use `NULL` (default) to skip writing this file.
+#'   alignment, optional chromosome subsetting, missingness filtering,
+#'   imputation, and minMAF/minMAC filtering. This describes the final SNP set
+#'   used for Step2.1 association testing; the `MissingRate` column is computed
+#'   after missingness filtering and before imputation. Use `NULL` (default) to
+#'   skip writing this file.
 #' @param correct Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.
 #' @param useCluster Logical; if `TRUE`, uses clustering in Step2.1. When
 #'   `clusterFile` is not provided, PLINK input falls back to FID from `.fam`.
@@ -50,6 +61,8 @@ getSummary <- function(genoFile,
                        featureColList = NULL,
                        minMAF = 0.05,
                        minMAC = 5,
+                       maxMissing = 0.15,
+                       impute_method = "best_guess",
                        SnpInfoFile = NULL,
                        correct = NULL,
                        useCluster = FALSE,
@@ -85,6 +98,16 @@ getSummary <- function(genoFile,
   }
   if (!is.numeric(minMAC) || length(minMAC) != 1L || is.na(minMAC) || minMAC < 0 || minMAC != as.integer(minMAC)) {
     stop("'minMAC' must be a single non-negative integer value.")
+  }
+  if (!is.numeric(maxMissing) || length(maxMissing) != 1L || is.na(maxMissing) || maxMissing < 0 || maxMissing > 1) {
+    stop("'maxMissing' must be a single numeric value between 0 and 1.")
+  }
+  impute_method <- tolower(trimws(as.character(impute_method)[1]))
+  if (is.na(impute_method) || !nzchar(impute_method) || identical(toupper(impute_method), "NULL")) {
+    impute_method <- "best_guess"
+  }
+  if (!impute_method %in% c("best_guess", "mean", "minor", "false")) {
+    stop("'impute_method' must be one of 'best_guess', 'mean', 'minor', or 'false'.")
   }
   output_dir <- dirname(SummaryPrefix)
   if (!output_dir %in% c("", ".")) {
@@ -256,6 +279,17 @@ getSummary <- function(genoFile,
   } else {
     message("MAC filter disabled: minMAC=0")
   }
+  if (maxMissing < 1) {
+    message("Missingness filter enabled: maxMissing=", maxMissing)
+  } else {
+    message("Missingness filter disabled: maxMissing=1")
+  }
+  message("Missing genotype imputation method: ", impute_method)
+  message(
+    "Genotype QC order: load genotype -> align NULL-model samples -> chromosome filter -> ",
+    "compute MissingRate -> maxMissing filter -> impute unless impute_method=false -> ",
+    "minMAF/minMAC filter -> write SnpInfoFile -> PALM summary."
+  )
   if (is.null(correct)) {
     message("Compositional correction disabled: correct=NULL")
   } else {
@@ -381,25 +415,70 @@ getSummary <- function(genoFile,
     message("Genotype matrix after chromosome filtering: ", nrow(geno), " samples x ", ncol(geno), " SNPs.")
   }
 
-  if (!is.null(SnpInfoFile) && nzchar(SnpInfoFile)) {
+  missing_rate <- colMeans(is.na(geno))
+  message(
+    "Computed per-SNP MissingRate before imputation: min/median/max = ",
+    sprintf("%.4f", min(missing_rate, na.rm = TRUE)), "/",
+    sprintf("%.4f", stats::median(missing_rate, na.rm = TRUE)), "/",
+    sprintf("%.4f", max(missing_rate, na.rm = TRUE))
+  )
+  if (maxMissing < 1) {
+    keep <- which(!is.na(missing_rate) & missing_rate <= maxMissing)
+    if (length(keep) == 0L) {
+      stop("No SNPs remain after applying missingness filter (--maxMissing=", maxMissing, ").")
+    }
     message(
-      "Generating SNPInfo from the Step2 genotype matrix after NULL-model sample alignment",
-      if (!is.null(chrom) && toupper(chrom) != "NULL") " and chromosome filtering" else "",
-      ", before minMAF/minMAC filtering. Output path: ",
-      SnpInfoFile
+      "Genotype matrix after missingness filtering: ", nrow(geno), " samples x ", length(keep),
+      " SNPs (removed ", ncol(geno) - length(keep), ")."
     )
-    snp_stats <- snp_info_from_geno_matrix(geno, snp_ids = colnames(geno))
-    dir.create(dirname(SnpInfoFile), recursive = TRUE, showWarnings = FALSE)
-    data.table::fwrite(
-      snp_stats,
-      file = SnpInfoFile,
-      sep = "\t",
-      quote = FALSE,
-      na = "NA"
+    geno <- geno[, keep, drop = FALSE]
+    missing_rate <- missing_rate[keep]
+  }
+  missing_rate_for_info <- missing_rate
+
+  na_count <- sum(is.na(geno))
+  if (na_count > 0L && identical(impute_method, "false")) {
+    message(
+      "Missing genotype imputation disabled by impute_method=false; retaining ",
+      na_count,
+      " missing genotype value(s)."
     )
-    message("SNPInfo finished: ", nrow(snp_stats), " SNP(s) written to ", SnpInfoFile)
+  } else if (na_count > 0L) {
+    message("Imputing ", na_count, " missing genotype value(s) using method: ", impute_method)
+    for (j in seq_len(ncol(geno))) {
+      miss <- is.na(geno[, j])
+      if (!any(miss)) {
+        next
+      }
+      observed <- geno[!miss, j]
+      if (!length(observed)) {
+        stop("SNP has all missing genotypes after missingness filtering: ", colnames(geno)[j])
+      }
+      mean_dosage <- mean(observed)
+      fill <- switch(
+        impute_method,
+        mean = mean_dosage,
+        best_guess = {
+          rounded <- pmin(2, pmax(0, round(observed)))
+          tab <- table(factor(rounded, levels = c(0, 1, 2)))
+          candidates <- as.numeric(names(tab)[tab == max(tab)])
+          candidates[which.min(abs(candidates - mean_dosage))]
+        },
+        minor = {
+          allele_freq <- mean_dosage / 2
+          if (is.na(allele_freq)) {
+            stop("Cannot infer minor allele for SNP: ", colnames(geno)[j])
+          }
+          if (allele_freq <= 0.5) 2 else 0
+        }
+      )
+      geno[miss, j] <- fill
+    }
+    if (anyNA(geno)) {
+      stop("Missing genotype imputation failed; NA values remain in genotype matrix.")
+    }
   } else {
-    message("SNPInfo skipped: SnpInfoFile is NULL.")
+    message("No missing genotype values detected after missingness filtering; imputation skipped.")
   }
 
   if (minMAF > 0 || minMAC > 0) {
@@ -423,6 +502,32 @@ getSummary <- function(genoFile,
       " SNPs (removed ", ncol(geno) - length(keep), ")."
     )
     geno <- geno[, keep, drop = FALSE]
+    missing_rate_for_info <- missing_rate_for_info[keep]
+  }
+
+  if (!is.null(SnpInfoFile) && nzchar(SnpInfoFile)) {
+    message(
+      "Generating SNPInfo from the final Step2.1 genotype matrix after sample alignment",
+      if (!is.null(chrom) && toupper(chrom) != "NULL") " and chromosome filtering" else "",
+      ", missingness filtering, imputation, minMAF, and minMAC filtering. MissingRate is computed after missingness filtering and before imputation. Output path: ",
+      SnpInfoFile
+    )
+    snp_stats <- snp_info_from_geno_matrix(
+      geno,
+      snp_ids = colnames(geno),
+      missing_rate = missing_rate_for_info
+    )
+    dir.create(dirname(SnpInfoFile), recursive = TRUE, showWarnings = FALSE)
+    data.table::fwrite(
+      snp_stats,
+      file = SnpInfoFile,
+      sep = "\t",
+      quote = FALSE,
+      na = "NA"
+    )
+    message("SNPInfo finished: ", nrow(snp_stats), " SNP(s) written to ", SnpInfoFile)
+  } else {
+    message("SNPInfo skipped: SnpInfoFile is NULL.")
   }
 
 

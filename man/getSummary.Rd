@@ -13,6 +13,8 @@ getSummary(
   featureColList = NULL,
   minMAF = 0.05,
   minMAC = 5,
+  maxMissing = 0.15,
+  impute_method = "best_guess",
   SnpInfoFile = NULL,
   correct = NULL,
   useCluster = FALSE,
@@ -51,10 +53,23 @@ Use `0` to disable MAF filtering.}
 SNPs before running `PALM::palm.get.summary()`. Defaults to `5`. Use `0`
 to disable MAC filtering.}
 
+\item{maxMissing}{Maximum per-SNP missing genotype rate. SNPs above this
+threshold are removed before imputation and association testing. Defaults
+to `0.15`. Use `1` to disable missingness filtering.}
+
+\item{impute_method}{Missing genotype imputation method for SNPs that pass
+`maxMissing`. Supported values are `"best_guess"` (most frequent observed
+genotype, with mean dosage tie-break), `"mean"` (mean observed dosage), and
+`"minor"` (homozygous minor-allele genotype inferred from observed allele
+frequency). Use `"false"` to skip imputation. Defaults to `"best_guess"`.}
+
 \item{SnpInfoFile}{Optional output path for SNP sample count and allele
 frequency computed from the Step2 genotype matrix after NULL-model sample
-alignment and optional chromosome subsetting, but before minMAF/minMAC
-filtering. Use `NULL` (default) to skip writing this file.}
+alignment, optional chromosome subsetting, missingness filtering,
+imputation, and minMAF/minMAC filtering. This describes the final SNP set
+used for Step2.1 association testing; the `MissingRate` column is computed
+after missingness filtering and before imputation. Use `NULL` (default) to
+skip writing this file.}
 
 \item{correct}{Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.}
 

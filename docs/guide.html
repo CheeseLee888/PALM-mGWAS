@@ -306,6 +306,8 @@ docker run --rm -it --privileged \
     --featureColList=${featureColList} \
     --minMAF=${minMAF} \
     --minMAC=${minMAC} \
+    --maxMissing=${maxMissing} \
+    --impute_method=${impute_method} \
     --SnpInfoFile=${SnpInfoFile} \
     --useCluster=${useCluster} \
     --clusterFile=${clusterFile}</code></pre>
@@ -320,12 +322,15 @@ docker run --rm -it --privileged \
     --featureColList=${featureColList} \
     --minMAF=${minMAF} \
     --minMAC=${minMAC} \
+    --maxMissing=${maxMissing} \
+    --impute_method=${impute_method} \
     --SnpInfoFile=${SnpInfoFile} \
     --useCluster=${useCluster} \
     --clusterFile=${clusterFile}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>.</li>
     <li><strong>Outputs:</strong> generates many per-feature <code>.txt</code> files, one file for each tested feature, with columns <code>SNP, CHR, POS, est, stderr, pval</code>.</li>
+    <li><strong>Genotype QC order:</strong> Step2.1 reads genotype data, aligns samples to the NULL model, optionally filters by chromosome, computes per-SNP <code>MissingRate</code>, applies <code>--maxMissing</code>, preserves the passing SNPs' pre-imputation <code>MissingRate</code>, applies <code>--impute_method</code> unless set to <code>false</code>, applies <code>--minMAF</code>/<code>--minMAC</code>, writes <code>--SnpInfoFile</code> for the final tested SNP set if requested, then runs <code>PALM::palm.get.summary()</code>.</li>
     <li><strong>SNP format:</strong> dots are replaced by colons, e.g., <code>chr1:12345:REF:ALT</code>.</li>
     <li><strong>Parallelization pattern:</strong> the software exposes <code>--chrom</code> and <code>--featureColList</code> so users can decompose Step2.1 into independent jobs. In other words, <code>chrom x feature</code> parallelism is achieved by scheduler-level job submission, not by internal multithreading within one Step2.1 process.</li>
   </ul>
@@ -338,7 +343,9 @@ docker run --rm -it --privileged \
     <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated feature IDs to test from the Step1 null model; <code>NULL</code> keeps all modeled features</td></tr>
     <tr><td><code>--minMAF</code></td><td><code>double</code></td><td><code>0.05</code></td><td>Optional minimum minor allele frequency threshold for SNP filtering; <code>0</code> disables this filter</td></tr>
     <tr><td><code>--minMAC</code></td><td><code>integer</code></td><td><code>5</code></td><td>Optional minimum minor allele count threshold for SNP filtering; <code>0</code> disables this filter</td></tr>
-    <tr><td><code>--SnpInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for genotype/SNP summary. <code>SNPInfo</code> is computed from the Step2.1 genotype matrix after NULL-model sample alignment and optional chromosome filtering, but before <code>minMAF</code>/<code>minMAC</code> remove SNPs</td></tr>
+    <tr><td><code>--maxMissing</code></td><td><code>double</code></td><td><code>0.15</code></td><td>Maximum per-SNP missing genotype rate. Step2.1 removes SNPs above this rate before imputation; <code>1</code> disables this filter</td></tr>
+    <tr><td><code>--impute_method</code></td><td><code>character</code></td><td><code>"best_guess"</code></td><td>Missing genotype imputation for SNPs that pass <code>--maxMissing</code>. Supported values are <code>best_guess</code>, <code>mean</code>, <code>minor</code>, and <code>false</code>. Use <code>false</code> to skip imputation and keep remaining missing genotypes</td></tr>
+    <tr><td><code>--SnpInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for genotype/SNP summary. <code>SNPInfo</code> contains the final SNP set used by Step2.1 after NULL-model sample alignment, optional chromosome filtering, missingness filtering, imputation, and <code>minMAF</code>/<code>minMAC</code> filtering. Its <code>MissingRate</code> column is computed after missingness filtering and before imputation</td></tr>
     <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether to use clustering in Step2.1. If no <code>--clusterFile</code> is provided, native PLINK input falls back to FID from the <code>.fam</code> file; all-zero FIDs still disable clustering</td></tr>
     <tr><td><code>--clusterFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional two-column cluster file. The first column is sample IID and the second column is cluster ID. A header row <code>IID cluster</code> is accepted but not required. Providing this file enables clustering and overrides the PLINK FID fallback</td></tr>
   </table>
@@ -351,6 +358,8 @@ docker run --rm -it --privileged \
     <li><code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code>; <code>--featureColList=NULL</code></li>
     <li><code>--minMAF=0.05</code>; <code>--minMAF=0</code></li>
     <li><code>--minMAC=5</code>; <code>--minMAC=0</code></li>
+    <li><code>--maxMissing=0.15</code>; <code>--maxMissing=1</code></li>
+    <li><code>--impute_method=best_guess</code>; <code>--impute_method=mean</code>; <code>--impute_method=minor</code>; <code>--impute_method=false</code></li>
     <li><code>--SnpInfoFile=example/output/study1/info_snp.txt</code>; <code>--SnpInfoFile=NULL</code></li>
     <li><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></li>
     <li><code>--clusterFile=example/input/study1/cluster.txt</code>; <code>--clusterFile=NULL</code>. The file must contain two columns: <code>IID</code> and <code>cluster</code></li>
@@ -627,6 +636,8 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --chrom=NULL \
     --minMAF=0.05 \
     --minMAC=5 \
+    --maxMissing=0.15 \
+    --impute_method=best_guess \
     --SnpInfoFile=NULL \
     --useCluster=FALSE \
     --clusterFile=NULL</code></pre>
@@ -640,6 +651,8 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --chrom=NULL \
     --minMAF=0.05 \
     --minMAC=5 \
+    --maxMissing=0.15 \
+    --impute_method=best_guess \
     --SnpInfoFile=NULL \
     --useCluster=FALSE \
     --clusterFile=NULL</code></pre>

@@ -16,7 +16,7 @@ auto-detects and prefers `"DS"` when present, otherwise falls back to
 `"GT"`. Supported explicit values are `"DS"` and `"GT"`.}
 }
 \value{
-Data frame with CHR, SNP, POS, A1, A2, N, AF.
+Data frame with CHR, SNP, POS, A1, A2, N, MissingRate, AF.
 }
 \description{
 Accepts a PLINK prefix directly. VCF input is read directly before reading

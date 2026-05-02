@@ -39,7 +39,7 @@ seqdepth_info_from_values <- function(sample_ids, depth_values) {
   )
 }
 
-snp_info_from_geno_matrix <- function(geno, snp_ids = colnames(geno)) {
+snp_info_from_geno_matrix <- function(geno, snp_ids = colnames(geno), missing_rate = NULL) {
   geno <- as.matrix(geno)
   storage.mode(geno) <- "numeric"
   if (ncol(geno) < 1L) {
@@ -50,6 +50,14 @@ snp_info_from_geno_matrix <- function(geno, snp_ids = colnames(geno)) {
   }
 
   n_called <- colSums(!is.na(geno))
+  if (is.null(missing_rate)) {
+    missing_rate <- colMeans(is.na(geno))
+  } else {
+    missing_rate <- as.numeric(missing_rate)
+    if (length(missing_rate) != length(snp_ids)) {
+      stop("missing_rate must have the same length as snp_ids")
+    }
+  }
   mac <- colSums(geno, na.rm = TRUE)
   af <- rep(NA_real_, length(snp_ids))
   ok <- n_called > 0
@@ -57,9 +65,10 @@ snp_info_from_geno_matrix <- function(geno, snp_ids = colnames(geno)) {
 
   info <- parse_snp_ids(snp_ids)
   info$N <- as.integer(n_called)
+  info$MissingRate <- as.numeric(missing_rate)
   info$AF <- as.numeric(af)
 
-  info[, c("CHR", "SNP", "POS", "A1", "A2", "N", "AF")]
+  info[, c("CHR", "SNP", "POS", "A1", "A2", "N", "MissingRate", "AF")]
 }
 
 #' Compute feature-level prevalence and average proportion
@@ -160,7 +169,7 @@ parse_snp_ids <- function(snp_ids) {
 #' @param vcf_field Optional VCF FORMAT field override. By default the reader
 #'   auto-detects and prefers `"DS"` when present, otherwise falls back to
 #'   `"GT"`. Supported explicit values are `"DS"` and `"GT"`.
-#' @return Data frame with CHR, SNP, POS, A1, A2, N, AF.
+#' @return Data frame with CHR, SNP, POS, A1, A2, N, MissingRate, AF.
 #' @export
 snp_info <- function(genoFile,
                      vcf_field = NULL) {
