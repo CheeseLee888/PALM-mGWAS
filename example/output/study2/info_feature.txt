@@ -1,0 +1,11 @@
+FeatureID	Prevalence	AvgProportion
+g_Bifidobacterium	0.89	0.325083577046967
+g_Lactobacillus	0.85	0.14293070126817
+g_Hungatella	0.51	0.062975793972621
+g_Sutterella	0.64	0.0971717306913212
+g_Anaerostipes	0.76	0.105252554061502
+g_Peptoniphilus_unclassified	0.46	0.057454202152106
+g_Fusobacterium	0.39	0.043287597640249
+g_Terrisporobacter	0.51	0.0454343926650429
+g_Rothia	0.42	0.0382251260298547
+f_Atopobiaceae	0.6	0.0821843244721669

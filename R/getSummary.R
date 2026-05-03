@@ -652,6 +652,7 @@ getSummary <- function(genoFile,
   output_prefix <- paste0(SummaryPrefix, "_", summary_suffix)
   out_dir <- dirname(output_prefix)
   dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+  summary_n <- as.integer(nrow(geno))
 
   out_paths <- character(0)
   for (pheno in rownames(res)) {
@@ -692,9 +693,10 @@ getSummary <- function(genoFile,
 
     out$CHR <- suppressWarnings(as.integer(chr_clean))
     out$POS <- suppressWarnings(as.integer(pos_raw))
+    out$N <- summary_n
 
     # (Optional) Reorder columns
-    out <- out[, c("SNP", "CHR", "POS", "est", "stderr", "pval")]
+    out <- out[, c("SNP", "CHR", "POS", "N", "est", "stderr", "pval")]
 
 
     out_file <- paste0(output_prefix, "_", pheno, ".txt")

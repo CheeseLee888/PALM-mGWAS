@@ -8,8 +8,7 @@ correctSummary(
   inputPrefix,
   chrom = NULL,
   overwriteOutput = TRUE,
-  correct = c("median", "tune"),
-  NULLmodelFile = NULL
+  correct = c("median", "tune")
 )
 }
 \arguments{
@@ -27,11 +26,8 @@ If `FALSE`, keep the originals and write new files as
 `<inputPrefix>_corrected_<allchr|chrN>_<feature>.txt`.}
 
 \item{correct}{Correction method. Supported values are `"median"` and
-`"tune"`.}
-
-\item{NULLmodelFile}{Optional Step1 NULL model `.rda` containing `modglmm`.
-Required when `correct = "tune"`; the sample size is inferred from
-`nrow(modglmm[[1]]$Y_I)`.}
+`"tune"`. When `correct = "tune"`, sample size is inferred from the Step2.1
+`N` column.}
 }
 \value{
 Invisibly returns the corrected file paths.

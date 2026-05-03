@@ -20,17 +20,15 @@
 #'   `<inputPrefix>_corrected_<allchr|chrN>_<feature>.txt`.
 #' @param correct Correction method. Supported values are `"median"` and
 #'   `"tune"`.
-#' @param NULLmodelFile Optional Step1 NULL model `.rda` containing `modglmm`.
-#'   Required when `correct = "tune"`; the sample size is inferred from
-#'   `nrow(modglmm[[1]]$Y_I)`.
+#'   When `correct = "tune"`, sample size is inferred from the Step2.1 `N`
+#'   column.
 #'
 #' @return Invisibly returns the corrected file paths.
 #' @export
 correctSummary <- function(inputPrefix,
                            chrom = NULL,
                            overwriteOutput = TRUE,
-                           correct = c("median", "tune"),
-                           NULLmodelFile = NULL) {
+                           correct = c("median", "tune")) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
   }
@@ -45,28 +43,6 @@ correctSummary <- function(inputPrefix,
   if (!is.logical(overwriteOutput) || length(overwriteOutput) != 1L || is.na(overwriteOutput)) {
     stop("'overwriteOutput' must be a single TRUE/FALSE value.")
   }
-  tuneN <- NULL
-  if (!is.null(NULLmodelFile)) {
-    if (!file.exists(NULLmodelFile)) {
-      stop("NULL model file not found: ", NULLmodelFile)
-    }
-    env <- new.env()
-    load(NULLmodelFile, envir = env)
-    if (!exists("modglmm", envir = env)) {
-      stop("Object 'modglmm' not found in ", NULLmodelFile)
-    }
-    modglmm <- env$modglmm
-    if (identical(correct, "tune")) {
-      tuneN <- nrow(modglmm[[1]]$Y_I)
-      message("Inferred tuneN from NULL model: ", tuneN)
-    }
-  }
-  if (identical(correct, "tune")) {
-    if (is.null(tuneN)) {
-      stop("'NULLmodelFile' must be supplied when correct='tune' so tuneN can be inferred.")
-    }
-  }
-
   escape_regex <- function(x) {
     gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", x)
   }
@@ -172,10 +148,17 @@ correctSummary <- function(inputPrefix,
     if (length(miss) > 0L) {
       stop("Missing required columns in ", path, ": ", paste(miss, collapse = ", "))
     }
-    dat <- dat[, need, drop = FALSE]
+    keep <- need
+    if ("N" %in% colnames(dat)) {
+      keep <- append(keep, "N", after = match("POS", keep))
+    }
+    dat <- dat[, keep, drop = FALSE]
     dat$SNP <- as.character(dat$SNP)
     dat$CHR <- suppressWarnings(as.integer(dat$CHR))
     dat$POS <- suppressWarnings(as.integer(dat$POS))
+    if ("N" %in% colnames(dat)) {
+      dat$N <- suppressWarnings(as.integer(dat$N))
+    }
     dat$est <- suppressWarnings(as.numeric(dat$est))
     dat$stderr <- suppressWarnings(as.numeric(dat$stderr))
     dat$pval <- suppressWarnings(as.numeric(dat$pval))
@@ -204,6 +187,30 @@ correctSummary <- function(inputPrefix,
   if (identical(correct, "median")) {
     delta <- apply(est_mat, 2, function(x) stats::median(-x, na.rm = TRUE))
   } else {
+    missing_n <- names(feature_data)[!vapply(feature_data, function(dat) "N" %in% colnames(dat), logical(1))]
+    if (length(missing_n) > 0L) {
+      stop(
+        "Step2.2 tune correction requires Step2.1 files with an 'N' column. ",
+        "Missing from feature file(s): ", paste(utils::head(missing_n, 5), collapse = ", ")
+      )
+    }
+    tuneN_by_snp <- vapply(snp_ids, function(snp) {
+      snp_n <- unlist(lapply(feature_data, function(dat) dat$N[dat$SNP == snp]), use.names = FALSE)
+      snp_n <- unique(snp_n[!is.na(snp_n)])
+      if (length(snp_n) != 1L) {
+        stop(
+          "Step2.1 N column must contain exactly one sample size per SNP across feature files. ",
+          "SNP ", snp, " has ", length(snp_n), " value(s): ",
+          if (length(snp_n)) paste(snp_n, collapse = ", ") else "NA"
+        )
+      }
+      as.integer(snp_n)
+    }, integer(1))
+    names(tuneN_by_snp) <- snp_ids
+    message(
+      "Inferred tune N from Step2.1 files: ",
+      paste(sort(unique(tuneN_by_snp)), collapse = ", ")
+    )
     palm_tune <- utils::getFromNamespace("palm_tune", "PALM")
     delta <- rep(NA_real_, length(snp_ids))
     names(delta) <- snp_ids
@@ -213,7 +220,7 @@ correctSummary <- function(inputPrefix,
           Study1 = list(
             est = est_mat[, snp, drop = FALSE],
             stderr = stderr_mat[, snp, drop = FALSE],
-            n = tuneN
+            n = tuneN_by_snp[[snp]]
           )
         ),
         output.best.one = TRUE,
