@@ -24,7 +24,11 @@ option_list <- list(
   make_option("--genoFile", type = "character",
               help = "Genotype input: PLINK prefix or VCF(.vcf/.vcf.gz/.vcf.bgz)"),
   make_option("--SeqDepthInfoFile", type = "character", default = "NULL",
-              help = "Optional output file for sequencing depth info used by Step0 filtering [default %default]")
+              help = "Optional output file for sequencing depth info used by Step0 filtering [default %default]"),
+  make_option("--useCluster", type = "logical", default = FALSE,
+              help = "Whether Step2.1 will use clustering; when TRUE and clusterFile is NULL, PLINK FID is used [default %default]"),
+  make_option("--clusterFile", type = "character", default = "NULL",
+              help = "Optional two-column IID/cluster file used by Step2.1 [default %default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
@@ -81,6 +85,19 @@ read_fam_iid <- function(prefix) {
   ids
 }
 
+read_fam_cluster <- function(prefix) {
+  fam <- paste0(prefix, ".fam")
+  if (!file.exists(fam)) stop("Missing .fam file: ", fam)
+  fam_df <- fread(fam, data.table = FALSE, header = FALSE)
+  if (ncol(fam_df) < 2) stop("Invalid .fam (need >=2 cols): ", fam)
+  ids <- as.character(fam_df[[2]])
+  if (anyNA(ids) || any(!nzchar(ids))) stop("Missing/empty IID detected in .fam: ", fam)
+  if (anyDuplicated(ids)) stop("Duplicated IID in .fam: ", fam)
+  cluster <- as.character(fam_df[[1]])
+  names(cluster) <- ids
+  cluster
+}
+
 read_geno_iid <- function(geno_file) {
   geno_format <- PALMmGWAS:::infer_geno_format(geno_file)
   if (identical(geno_format, "vcf")) {
@@ -94,6 +111,48 @@ read_geno_iid <- function(geno_file) {
     tempLabel = "check_tmp"
   )
   list(ids = read_fam_iid(geno_input$prefix), cleanup = geno_input$cleanup)
+}
+
+read_cluster_file <- function(path) {
+  if (is.null(path) || !nzchar(path)) {
+    return(NULL)
+  }
+  if (!file.exists(path)) {
+    stop("Cluster file not found: ", path)
+  }
+
+  first_line <- readLines(path, n = 1L, warn = FALSE)
+  if (!length(first_line)) {
+    stop("Cluster file is empty: ", path)
+  }
+  first_fields <- strsplit(trimws(first_line), "\\s+")[[1]]
+  has_header <- length(first_fields) >= 2L &&
+    identical(toupper(first_fields[1]), "IID") &&
+    identical(toupper(first_fields[2]), "CLUSTER")
+
+  cluster_data <- fread(
+    path,
+    data.table = FALSE,
+    header = has_header,
+    check.names = FALSE
+  )
+  if (ncol(cluster_data) != 2L) {
+    stop("Cluster file must contain exactly two columns: IID and cluster. File: ", path)
+  }
+  colnames(cluster_data) <- c("IID", "cluster")
+  cluster_data$IID <- as.character(cluster_data$IID)
+  cluster_data$cluster <- as.character(cluster_data$cluster)
+  if (anyNA(cluster_data$IID) || any(!nzchar(cluster_data$IID))) {
+    stop("Cluster file contains missing/empty IID values: ", path)
+  }
+  duplicated_iid <- unique(cluster_data$IID[duplicated(cluster_data$IID)])
+  if (length(duplicated_iid) > 0L) {
+    stop("Cluster file contains duplicated IID(s): ", paste(utils::head(duplicated_iid, 5), collapse = ", "))
+  }
+
+  cluster <- cluster_data$cluster
+  names(cluster) <- cluster_data$IID
+  cluster
 }
 
 reorder_df_to_ref <- function(df, ref_ids, path_label) {
@@ -116,6 +175,12 @@ cat(
 )
 if (is.null(opt$SeqDepthInfoFile) || !nzchar(opt$SeqDepthInfoFile) || toupper(opt$SeqDepthInfoFile) == "NULL") {
   opt$SeqDepthInfoFile <- NULL
+}
+if (is.null(opt$clusterFile) || !nzchar(opt$clusterFile) || toupper(opt$clusterFile) == "NULL") {
+  opt$clusterFile <- NULL
+}
+if (!is.null(opt$clusterFile)) {
+  opt$useCluster <- TRUE
 }
 opt$covarColList <- normalize_col_list(opt$covarColList, "covarColList")
 opt$depthCol <- normalize_col_list(opt$depthCol, "depthCol")
@@ -241,6 +306,7 @@ cat("Matched abd/cov sample count: ", length(abd_ids), ".\n", sep = "")
 
 # 2) Use genotype sample order as the reference order; genotype may contain extra samples
 changed <- FALSE
+geno_format <- PALMmGWAS:::infer_geno_format(opt$genoFile)
 geno_input <- read_geno_iid(
   geno_file = opt$genoFile
 )
@@ -249,6 +315,54 @@ if (length(geno_input$cleanup) > 0L) {
 }
 geno_ids <- geno_input$ids
 cat("Genotype sample count: ", length(geno_ids), ".\n", sep = "")
+
+cluster <- NULL
+cluster_source <- NULL
+if (!is.null(opt$clusterFile)) {
+  cluster <- read_cluster_file(opt$clusterFile)
+  cluster_source <- opt$clusterFile
+  cat("Cluster filter source: clusterFile ", opt$clusterFile, ".\n", sep = "")
+} else if (isTRUE(opt$useCluster)) {
+  if (!identical(geno_format, "plink")) {
+    stop("--useCluster=TRUE without --clusterFile is only supported for native PLINK input.")
+  }
+  cluster <- read_fam_cluster(opt$genoFile)
+  cluster_source <- "PLINK .fam FID"
+  if (all(!is.na(cluster) & cluster == "0")) {
+    cat("All PLINK FID values are 0. No valid cluster information detected; cluster missingness filtering skipped.\n")
+    cluster <- NULL
+    cluster_source <- NULL
+  } else {
+    cat("Cluster filter source: PLINK .fam FID.\n")
+  }
+}
+
+if (!is.null(cluster)) {
+  cluster_values <- cluster[abd_ids]
+  missing_cluster <- is.na(cluster_values) | !nzchar(trimws(cluster_values))
+  removed_n <- sum(missing_cluster)
+  cat(
+    "Removing ", removed_n,
+    " sample(s) with missing cluster values",
+    if (!is.null(cluster_source)) paste0(" from ", cluster_source) else "",
+    ".\n",
+    sep = ""
+  )
+  if (removed_n > 0L) {
+    keep_ids <- abd_ids[!missing_cluster]
+    if (!length(keep_ids)) {
+      stop("No samples remain after removing samples with missing cluster values.")
+    }
+    abd_df <- abd_df[as.character(abd_df[[1]]) %in% keep_ids, , drop = FALSE]
+    cov_df <- cov_df[as.character(cov_df[[1]]) %in% keep_ids, , drop = FALSE]
+    abd_ids <- as.character(abd_df[[1]])
+    cov_ids <- as.character(cov_df[[1]])
+    filtered <- TRUE
+  }
+} else {
+  cat("No cluster missingness filtering requested.\n")
+}
+
 missing_in_geno <- setdiff(abd_ids, geno_ids)
 if (length(missing_in_geno) > 0) {
   stop("IID set mismatch: filtered abd/cov samples missing from genotype input: ",

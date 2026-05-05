@@ -220,8 +220,8 @@ getSummary <- function(genoFile,
     colnames(cluster_data) <- c("IID", "cluster")
     cluster_data$IID <- as.character(cluster_data$IID)
     cluster_data$cluster <- as.character(cluster_data$cluster)
-    if (any(!nzchar(cluster_data$IID)) || any(!nzchar(cluster_data$cluster))) {
-      stop("Cluster file contains empty IID or cluster values: ", path)
+    if (anyNA(cluster_data$IID) || any(!nzchar(cluster_data$IID))) {
+      stop("Cluster file contains missing/empty IID values: ", path)
     }
     duplicated_iid <- unique(cluster_data$IID[duplicated(cluster_data$IID)])
     if (length(duplicated_iid) > 0L) {
@@ -336,7 +336,7 @@ getSummary <- function(genoFile,
       cluster <- as.character(fam_data$FID)
       names(cluster) <- fam_data$IID
       cluster_source <- "PLINK FID"
-      if (all(cluster == 0)) {
+      if (all(!is.na(cluster) & cluster == 0)) {
         message("All FID values are 0. No valid cluster information detected. Setting useCluster = FALSE.")
         useCluster <- FALSE
         cluster <- NULL
