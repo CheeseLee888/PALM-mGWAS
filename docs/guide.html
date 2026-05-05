@@ -185,7 +185,7 @@ docker run --rm -it --privileged \
   <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Step0</code> to <code>Step4</code>. Pixi commands use local project-relative paths. Docker commands mount the same local project at <code>/work</code>, so their input and output arguments use <code>/work/...</code> paths.</p>
   <p>In the parameter tables below, parameter names shown in bold are required.</p>
   <div class="steps">
-    <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> removes samples with missing abundance or required covariate values, optionally filters low-depth samples, checks IID consistency across abundance, covariates, and genotype input, reorders tables to match genotype sample order, and can write sequencing-depth summaries.</div>
+    <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> removes samples with missing abundance, required covariate/depth, or requested cluster values, optionally filters low-depth samples, checks IID consistency across abundance, covariates, and genotype input, reorders tables to match genotype sample order, and can write sequencing-depth summaries.</div>
     <div class="card"><strong>Step1 Null</strong><br><code>step1_null.R</code> fits the PALM null model from the Step0-aligned abundance and covariate tables and can write feature summaries.</div>
     <div class="card"><strong>Step2.1 Summary</strong><br><code>step2_1_summary.R</code> reads genotype input, runs PALM score tests without compositional correction, writes one association file per feature, and can write genotype/SNP summaries.</div>
     <div class="card"><strong>Step2.2 Correction</strong><br><code>step2_2_correction.R</code> reads one Step2 scope at a time and applies median- or tune-based compositional correction across features for each SNP.</div>
@@ -203,7 +203,9 @@ docker run --rm -it --privileged \
     --depthCol=${depthCol} \
     --depth.filter=${depth_filter} \
     --genoFile=${genoFile} \
-    --SeqDepthInfoFile=${SeqDepthInfoFile}</code></pre>
+    --SeqDepthInfoFile=${SeqDepthInfoFile} \
+    --useCluster=${useCluster} \
+    --clusterFile=${clusterFile}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palm-mgwas:latest \
@@ -216,10 +218,13 @@ docker run --rm -it --privileged \
     --depthCol=${depthCol} \
     --depth.filter=${depth_filter} \
     --genoFile=${genoFile} \
-    --SeqDepthInfoFile=${SeqDepthInfoFile}</code></pre>
+    --SeqDepthInfoFile=${SeqDepthInfoFile} \
+    --useCluster=${useCluster} \
+    --clusterFile=${clusterFile}</code></pre>
   <ul>
-    <li><strong>Purpose:</strong> remove samples with missing values needed by Step1, optionally filter low-depth samples, then verify that abundance, covariates, and genotype input remain aligned before modeling.</li>
-    <li><strong>Missingness rule:</strong> samples with missing values in any abundance column are removed. Samples with missing values in Step1-required covariate/depth columns are also removed. When a sample is removed from one table, the matching IID is removed from the other table before ID matching.</li>
+    <li><strong>Purpose:</strong> remove samples with missing values needed by Step1 or clustered Step2.1, optionally filter low-depth samples, then verify that abundance, covariates, and genotype input remain aligned before modeling.</li>
+    <li><strong>Missingness rule:</strong> samples with missing values in any abundance column are removed. Samples with missing values in Step1-required covariate/depth columns are also removed. If clustering is requested through <code>--clusterFile</code> or <code>--useCluster=TRUE</code>, samples with missing cluster values are removed before the aligned files are written. When a sample is removed from one table, the matching IID is removed from the other table before ID matching.</li>
+    <li><strong>Cluster source:</strong> when <code>--clusterFile</code> is provided, Step0 reads a two-column <code>IID</code>/<code>cluster</code> file and treats missing or empty cluster values as sample-level missingness. When <code>--useCluster=TRUE</code> and <code>--clusterFile=NULL</code>, Step0 uses the PLINK <code>.fam</code> FID column as the cluster source; this fallback is available only for PLINK genotype input.</li>
     <li><strong>Alignment rule:</strong> after missingness and depth filtering, the step keeps samples matched across <code>abdFile</code>, <code>covFile</code>, and genotype input, then writes aligned abundance and covariate tables in genotype sample order.</li>
     <li><strong>Covariate columns:</strong> <code>--covarColList</code> is used only to decide which covariate columns must be non-missing for sample filtering before Step1. It does not subset columns in the aligned covariate output; <code>covAlignedFile</code> keeps all columns from <code>covFile</code>.</li>
     <li><strong>Genotype sample count:</strong> genotype input may contain extra samples, but it must not miss any sample retained from <code>abdFile</code>/<code>covFile</code> after filtering.</li>
@@ -236,6 +241,8 @@ docker run --rm -it --privileged \
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td></tr>
     <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Sample-level depth threshold applied after missingness filtering and before genotype ID matching; samples with depth <code>&lt;=</code> this value are removed</td></tr>
     <tr><td><code>--SeqDepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>DepthInfo</code>, written for the final Step0 filtered/aligned sample set in genotype order. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
+    <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether clustered Step2.1 analysis is planned. If <code>TRUE</code> and <code>clusterFile</code> is <code>NULL</code>, Step0 uses PLINK <code>.fam</code> FID values for cluster missingness filtering</td></tr>
+    <tr><td><code>--clusterFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional two-column cluster file. The first column is sample IID and the second column is cluster ID; a header row <code>IID cluster</code> is accepted. Providing this file enables cluster missingness filtering in Step0 and clustered analysis in Step2.1</td></tr>
   </table>
   <p><strong>Step0 examples:</strong></p>
   <ul>
@@ -248,6 +255,8 @@ docker run --rm -it --privileged \
     <li><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></li>
     <li><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></li>
     <li><code>--SeqDepthInfoFile=example/output/study1/info_seqdepth.txt</code>; <code>--SeqDepthInfoFile=NULL</code></li>
+    <li><code>--useCluster=TRUE --clusterFile=example/input/study1/cluster.txt</code> filters samples with missing cluster values from the provided file.</li>
+    <li><code>--useCluster=TRUE --clusterFile=NULL</code> uses PLINK <code>.fam</code> FID values as clusters for PLINK genotype input.</li>
   </ul>
 
   <h2 id="step1">Step1: Fit Null Model</h2>
