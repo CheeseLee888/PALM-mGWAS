@@ -85,7 +85,7 @@
     </div>
   </div>
   <ul>
-    <li><strong>R version:</strong> use <code>R &gt;= 4.2</code>. The bundled pixi setup already pins a compatible runtime.</li>
+    <li><strong>R version:</strong> use <code>R &gt;= 4.1.0</code>, matching the package <code>DESCRIPTION</code>. The bundled pixi setup already provides a compatible runtime.</li>
     <li><strong>Core R packages:</strong> <code>PALM</code>, <code>Matrix</code>, <code>data.table</code>, <code>dplyr</code>, <code>ggplot2</code>, <code>metafor</code>, <code>qqman</code>, <code>snpStats</code>, <code>stringr</code>, <code>tibble</code>, <code>optparse</code>, and <code>abess</code>.</li>
     <li><strong>System consistency:</strong> install PALM and PALM-mGWAS into the same library tree that will be used at runtime.</li>
     <li><strong>If you do not use pixi or Docker:</strong> you can run from local R source, but you must create a clean R environment yourself and install all required packages into the same R library before running the CLI.</li>
@@ -248,14 +248,14 @@ docker run --rm -it --privileged \
   <ul>
     <li><code>--abdFile=example/input/study1/abd.txt</code></li>
     <li><code>--covFile=example/input/study1/cov.txt</code></li>
-    <li><code>--abdAlignedFile=example/output/study1/abd_aligned.txt</code></li>
-    <li><code>--covAlignedFile=example/output/study1/cov_aligned.txt</code></li>
-    <li><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></li>
+    <li><code>--abdAlignedFile=example/input/study1/abd_aligned.txt</code></li>
+    <li><code>--covAlignedFile=example/input/study1/cov_aligned.txt</code></li>
+    <li><code>--genoFile=example/input/study1/geno</code>; VCF input is also supported by passing your own <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code> file path</li>
     <li><code>--covarColList=NULL</code> checks all covariate columns for missingness; <code>--covarColList=AGE,SEX,PC01</code> checks only those columns. In both cases, <code>covAlignedFile</code> still keeps all original covariate columns.</li>
     <li><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></li>
     <li><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></li>
     <li><code>--SeqDepthInfoFile=example/output/study1/info_seqdepth.txt</code>; <code>--SeqDepthInfoFile=NULL</code></li>
-    <li><code>--useCluster=TRUE --clusterFile=example/input/study1/cluster.txt</code> filters samples with missing cluster values from the provided file.</li>
+    <li><code>--useCluster=TRUE --clusterFile=/path/to/cluster.txt</code> filters samples with missing cluster values from a user-provided two-column cluster file.</li>
     <li><code>--useCluster=TRUE --clusterFile=NULL</code> uses PLINK <code>.fam</code> FID values as clusters for PLINK genotype input.</li>
   </ul>
 
@@ -299,9 +299,9 @@ docker run --rm -it --privileged \
   </table>
   <p><strong>Step1 examples:</strong></p>
   <ul>
-    <li><code>--abdFile=example/output/study1/abd_aligned.txt</code></li>
+    <li><code>--abdFile=example/input/study1/abd_aligned.txt</code></li>
     <li><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code> writes <code>example/output/study1/step1_allpheno.rda</code></li>
-    <li><code>--covFile=example/output/study1/cov_aligned.txt</code>; <code>--covFile=NULL</code></li>
+    <li><code>--covFile=example/input/study1/cov_aligned.txt</code>; <code>--covFile=NULL</code></li>
     <li><code>--covarColList=NULL</code> uses all covariate columns from <code>covFile</code> except <code>depthCol</code>; use <code>--covarColList=AGE,SEX,PC01</code> only when selecting specific covariates</li>
     <li><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></li>
     <li><code>--prev.filter=0.1</code>; <code>--prev.filter=0</code></li>
@@ -364,7 +364,7 @@ docker run --rm -it --privileged \
   </table>
   <p><strong>Step2.1 examples:</strong></p>
   <ul>
-    <li><code>--genoFile=example/input/study1/geno</code>; <code>--genoFile=example/input/study1_vcf/geno.vcf.gz</code></li>
+    <li><code>--genoFile=example/input/study1/geno</code>; VCF input is also supported by passing your own <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code> file path</li>
     <li><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code></li>
     <li><code>--SummaryPrefix=example/output/study1/step2 --chrom=1</code> writes one file per tested feature, such as <code>example/output/study1/step2_chr1_g_Bifidobacterium.txt</code> and <code>example/output/study1/step2_chr1_g_Peptoniphilus_unclassified.txt</code>; <code>--SummaryPrefix=example/output/study1/step2_ --chrom=NULL</code> writes all-chromosome files such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code> and <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code></li>
     <li><code>--chrom=1</code>; <code>--chrom=NULL</code>; omit it or set <code>--chrom=</code> for all chromosomes</li>
@@ -375,7 +375,7 @@ docker run --rm -it --privileged \
     <li><code>--impute_method=best_guess</code>; <code>--impute_method=mean</code>; <code>--impute_method=minor</code>; <code>--impute_method=false</code></li>
     <li><code>--SnpInfoFile=example/output/study1/info_snp.txt</code>; <code>--SnpInfoFile=NULL</code></li>
     <li><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></li>
-    <li><code>--clusterFile=example/input/study1/cluster.txt</code>; <code>--clusterFile=NULL</code>. The file must contain two columns: <code>IID</code> and <code>cluster</code></li>
+    <li><code>--clusterFile=/path/to/cluster.txt</code>; <code>--clusterFile=NULL</code>. The file must contain two columns: <code>IID</code> and <code>cluster</code></li>
   </ul>
 
   <h3>Step2.2: compositional correction on one Step2 scope</h3>
@@ -560,7 +560,7 @@ study3  /work/example/output/study3</code></pre>
   <p>Use <code>study_dirs_docker.txt</code> for Docker runs because the container sees the mounted local project under <code>/work</code>.</p>
 
   <h3>Example Input: genotype</h3>
-  <p>The primary genotype input for each study is stored as a PLINK dataset with prefix <code>example/input/study1/geno</code>, corresponding to the files <code>geno.bed</code>, <code>geno.bim</code>, and <code>geno.fam</code>. The repository also includes an alternative input example under <code>example/input/study1_vcf/</code> for testing Step2 with VCF input.</p>
+  <p>The primary genotype input for each study is stored as a PLINK dataset with prefix <code>example/input/study1/geno</code>, corresponding to the files <code>geno.bed</code>, <code>geno.bim</code>, and <code>geno.fam</code>. Step0 and Step2.1 also support VCF input when users pass their own <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code> file path.</p>
 
   <h3 id="example-workflow">Example Workflow: from input to output</h3>
   <p>The same example data can be read as a concrete workflow: what goes in, which script is called, which parameters matter, and what files come out.</p>
