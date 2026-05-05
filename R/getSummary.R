@@ -333,7 +333,7 @@ getSummary <- function(genoFile,
       message("Reading PLINK .fam file for cluster info.")
       fam_data <- utils::read.table(fam, stringsAsFactors = FALSE)
       colnames(fam_data) <- c("FID", "IID", "PID", "MID", "SEX", "PHENO")
-      cluster <- fam_data$FID
+      cluster <- as.character(fam_data$FID)
       names(cluster) <- fam_data$IID
       cluster_source <- "PLINK FID"
       if (all(cluster == 0)) {

@@ -76,9 +76,9 @@ For each study, submit `Step2.1 -> Step2.2` only after the previous stage has fi
 If you want to reproduce the same results currently stored under `output/`, skip `step2.2`.
 
 ```bash
-STUDY=study1 sbatch --array=1-22 run/step2_1.sbatch
-STUDY=study2 sbatch --array=1-22 run/step2_1.sbatch
-STUDY=study3 sbatch --array=1-22 run/step2_1.sbatch
+STUDY=study1 sbatch --array=1-$(wc -l < output/study1/feature_list.txt) run/step2_1.sbatch
+STUDY=study2 sbatch --array=1-$(wc -l < output/study2/feature_list.txt) run/step2_1.sbatch
+STUDY=study3 sbatch --array=1-$(wc -l < output/study3/feature_list.txt) run/step2_1.sbatch
 
 STUDY=study1 sbatch --array=1-22 run/step2_2.sbatch
 STUDY=study2 sbatch --array=1-22 run/step2_2.sbatch
@@ -87,7 +87,7 @@ STUDY=study3 sbatch --array=1-22 run/step2_2.sbatch
 
 This means:
 
-- `run/step2_1.sbatch` runs as a one-chromosome-per-task array
+- `run/step2_1.sbatch` runs as a one-feature-per-task array and writes all-chromosome Step2.1 files
 - `run/step2_2.sbatch` runs as a one-chromosome-per-task array
 
 

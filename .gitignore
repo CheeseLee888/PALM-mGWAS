@@ -26,3 +26,5 @@ config.sh
 workflow/
 simulation/input/
 simulation/output/
+
+app_note/
