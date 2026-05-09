@@ -185,7 +185,7 @@ docker run --rm -it --privileged \
   <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Step0</code> to <code>Step4</code>. Pixi commands use local project-relative paths. Docker commands mount the same local project at <code>/work</code>, so their input and output arguments use <code>/work/...</code> paths.</p>
   <p>In the parameter tables below, parameter names shown in bold are required.</p>
   <div class="steps">
-    <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> removes samples with missing abundance, required covariate/depth, or requested cluster values, optionally filters low-depth samples, checks IID consistency across abundance, covariates, and genotype input, reorders tables to match genotype sample order, and can write sequencing-depth summaries.</div>
+    <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> removes rows with missing abundance or required covariate/depth values, optionally filters low-depth rows, handles repeated subject IDs for longitudinal microbiome data, expands subject-level covariates when needed, aligns rows to genotype subject order, and can write sequencing-depth summaries.</div>
     <div class="card"><strong>Step1 Null</strong><br><code>step1_null.R</code> fits the PALM null model from the Step0-aligned abundance and covariate tables and can write feature summaries.</div>
     <div class="card"><strong>Step2.1 Summary</strong><br><code>step2_1_summary.R</code> reads genotype input, runs PALM score tests without compositional correction, writes one association file per feature, and can write genotype/SNP summaries.</div>
     <div class="card"><strong>Step2.2 Correction</strong><br><code>step2_2_correction.R</code> reads one Step2 scope at a time and applies median- or tune-based compositional correction across features for each SNP.</div>
@@ -201,6 +201,7 @@ docker run --rm -it --privileged \
     --covAlignedFile=${covAlignedFile} \
     --covarColList=${covarColList} \
     --depthCol=${depthCol} \
+    --timeCol=${timeCol} \
     --depth.filter=${depth_filter} \
     --genoFile=${genoFile} \
     --SeqDepthInfoFile=${SeqDepthInfoFile} \
@@ -216,33 +217,35 @@ docker run --rm -it --privileged \
     --covAlignedFile=${covAlignedFile} \
     --covarColList=${covarColList} \
     --depthCol=${depthCol} \
+    --timeCol=${timeCol} \
     --depth.filter=${depth_filter} \
     --genoFile=${genoFile} \
     --SeqDepthInfoFile=${SeqDepthInfoFile} \
     --useCluster=${useCluster} \
     --clusterFile=${clusterFile}</code></pre>
   <ul>
-    <li><strong>Purpose:</strong> remove samples with missing values needed by Step1 or clustered Step2.1, optionally filter low-depth samples, then verify that abundance, covariates, and genotype input remain aligned before modeling.</li>
-    <li><strong>Missingness rule:</strong> samples with missing values in any abundance column are removed. Samples with missing values in Step1-required covariate/depth columns are also removed. If clustering is requested through <code>--clusterFile</code> or <code>--useCluster=TRUE</code>, samples with missing cluster values are removed before the aligned files are written. When a sample is removed from one table, the matching IID is removed from the other table before ID matching.</li>
-    <li><strong>Cluster source:</strong> when <code>--clusterFile</code> is provided, Step0 reads a two-column <code>IID</code>/<code>cluster</code> file and treats missing or empty cluster values as sample-level missingness. When <code>--useCluster=TRUE</code> and <code>--clusterFile=NULL</code>, Step0 uses the PLINK <code>.fam</code> FID column as the cluster source; this fallback is available only for PLINK genotype input.</li>
-    <li><strong>Alignment rule:</strong> after missingness and depth filtering, the step keeps samples matched across <code>abdFile</code>, <code>covFile</code>, and genotype input, then writes aligned abundance and covariate tables in genotype sample order.</li>
+    <li><strong>Purpose:</strong> remove rows with missing values needed by Step1, optionally filter low-depth rows, resolve longitudinal repeated subject IDs, then verify that abundance, covariates, and genotype input remain aligned before modeling.</li>
+    <li><strong>Missingness rule:</strong> rows with missing values in any abundance feature column are removed. Rows with missing values in Step1-required covariate/depth columns are also removed. When a row is removed from one table, the matching row is removed from the other table before genotype matching.</li>
+    <li><strong>Longitudinal rule:</strong> the first column, usually <code>IID</code>, is the subject ID. If <code>abdFile</code> contains repeated subject IDs, pass <code>--timeCol</code>. If <code>covFile</code> also contains repeated subject IDs, it must contain the same <code>--timeCol</code> and the same set of <code>(subject ID, time ID)</code> rows. If <code>covFile</code> has one row per subject, Step0 expands each subject-level covariate row to match the repeated abundance rows.</li>
+    <li><strong>Alignment rule:</strong> after missingness and depth filtering, the step keeps subjects present in genotype input, ignores extra genotype-only subjects, and writes aligned abundance and covariate rows grouped by genotype subject order. For repeated subject IDs, within-subject row order follows the abundance input.</li>
     <li><strong>Covariate columns:</strong> <code>--covarColList</code> is used only to decide which covariate columns must be non-missing for sample filtering before Step1. It does not subset columns in the aligned covariate output; <code>covAlignedFile</code> keeps all columns from <code>covFile</code>.</li>
-    <li><strong>Genotype sample count:</strong> genotype input may contain extra samples, but it must not miss any sample retained from <code>abdFile</code>/<code>covFile</code> after filtering.</li>
-    <li><strong>Failure cases:</strong> missing/empty or duplicated IDs, requested covariate/depth columns not found, non-numeric depth values, no samples left after filtering, or genotype input missing retained samples.</li>
+    <li><strong>Genotype subject count:</strong> genotype input may contain extra subjects, but it must not miss any subject retained from <code>abdFile</code>/<code>covFile</code> after filtering.</li>
+    <li><strong>Failure cases:</strong> missing/empty subject IDs, duplicated <code>(subject ID, time ID)</code> rows, requested covariate/depth/time columns not found, non-numeric depth values, no rows left after filtering, or genotype input missing retained subjects.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose sample order will be checked/reordered; samples with missing values in any abundance column are removed</td></tr>
-    <tr><td><strong><code>--covFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Covariate table whose sample order will be checked/reordered; samples with missing values in required covariate/depth columns are removed</td></tr>
+    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose first column is subject ID; rows with missing values in any abundance feature column are removed</td></tr>
+    <tr><td><strong><code>--covFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Covariate table whose first column is subject ID. It may have one row per subject or, for repeated-measured covariates, one row per subject-time pair</td></tr>
     <tr><td><strong><code>--abdAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned abundance table; original input is not overwritten</td></tr>
     <tr><td><strong><code>--covAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned covariate table; original input is not overwritten</td></tr>
-    <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the sample-order reference. Accepted values are a PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code>. For VCF, Step0 reads sample IDs from the sample columns in the <code>#CHROM</code> header line, checks that every retained abundance/covariate IID is present, ignores extra VCF-only samples, and reorders the aligned abundance/covariate outputs to that VCF sample-column order</td></tr>
+    <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the subject-order reference. Accepted values are a PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code>. For VCF, Step0 reads subject IDs from the sample columns in the <code>#CHROM</code> header line, checks that every retained subject is present, ignores extra VCF-only subjects, and reorders aligned rows by that VCF subject-column order</td></tr>
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated covariate columns required by Step1. Step0 uses these columns only for missingness-based sample filtering before ID matching. It does not remove other columns from <code>covAlignedFile</code>. If omitted or set to <code>NULL</code>, all non-ID columns in <code>covFile</code> are checked for missingness</td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td></tr>
-    <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Sample-level depth threshold applied after missingness filtering and before genotype ID matching; samples with depth <code>&lt;=</code> this value are removed</td></tr>
-    <tr><td><code>--SeqDepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>DepthInfo</code>, written for the final Step0 filtered/aligned sample set in genotype order. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
-    <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether clustered Step2.1 analysis is planned. If <code>TRUE</code> and <code>clusterFile</code> is <code>NULL</code>, Step0 uses PLINK <code>.fam</code> FID values for cluster missingness filtering</td></tr>
-    <tr><td><code>--clusterFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional two-column cluster file. The first column is sample IID and the second column is cluster ID; a header row <code>IID cluster</code> is accepted. Providing this file enables cluster missingness filtering in Step0 and clustered analysis in Step2.1</td></tr>
+    <tr><td><code>--timeCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Time ID column required when <code>abdFile</code> contains repeated subject IDs. Step0 uses it to match repeated-measured covariates by <code>(subject ID, time ID)</code>; the time column is removed from aligned Step1 model inputs</td></tr>
+    <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Row-level depth threshold applied after missingness filtering and before genotype subject matching; rows with depth <code>&lt;=</code> this value are removed</td></tr>
+    <tr><td><code>--SeqDepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>DepthInfo</code>, written for the final Step0 filtered/aligned row set in genotype subject order. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
+    <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether family/pedigree clustering is planned for non-longitudinal data. Longitudinal repeated subject IDs are detected automatically in Step2.1</td></tr>
+    <tr><td><code>--clusterFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Deprecated compatibility argument. Prefer repeated subject IDs for longitudinal clustering and PLINK <code>.fam</code> FID for family/pedigree clustering</td></tr>
   </table>
   <p><strong>Step0 examples:</strong></p>
   <ul>
@@ -255,9 +258,14 @@ docker run --rm -it --privileged \
     <li><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></li>
     <li><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></li>
     <li><code>--SeqDepthInfoFile=example/output/study1/info_seqdepth.txt</code>; <code>--SeqDepthInfoFile=NULL</code></li>
-    <li><code>--useCluster=TRUE --clusterFile=/path/to/cluster.txt</code> filters samples with missing cluster values from a user-provided two-column cluster file.</li>
-    <li><code>--useCluster=TRUE --clusterFile=NULL</code> uses PLINK <code>.fam</code> FID values as clusters for PLINK genotype input.</li>
+    <li><code>--timeCol=VISIT</code> for longitudinal abundance tables with repeated subject IDs; <code>--timeCol=NULL</code> for one row per subject.</li>
+    <li><code>--useCluster=TRUE --clusterFile=NULL</code> uses PLINK <code>.fam</code> FID values as family/pedigree clusters for PLINK genotype input.</li>
   </ul>
+
+  <h3 id="clustering-inputs">Clustering and Repeated Measures</h3>
+  <p>PALM-mGWAS distinguishes two clustering situations. In family or pedigree data, multiple subjects can belong to the same family; genotype input has one row per subject, abundance usually has one row per subject, and Step2.1 uses PLINK <code>.fam</code> FID as the cluster when <code>--useCluster=TRUE</code>. In longitudinal microbiome data, one subject can have multiple abundance rows over time while genotype has one row per subject. In that case the first column <code>IID</code> is the subject ID, not a sample ID, and Step2.1 automatically expands each genotype row to match the repeated abundance rows and uses subject ID as the cluster.</p>
+  <p>When both situations occur together, meaning repeated microbiome rows per subject and subjects nested in families, Step2.1 uses the expanded PLINK FID cluster. No separate cluster file is needed for the standard workflow.</p>
+  <p>For longitudinal inputs, <code>abdFile</code> must include <code>--timeCol</code>. If repeated-measured covariates are supplied, <code>covFile</code> must include the same subject ID and time ID pairs as <code>abdFile</code>. If covariates are subject-level only, such as sex or genetic ancestry PCs, <code>covFile</code> should contain one row per subject; Step0 expands those covariates to match the abundance rows.</p>
 
   <h2 id="step1">Step1: Fit Null Model</h2>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R \
@@ -284,7 +292,7 @@ docker run --rm -it --privileged \
   <ul>
     <li><strong>Inputs:</strong> the Step0-aligned abundance table plus the aligned covariate table.</li>
     <li><strong>Outputs:</strong> <code>NULLObjPrefix</code> containing <code>modglmm</code>; directories are created if missing.</li>
-    <li><strong>Tips:</strong> ensure no duplicated sample IDs; use abundance(count); keep sessionInfo for reproducibility.</li>
+    <li><strong>Tips:</strong> use abundance counts; run Step0 first so repeated subject IDs are handled consistently; keep sessionInfo for reproducibility.</li>
   </ul>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
@@ -343,7 +351,7 @@ docker run --rm -it --privileged \
   <ul>
     <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>.</li>
     <li><strong>Outputs:</strong> generates many per-feature <code>.txt</code> files, one file for each tested feature, with columns <code>SNP, CHR, POS, N, est, stderr, pval</code>.</li>
-    <li><strong>Genotype QC order:</strong> Step2.1 reads genotype data, aligns samples to the NULL model, optionally filters by chromosome, computes per-SNP <code>MissingRate</code>, applies <code>--maxMissing</code>, preserves the passing SNPs' pre-imputation <code>MissingRate</code>, applies <code>--impute_method</code> unless set to <code>false</code>, applies <code>--minMAF</code>/<code>--minMAC</code>, writes <code>--SnpInfoFile</code> for the final tested SNP set if requested, then runs <code>PALM::palm.get.summary()</code>.</li>
+    <li><strong>Genotype QC order:</strong> Step2.1 reads genotype data, aligns and, for longitudinal data, expands genotype rows to the NULL model rows, optionally filters by chromosome, computes per-SNP <code>MissingRate</code>, applies <code>--maxMissing</code>, preserves the passing SNPs' pre-imputation <code>MissingRate</code>, applies <code>--impute_method</code> unless set to <code>false</code>, applies <code>--minMAF</code>/<code>--minMAC</code>, writes <code>--SnpInfoFile</code> for the final tested SNP set if requested, then runs <code>PALM::palm.get.summary()</code>.</li>
     <li><strong>SNP format:</strong> dots are replaced by colons, e.g., <code>chr1:12345:REF:ALT</code>.</li>
     <li><strong>Parallelization pattern:</strong> the software exposes <code>--chrom</code> and <code>--featureColList</code> so users can decompose Step2.1 into independent jobs. In other words, <code>chrom x feature</code> parallelism is achieved by scheduler-level job submission, not by internal multithreading within one Step2.1 process.</li>
   </ul>
@@ -359,8 +367,8 @@ docker run --rm -it --privileged \
     <tr><td><code>--maxMissing</code></td><td><code>double</code></td><td><code>0.15</code></td><td>Maximum per-SNP missing genotype rate. Step2.1 removes SNPs above this rate before imputation; <code>1</code> disables this filter</td></tr>
     <tr><td><code>--impute_method</code></td><td><code>character</code></td><td><code>"best_guess"</code></td><td>Missing genotype imputation for SNPs that pass <code>--maxMissing</code>. Supported values are <code>best_guess</code>, <code>mean</code>, <code>minor</code>, and <code>false</code>. Use <code>false</code> to skip imputation and keep remaining missing genotypes</td></tr>
     <tr><td><code>--SnpInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for genotype/SNP summary. <code>SNPInfo</code> contains the final SNP set used by Step2.1 after NULL-model sample alignment, optional chromosome filtering, missingness filtering, imputation, and <code>minMAF</code>/<code>minMAC</code> filtering. Its <code>MissingRate</code> column is computed after missingness filtering and before imputation</td></tr>
-    <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether to use clustering in Step2.1. If no <code>--clusterFile</code> is provided, native PLINK input falls back to FID from the <code>.fam</code> file; all-zero FIDs still disable clustering</td></tr>
-    <tr><td><code>--clusterFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional two-column cluster file. The first column is sample IID and the second column is cluster ID. A header row <code>IID cluster</code> is accepted but not required. Providing this file enables clustering and overrides the PLINK FID fallback</td></tr>
+    <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether to use family/pedigree clustering in Step2.1. For PLINK input, Step2.1 uses FID from the <code>.fam</code> file. Longitudinal repeated subject IDs are detected from the NULL model and enable clustering automatically</td></tr>
+    <tr><td><code>--clusterFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Deprecated compatibility argument for a two-column <code>IID</code>/<code>cluster</code> file. The standard workflow no longer requires an additional cluster file</td></tr>
   </table>
   <p><strong>Step2.1 examples:</strong></p>
   <ul>
@@ -375,7 +383,7 @@ docker run --rm -it --privileged \
     <li><code>--impute_method=best_guess</code>; <code>--impute_method=mean</code>; <code>--impute_method=minor</code>; <code>--impute_method=false</code></li>
     <li><code>--SnpInfoFile=example/output/study1/info_snp.txt</code>; <code>--SnpInfoFile=NULL</code></li>
     <li><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></li>
-    <li><code>--clusterFile=/path/to/cluster.txt</code>; <code>--clusterFile=NULL</code>. The file must contain two columns: <code>IID</code> and <code>cluster</code></li>
+    <li><code>--clusterFile=NULL</code> for the standard workflow. Longitudinal clustering is inferred from repeated subject IDs; family/pedigree clustering uses PLINK FID when <code>--useCluster=TRUE</code>.</li>
   </ul>
 
   <h3>Step2.2: compositional correction on one Step2 scope</h3>
@@ -536,7 +544,7 @@ ID_001	178	81	59	0	74	32	0	49	0	0
 ID_002	0	43	0	73	96	0	0	0	0	82
 ID_003	235	81	0	92	110	81	54	0	63	0
 ID_004	152	0	0	0	75	91	0	0	0	0</code></pre>
-  <p>The first column is sample ID (<code>IID</code>), and each remaining column is a microbial feature. The actual <code>study1</code> example contains many genus-, family-, and order-level features, so the table above is intentionally truncated after the first few feature columns.</p>
+  <p>The first column is subject ID (<code>IID</code>), and each remaining column is a microbial feature. In longitudinal data, the subject ID can be repeated and a separate time ID column must be supplied through <code>--timeCol</code>. The actual <code>study1</code> example contains many genus-, family-, and order-level features, so the table above is intentionally truncated after the first few feature columns.</p>
 
   <h3>Example Input: covariates</h3>
   <pre><code class="language-tsv"># file: example/input/study1/cov.txt
@@ -545,7 +553,7 @@ ID_001	0.199426813268783	0	-0.0109014	0.0462363	-0.0272948	-0.00748014	0.0047031
 ID_002	-0.829764647357603	0	0.00637629	-0.00200517	-0.00108298	0.00540607	0.000137391
 ID_003	-1.03560293948288	0	0.0103864	-0.00676172	0.000785164	-0.00612183	0.00100164
 ID_004	-0.848477219368992	1	0.0108307	-0.00694051	-0.000638697	-0.0077418	0.00113121</code></pre>
-  <p>The first column must still be the sample ID. Remaining columns can be numeric or factor-like covariates used in the null model.</p>
+  <p>The first column must still be the subject ID. Remaining columns can be numeric or factor-like covariates used in the null model. For longitudinal data, covariates may either repeat by subject-time pair or contain one row per subject for subject-level covariates.</p>
 
   <h3>Example Input: study list for meta-analysis</h3>
   <pre><code class="language-tsv"># file: example/input/study_dirs.txt
@@ -567,7 +575,7 @@ study3  /work/example/output/study3</code></pre>
 
   <h3 id="example-step0">Step0: align IDs before modeling</h3>
   <p><strong>Input:</strong> <code>example/input/study1/abd.txt</code>, <code>example/input/study1/cov.txt</code>, and genotype input passed through <code>--genoFile</code>.</p>
-  <pre><code class="language-bash"># Step0 removes samples with missing required values, filters low-depth samples if requested, then checks IID sets and reorders abd/cov if needed
+  <pre><code class="language-bash"># Step0 removes rows with missing required values, filters low-depth rows if requested, then checks subject IDs and reorders abd/cov if needed
 pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --abdFile=example/input/study1/abd.txt \
     --covFile=example/input/study1/cov.txt \
@@ -575,6 +583,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --covAlignedFile=example/input/study1/cov_aligned.txt \
     --covarColList=NULL \
     --depthCol=NULL \
+    --timeCol=NULL \
     --depth.filter=0 \
     --genoFile=example/input/study1/geno \
     --SeqDepthInfoFile=NULL</code></pre>
@@ -588,6 +597,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --covAlignedFile=/work/example/input/study1/cov_aligned.txt \
     --covarColList=NULL \
     --depthCol=NULL \
+    --timeCol=NULL \
     --depth.filter=0 \
     --genoFile=/work/example/input/study1/geno \
     --SeqDepthInfoFile=NULL</code></pre>
@@ -600,7 +610,7 @@ ID_001	473
 ID_002	294
 ID_003	716
 ID_004	318</code></pre>
-  <p>This optional table is written by Step0 when <code>--SeqDepthInfoFile</code> is set. It contains the final filtered/aligned sample set in genotype order. With <code>--depthCol=NULL</code>, <code>SeqDepth</code> values are computed from row sums of <code>abdFile</code>.</p>
+  <p>This optional table is written by Step0 when <code>--SeqDepthInfoFile</code> is set. It contains the final filtered/aligned rows in genotype subject order. With <code>--depthCol=NULL</code>, <code>SeqDepth</code> values are computed from row sums of <code>abdFile</code>.</p>
 
   <h3 id="example-step1">Step1: fit the null model</h3>
   <p><strong>Input:</strong> aligned abundance and covariate tables from the previous step.</p>

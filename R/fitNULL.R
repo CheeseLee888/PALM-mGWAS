@@ -3,11 +3,11 @@
 #' Reads abundance and optional covariate tables, fits `PALM::palm.null.model`,
 #' saves the fitted object, and invisibly returns it.
 #'
-#' @param abdFile Path to abundance table with sample IDs in the first column.
+#' @param abdFile Path to abundance table with subject IDs in the first column.
 #' @param phenoColList Optional phenotype column names to keep from `abdFile`.
 #'   Accepts either a character vector or a single comma-separated string.
 #'   By default, all non-ID columns in `abdFile` are used.
-#' @param covFile Optional path to covariate table with matching sample IDs.
+#' @param covFile Optional path to covariate table with matching subject IDs.
 #'   Use `NULL` (default) to fit without covariates.
 #' @param covarColList Optional covariate column names to keep from `covFile`.
 #'   Accepts either a character vector or a single comma-separated string.
@@ -87,8 +87,24 @@ fitNULL <- function(abdFile,
     suffix <- if (length(x) > max_show) paste0(", ... (+", length(x) - max_show, " more)") else ""
     paste0(paste(shown, collapse = ", "), suffix)
   }
+  read_firstcol_as_data <- function(file) {
+    if (!requireNamespace("data.table", quietly = TRUE)) {
+      stop("Package 'data.table' is required but not installed.")
+    }
+    df <- data.table::fread(file = file, data.table = FALSE, check.names = FALSE)
+    if (ncol(df) < 1L) {
+      stop("Input file has no columns: ", file)
+    }
+    ids <- as.character(df[[1]])
+    if (anyNA(ids) || any(!nzchar(ids))) {
+      stop("Missing/empty subject ID detected in first column of ", file)
+    }
+    df[[1]] <- NULL
+    list(data = df, ids = ids)
+  }
 
-  abd <- read_firstcol_as_rownames(abdFile)
+  abd_input <- read_firstcol_as_data(abdFile)
+  abd <- abd_input$data
   phenoColList <- normalize_col_list(phenoColList, "phenoColList")
   if (!is.null(phenoColList)) {
     missing_cols <- setdiff(phenoColList, colnames(abd))
@@ -100,37 +116,45 @@ fitNULL <- function(abdFile,
     }
     abd <- abd[, phenoColList, drop = FALSE]
   }
+  subject_ids <- abd_input$ids
+  model_row_ids <- make.unique(subject_ids, sep = "__rep")
   abd <- as.matrix(abd)
   storage.mode(abd) <- "numeric"
+  rownames(abd) <- model_row_ids
   message(
-    "Input abundance matrix: ", nrow(abd), " samples x ", ncol(abd), " features."
+    "Input abundance matrix: ", nrow(abd), " rows x ", ncol(abd), " features."
   )
   cov <- NULL
   if (!is.null(covFile)) {
     if (!file.exists(covFile)) {
       stop("'covFile' does not exist: ", covFile)
     }
-    cov <- read_firstcol_as_rownames(covFile)
+    cov_input <- read_firstcol_as_data(covFile)
+    cov <- cov_input$data
+    rownames(cov) <- make.unique(cov_input$ids)
     message(
-      "Input covariate table: ", nrow(cov), " samples x ", ncol(cov),
+      "Input covariate table: ", nrow(cov), " rows x ", ncol(cov),
       " covariate column(s)."
     )
     message("Covariate columns in covFile: ", format_name_list(colnames(cov)))
-    missing_cov_ids <- setdiff(rownames(abd), rownames(cov))
-    extra_cov_ids <- setdiff(rownames(cov), rownames(abd))
-    same_sample_order <- identical(rownames(abd), rownames(cov))
+    missing_cov_ids <- setdiff(unique(subject_ids), unique(cov_input$ids))
+    extra_cov_ids <- setdiff(unique(cov_input$ids), unique(subject_ids))
+    same_sample_order <- identical(subject_ids, cov_input$ids)
     message(
-      "Covariate sample match: matched=", nrow(abd) - length(missing_cov_ids),
+      "Covariate subject match: matched rows=", sum(subject_ids == cov_input$ids),
       "/", nrow(abd),
       ", missing=", length(missing_cov_ids),
       ", extra=", length(extra_cov_ids),
       ", same_order=", same_sample_order
     )
     if (length(missing_cov_ids) > 0L) {
-      message("Covariate missing sample IDs: ", format_name_list(missing_cov_ids, max_show = 5L))
+      message("Covariate missing subject IDs: ", format_name_list(missing_cov_ids, max_show = 5L))
     }
     if (length(extra_cov_ids) > 0L) {
-      message("Covariate extra sample IDs: ", format_name_list(extra_cov_ids, max_show = 5L))
+      message("Covariate extra subject IDs: ", format_name_list(extra_cov_ids, max_show = 5L))
+    }
+    if (!same_sample_order) {
+      stop("Step1 requires covFile rows to be aligned to abdFile rows by subject ID. Run Step0 first.")
     }
   }
 
@@ -148,12 +172,10 @@ fitNULL <- function(abdFile,
     if (any(is.na(depth) & !is.na(cov[[depthCol]]))) {
       stop("Requested depth column in 'covFile' cannot be safely converted to numeric: ", depthCol)
     }
-    names(depth) <- rownames(cov)
-    missing_ids <- setdiff(rownames(abd), names(depth))
-    if (length(missing_ids) > 0) {
-      stop("Missing depth values for sample IDs: ", paste(utils::head(missing_ids, 5), collapse = ", "))
+    if (length(depth) != nrow(abd)) {
+      stop("Depth column length does not match abundance row count. Run Step0 first.")
     }
-    depth <- depth[rownames(abd)]
+    names(depth) <- subject_ids
     message("depthCol provided: using '", depthCol, "' from ", covFile, " as sequencing depth.")
     message("Depth summary min/median/max=", min(depth), "/", stats::median(depth), "/", max(depth))
   } else {
@@ -201,6 +223,7 @@ fitNULL <- function(abdFile,
         prev.filter = prev.filter
       )
     } else {
+      rownames(cov) <- model_row_ids
       message(
         "covFile provided: fitting PALM null model with ", ncol(cov), " covariate column(s) from ", covFile
       )
@@ -214,6 +237,8 @@ fitNULL <- function(abdFile,
   }
 
   dir.create(dirname(null_model_file), recursive = TRUE, showWarnings = FALSE)
+  attr(modglmm, "subject_ids") <- subject_ids
+  attr(modglmm, "model_row_ids") <- model_row_ids
   save(modglmm, file = null_model_file)
   message("Done. PALM null model saved to ", null_model_file)
 

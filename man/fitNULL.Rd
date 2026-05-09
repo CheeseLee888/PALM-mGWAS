@@ -17,13 +17,13 @@ fitNULL(
 )
 }
 \arguments{
-\item{abdFile}{Path to abundance table with sample IDs in the first column.}
+\item{abdFile}{Path to abundance table with subject IDs in the first column.}
 
 \item{phenoColList}{Optional phenotype column names to keep from `abdFile`.
 Accepts either a character vector or a single comma-separated string.
 By default, all non-ID columns in `abdFile` are used.}
 
-\item{covFile}{Optional path to covariate table with matching sample IDs.
+\item{covFile}{Optional path to covariate table with matching subject IDs.
 Use `NULL` (default) to fit without covariates.}
 
 \item{covarColList}{Optional covariate column names to keep from `covFile`.

@@ -61,7 +61,7 @@ package functions. These scripts are the recommended workflow entry points.
 
 | Path | Purpose |
 | --- | --- |
-| `extdata/step0_checkInput.R` | Checks sample IDs, filters/aligns abundance and covariate tables, and verifies genotype sample compatibility. |
+| `extdata/step0_checkInput.R` | Checks subject IDs, filters/aligns abundance and covariate tables, supports longitudinal repeated subject IDs, and verifies genotype subject compatibility. |
 | `extdata/step1_null.R` | Fits the null model and writes the Step1 `.rda` object. |
 | `extdata/step2_1_summary.R` | Generates Step2.1 association summaries for one chromosome or all chromosomes. |
 | `extdata/step2_2_correction.R` | Applies compositional correction to Step2 outputs. |

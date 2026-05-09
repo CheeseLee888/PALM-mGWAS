@@ -19,16 +19,18 @@ option_list <- list(
               help = "Optional comma-separated covariate columns used in Step1; if NULL, all non-ID covariate columns are used. Samples missing these columns are removed [default %default]"),
   make_option("--depthCol", type = "character", default = "NULL",
               help = "Optional covariate column name used as sequencing depth [default %default]"),
+  make_option("--timeCol", type = "character", default = "NULL",
+              help = "Optional time ID column required when abdFile contains repeated subject IDs [default %default]"),
   make_option("--depth.filter", type = "double", default = 0,
-              help = "Sample-level depth threshold; samples with depth <= threshold are removed before ID matching [default %default]"),
+              help = "Row-level depth threshold; rows with depth <= threshold are removed before ID matching [default %default]"),
   make_option("--genoFile", type = "character",
               help = "Genotype input: PLINK prefix or VCF(.vcf/.vcf.gz/.vcf.bgz)"),
   make_option("--SeqDepthInfoFile", type = "character", default = "NULL",
               help = "Optional output file for sequencing depth info used by Step0 filtering [default %default]"),
   make_option("--useCluster", type = "logical", default = FALSE,
-              help = "Whether Step2.1 will use clustering; when TRUE and clusterFile is NULL, PLINK FID is used [default %default]"),
+              help = "Whether Step2.1 will use clustering; repeated subject IDs use subject ID, otherwise PLINK FID is used when available [default %default]"),
   make_option("--clusterFile", type = "character", default = "NULL",
-              help = "Optional two-column IID/cluster file used by Step2.1 [default %default]")
+              help = "Deprecated; clustering is inferred from repeated subject IDs or PLINK FID [default %default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
@@ -49,30 +51,89 @@ normalize_col_list <- function(x, arg_name) {
   cols
 }
 
-default_covariate_cols <- function(df) {
+default_covariate_cols <- function(df, time_col = NULL) {
   cols <- colnames(df)
   if (length(cols) <= 1L) {
     return(character(0))
   }
-  cols[-1]
+  setdiff(cols[-1], time_col)
 }
 
-read_abd_table <- function(path) {
+read_input_table <- function(path, label) {
   df <- fread(path, data.table = FALSE, check.names = FALSE)
   if (ncol(df) < 1) stop("File has no columns: ", path)
   ids <- as.character(df[[1]])
-  if (anyNA(ids) || any(!nzchar(ids))) stop("Missing/empty IID detected in abundance file: ", path)
-  if (anyDuplicated(ids)) stop("Duplicated IID in file: ", path)
+  if (anyNA(ids) || any(!nzchar(ids))) stop("Missing/empty subject ID detected in ", label, " file: ", path)
   df
 }
 
-read_cov_table <- function(path) {
-  df <- fread(path, data.table = FALSE, check.names = FALSE)
-  if (ncol(df) < 1) stop("File has no columns: ", path)
-  ids <- as.character(df[[1]])
-  if (anyNA(ids) || any(!nzchar(ids))) stop("Missing/empty IID detected in covariate file: ", path)
-  if (anyDuplicated(ids)) stop("Duplicated IID in file: ", path)
-  df
+make_pair_key <- function(subject_id, time_id) {
+  paste(subject_id, time_id, sep = "\r")
+}
+
+validate_time_col <- function(df, time_col, label) {
+  if (is.null(time_col) || !(time_col %in% colnames(df))) {
+    stop(label, " contains repeated subject IDs, so --timeCol must name a time ID column present in that file.")
+  }
+  time_id <- as.character(df[[time_col]])
+  if (anyNA(time_id) || any(!nzchar(time_id))) {
+    stop("Missing/empty time ID detected in ", label, " column '", time_col, "'.")
+  }
+  subject_id <- as.character(df[[1]])
+  key <- make_pair_key(subject_id, time_id)
+  duplicated_key <- unique(key[duplicated(key)])
+  if (length(duplicated_key) > 0L) {
+    stop(label, " contains duplicated (subject ID, time ID) rows.")
+  }
+  key
+}
+
+match_longitudinal_covariates <- function(abd_df, cov_df, time_col) {
+  abd_ids <- as.character(abd_df[[1]])
+  cov_ids <- as.character(cov_df[[1]])
+  abd_repeated <- anyDuplicated(abd_ids) > 0L
+  cov_repeated <- anyDuplicated(cov_ids) > 0L
+
+  if (!abd_repeated) {
+    if (cov_repeated) {
+      stop("covFile has repeated subject IDs but abdFile does not; cannot infer which covariate row to use.")
+    }
+    ord <- match(abd_ids, cov_ids)
+    if (anyNA(ord)) {
+      stop("Some abundance subject IDs are missing from covFile: ", paste(utils::head(abd_ids[is.na(ord)], 5), collapse = ", "))
+    }
+    return(list(abd = abd_df, cov = cov_df[ord, , drop = FALSE], repeated = FALSE))
+  }
+
+  abd_key <- validate_time_col(abd_df, time_col, "abdFile")
+  if (cov_repeated) {
+    cov_key <- validate_time_col(cov_df, time_col, "covFile")
+    missing_cov_key <- setdiff(abd_key, cov_key)
+    extra_cov_key <- setdiff(cov_key, abd_key)
+    if (length(missing_cov_key) > 0L) {
+      stop(
+        "covFile is missing repeated-measure covariate rows for ",
+        length(missing_cov_key),
+        " abundance (subject ID, time ID) pair(s)."
+      )
+    }
+    if (length(extra_cov_key) > 0L) {
+      message("Dropping ", length(extra_cov_key), " covariate-only (subject ID, time ID) row(s).")
+    }
+    ord <- match(abd_key, cov_key)
+    return(list(abd = abd_df, cov = cov_df[ord, , drop = FALSE], repeated = TRUE))
+  }
+
+  duplicated_cov <- unique(cov_ids[duplicated(cov_ids)])
+  if (length(duplicated_cov) > 0L) {
+    stop("Internal error: covariate subject-level branch received duplicated subject IDs.")
+  }
+  missing_subject_cov <- setdiff(unique(abd_ids), cov_ids)
+  if (length(missing_subject_cov) > 0L) {
+    stop("Some abundance subject IDs are missing from subject-level covFile: ", paste(utils::head(missing_subject_cov, 5), collapse = ", "))
+  }
+  ord <- match(abd_ids, cov_ids)
+  list(abd = abd_df, cov = cov_df[ord, , drop = FALSE], repeated = TRUE)
 }
 
 read_fam_iid <- function(prefix) {
@@ -155,22 +216,17 @@ read_cluster_file <- function(path) {
   cluster
 }
 
-reorder_df_to_ref <- function(df, ref_ids, path_label) {
-  ids <- as.character(df[[1]])
-  ord <- match(ref_ids, ids)
-  if (anyNA(ord)) {
-    stop("Cannot reorder: some ref IIDs not found in file: ", path_label)
-  }
-  df[ord, , drop = FALSE]
+order_rows_by_subject_ref <- function(ids, ref_ids) {
+  unlist(lapply(ref_ids, function(id) which(ids == id)), use.names = FALSE)
 }
 
 cat("Checking IIDs...\n")
 
-abd_df <- read_abd_table(opt$abdFile)
-cov_df <- read_cov_table(opt$covFile)
+abd_df <- read_input_table(opt$abdFile, "abundance")
+cov_df <- read_input_table(opt$covFile, "covariate")
 cat(
   "Loaded input tables: abd=", nrow(abd_df),
-  " sample(s), cov=", nrow(cov_df), " sample(s).\n",
+  " row(s), cov=", nrow(cov_df), " row(s).\n",
   sep = ""
 )
 if (is.null(opt$SeqDepthInfoFile) || !nzchar(opt$SeqDepthInfoFile) || toupper(opt$SeqDepthInfoFile) == "NULL") {
@@ -187,12 +243,16 @@ opt$depthCol <- normalize_col_list(opt$depthCol, "depthCol")
 if (!is.null(opt$depthCol) && length(opt$depthCol) != 1L) {
   stop("'depthCol' must specify exactly one column name.")
 }
+opt$timeCol <- normalize_col_list(opt$timeCol, "timeCol")
+if (!is.null(opt$timeCol) && length(opt$timeCol) != 1L) {
+  stop("'timeCol' must specify exactly one column name.")
+}
 if (!is.numeric(opt$depth.filter) || length(opt$depth.filter) != 1L || is.na(opt$depth.filter) || opt$depth.filter < 0) {
   stop("--depth.filter must be a single non-negative numeric value.")
 }
 
 if (is.null(opt$covarColList)) {
-  opt$covarColList <- default_covariate_cols(cov_df)
+  opt$covarColList <- default_covariate_cols(cov_df, opt$timeCol)
   if (length(opt$covarColList) > 0L) {
     cat("covarColList not provided: defaulting to all covariate columns in covFile.\n")
   } else {
@@ -216,39 +276,50 @@ if (length(required_cov_cols) > 0L) {
 
 filtered <- FALSE
 
-if (ncol(abd_df) > 1L) {
-  keep_abd_complete <- stats::complete.cases(abd_df[, -1, drop = FALSE])
+abd_non_id_cols <- setdiff(colnames(abd_df), c(colnames(abd_df)[1], opt$timeCol))
+if (length(abd_non_id_cols) > 0L) {
+  keep_abd_complete <- stats::complete.cases(abd_df[, abd_non_id_cols, drop = FALSE])
   removed_n <- sum(!keep_abd_complete)
-  cat("Removing ", removed_n, " sample(s) with missing values in abundance columns.\n", sep = "")
+  cat("Removing ", removed_n, " abundance row(s) with missing values in abundance columns.\n", sep = "")
   if (removed_n > 0L) {
-    keep_ids <- as.character(abd_df[[1]])[keep_abd_complete]
     abd_df <- abd_df[keep_abd_complete, , drop = FALSE]
-    cov_df <- cov_df[as.character(cov_df[[1]]) %in% keep_ids, , drop = FALSE]
     filtered <- TRUE
   }
   if (nrow(abd_df) == 0L) {
-    stop("No samples remain after removing samples with missing abundance values.")
+    stop("No abundance rows remain after removing rows with missing abundance values.")
   }
 }
+
+abd_repeated_subjects <- anyDuplicated(as.character(abd_df[[1]])) > 0L
+cat("Abundance repeated subject IDs after abundance filtering: ", abd_repeated_subjects, ".\n", sep = "")
+matched <- match_longitudinal_covariates(abd_df, cov_df, opt$timeCol)
+abd_df <- matched$abd
+cov_df <- matched$cov
+cat(
+  if (matched$repeated) {
+    "Matched covariates to longitudinal abundance rows.\n"
+  } else {
+    "Matched covariates to one row per subject.\n"
+  }
+)
 
 if (length(required_cov_cols) > 0L) {
   keep_cov_complete <- stats::complete.cases(cov_df[, required_cov_cols, drop = FALSE])
   removed_n <- sum(!keep_cov_complete)
-  cat("Removing ", removed_n, " sample(s) with missing values in Step1-required covariates/depth columns.\n", sep = "")
+  cat("Removing ", removed_n, " row(s) with missing values in Step1-required covariates/depth columns.\n", sep = "")
   if (removed_n > 0L) {
-    keep_ids <- as.character(cov_df[[1]])[keep_cov_complete]
     cov_df <- cov_df[keep_cov_complete, , drop = FALSE]
-    abd_df <- abd_df[as.character(abd_df[[1]]) %in% keep_ids, , drop = FALSE]
+    abd_df <- abd_df[keep_cov_complete, , drop = FALSE]
     filtered <- TRUE
   }
   if (nrow(cov_df) == 0L || nrow(abd_df) == 0L) {
-    stop("No samples remain after removing samples with missing Step1-required covariate/depth values.")
+    stop("No rows remain after removing rows with missing Step1-required covariate/depth values.")
   }
 }
 
 abd_ids_all <- as.character(abd_df[[1]])
 if (is.null(opt$depthCol)) {
-  depth <- rowSums(as.matrix(abd_df[, -1, drop = FALSE]), na.rm = TRUE)
+  depth <- rowSums(as.matrix(abd_df[, abd_non_id_cols, drop = FALSE]), na.rm = TRUE)
   names(depth) <- abd_ids_all
   cat("Depth filter source: row sums of abdFile.\n")
 } else {
@@ -266,43 +337,29 @@ cat(
   sep = ""
 )
 if (opt$depth.filter > 0) {
-  keep_ids <- names(depth)[depth > opt$depth.filter]
-  removed_n <- length(depth) - length(keep_ids)
-  cat("Applying depth.filter=", opt$depth.filter, ": keeping ", length(keep_ids), " sample(s), removing ", removed_n, ".\n", sep = "")
-  if (!length(keep_ids)) {
-    stop("No samples remain after applying --depth.filter=", opt$depth.filter)
+  keep_depth <- depth > opt$depth.filter
+  removed_n <- length(depth) - sum(keep_depth)
+  cat("Applying depth.filter=", opt$depth.filter, ": keeping ", sum(keep_depth), " row(s), removing ", removed_n, ".\n", sep = "")
+  if (!any(keep_depth)) {
+    stop("No rows remain after applying --depth.filter=", opt$depth.filter)
   }
-  abd_df <- abd_df[as.character(abd_df[[1]]) %in% keep_ids, , drop = FALSE]
-  cov_df <- cov_df[as.character(cov_df[[1]]) %in% keep_ids, , drop = FALSE]
+  abd_df <- abd_df[keep_depth, , drop = FALSE]
+  cov_df <- cov_df[keep_depth, , drop = FALSE]
+  depth <- depth[keep_depth]
   filtered <- filtered || removed_n > 0L
 }
 
 abd_ids <- as.character(abd_df[[1]])
 cov_ids <- as.character(cov_df[[1]])
 cat(
-  "After sample-level filtering: abd=", length(abd_ids),
-  " sample(s), cov=", length(cov_ids), " sample(s).\n",
+  "After row-level filtering: abd=", length(abd_ids),
+  " row(s), cov=", length(cov_ids), " row(s).\n",
   sep = ""
 )
-
-# 1) Keep matched IDs across abundance and covariates after sample filtering
-common_abd_cov_ids <- intersect(abd_ids, cov_ids)
-if (!length(common_abd_cov_ids)) {
-  stop("No matched IID remain across abdFile and covFile after filtering.")
+if (!identical(abd_ids, cov_ids)) {
+  stop("Internal error: abdFile and covFile row subject IDs are not matched after covariate processing.")
 }
-if (length(common_abd_cov_ids) < length(abd_ids) || length(common_abd_cov_ids) < length(cov_ids)) {
-  cat(
-    "Keeping ", length(common_abd_cov_ids),
-    " matched sample(s) shared by abdFile and covFile after filtering.\n",
-    sep = ""
-  )
-  abd_df <- abd_df[abd_ids %in% common_abd_cov_ids, , drop = FALSE]
-  cov_df <- cov_df[cov_ids %in% common_abd_cov_ids, , drop = FALSE]
-  filtered <- TRUE
-}
-abd_ids <- as.character(abd_df[[1]])
-cov_ids <- as.character(cov_df[[1]])
-cat("Matched abd/cov sample count: ", length(abd_ids), ".\n", sep = "")
+cat("Matched abd/cov row count: ", length(abd_ids), ".\n", sep = "")
 
 # 2) Use genotype sample order as the reference order; genotype may contain extra samples
 changed <- FALSE
@@ -337,13 +394,13 @@ if (!is.null(opt$clusterFile)) {
   }
 }
 
-if (!is.null(cluster)) {
+if (!is.null(cluster) && !abd_repeated_subjects) {
   cluster_values <- cluster[abd_ids]
   missing_cluster <- is.na(cluster_values) | !nzchar(trimws(cluster_values))
   removed_n <- sum(missing_cluster)
   cat(
     "Removing ", removed_n,
-    " sample(s) with missing cluster values",
+        " subject(s) with missing cluster values",
     if (!is.null(cluster_source)) paste0(" from ", cluster_source) else "",
     ".\n",
     sep = ""
@@ -351,7 +408,7 @@ if (!is.null(cluster)) {
   if (removed_n > 0L) {
     keep_ids <- abd_ids[!missing_cluster]
     if (!length(keep_ids)) {
-      stop("No samples remain after removing samples with missing cluster values.")
+        stop("No subjects remain after removing subjects with missing cluster values.")
     }
     abd_df <- abd_df[as.character(abd_df[[1]]) %in% keep_ids, , drop = FALSE]
     cov_df <- cov_df[as.character(cov_df[[1]]) %in% keep_ids, , drop = FALSE]
@@ -360,47 +417,46 @@ if (!is.null(cluster)) {
     filtered <- TRUE
   }
 } else {
-  cat("No cluster missingness filtering requested.\n")
+  cat("No cluster missingness filtering requested, or repeated-subject clustering will use subject ID directly in Step2.1.\n")
 }
 
-missing_in_geno <- setdiff(abd_ids, geno_ids)
+abd_ids <- as.character(abd_df[[1]])
+cov_ids <- as.character(cov_df[[1]])
+subject_ids <- unique(abd_ids)
+missing_in_geno <- setdiff(subject_ids, geno_ids)
 if (length(missing_in_geno) > 0) {
-  stop("IID set mismatch: filtered abd/cov samples missing from genotype input: ",
+  stop("Subject ID set mismatch: filtered abd/cov subjects missing from genotype input: ",
        paste(utils::head(missing_in_geno, 5), collapse = ", "))
 }
 
-ref_ids <- geno_ids[geno_ids %in% abd_ids]
+ref_ids <- geno_ids[geno_ids %in% subject_ids]
 cat(
-  "Retained samples present in genotype: ", length(ref_ids),
-  ". Extra genotype-only samples: ", length(geno_ids) - length(ref_ids), ".\n",
+  "Retained subjects present in genotype: ", length(ref_ids),
+  ". Extra genotype-only subjects: ", length(geno_ids) - length(ref_ids), ".\n",
   sep = ""
 )
 
-if (!identical(abd_ids, ref_ids)) {
-  cat("Order mismatch: reordering abdFile to match filtered genotype IID order...\n")
-  abd_df <- reorder_df_to_ref(abd_df, ref_ids, opt$abdFile)
-  changed <- TRUE
-}
-
-if (!identical(cov_ids, ref_ids)) {
-  cat("Order mismatch: reordering covFile to match filtered genotype IID order...\n")
-  cov_df <- reorder_df_to_ref(cov_df, ref_ids, opt$covFile)
+row_ord <- order_rows_by_subject_ref(abd_ids, ref_ids)
+if (!identical(row_ord, seq_len(nrow(abd_df)))) {
+  cat("Order mismatch: reordering abdFile/covFile rows to match filtered genotype subject order...\n")
+  abd_df <- abd_df[row_ord, , drop = FALSE]
+  cov_df <- cov_df[row_ord, , drop = FALSE]
   changed <- TRUE
 }
 
 abd_ids2 <- as.character(abd_df[[1]])
 cov_ids2 <- as.character(cov_df[[1]])
 
-if (!identical(abd_ids2, ref_ids)) stop("After reorder, abdFile IID order still mismatched.")
-if (!identical(cov_ids2, ref_ids)) stop("After reorder, covFile IID order still mismatched.")
+if (!identical(abd_ids2, cov_ids2)) stop("After reorder, abdFile/covFile subject ID order still mismatched.")
+if (!identical(unique(abd_ids2), ref_ids)) stop("After reorder, abdFile subject order still mismatched to genotype.")
 
 if (!is.null(opt$SeqDepthInfoFile)) {
   cat("Generating DepthInfo from the final Step0 filtered/aligned sample set...\n")
-  final_depth <- depth[ref_ids]
+  final_depth <- depth[row_ord]
   if (anyNA(final_depth)) {
-    stop("Internal error: final retained sample(s) missing depth values.")
+    stop("Internal error: final retained row(s) missing depth values.")
   }
-  seqdepth_df <- PALMmGWAS:::seqdepth_info_from_values(ref_ids, final_depth)
+  seqdepth_df <- PALMmGWAS:::seqdepth_info_from_values(abd_ids2, final_depth)
   dir.create(dirname(opt$SeqDepthInfoFile), recursive = TRUE, showWarnings = FALSE)
   fwrite(seqdepth_df, file = opt$SeqDepthInfoFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
   cat(
@@ -414,11 +470,17 @@ if (!is.null(opt$SeqDepthInfoFile)) {
 
 dir.create(dirname(opt$abdAlignedFile), recursive = TRUE, showWarnings = FALSE)
 dir.create(dirname(opt$covAlignedFile), recursive = TRUE, showWarnings = FALSE)
-fwrite(abd_df, file = opt$abdAlignedFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
-fwrite(cov_df, file = opt$covAlignedFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
+abd_out <- abd_df
+cov_out <- cov_df
+if (!is.null(opt$timeCol)) {
+  abd_out <- abd_out[, setdiff(colnames(abd_out), opt$timeCol), drop = FALSE]
+  cov_out <- cov_out[, setdiff(colnames(cov_out), opt$timeCol), drop = FALSE]
+}
+fwrite(abd_out, file = opt$abdAlignedFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
+fwrite(cov_out, file = opt$covAlignedFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
 cat(
-  "Final aligned sample count: abd=", nrow(abd_df),
-  ", cov=", nrow(cov_df), ".\n",
+  "Final aligned row count: abd=", nrow(abd_out),
+  ", cov=", nrow(cov_out), ".\n",
   sep = ""
 )
 

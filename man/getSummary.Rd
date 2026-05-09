@@ -73,14 +73,13 @@ skip writing this file.}
 
 \item{correct}{Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.}
 
-\item{useCluster}{Logical; if `TRUE`, uses clustering in Step2.1. When
-`clusterFile` is not provided, PLINK input falls back to FID from `.fam`.
-Defaults to `FALSE`.}
+\item{useCluster}{Logical; if `TRUE`, uses PLINK FID clustering in Step2.1
+when PLINK FID is available. Longitudinal NULL models with repeated
+subject IDs automatically use clustering even when this is `FALSE`.}
 
-\item{clusterFile}{Optional two-column cluster file. The first column is
-sample IID and the second column is cluster ID. A header row with
-`IID` and `cluster` is accepted but not required. When provided, this
-enables clustering and overrides the PLINK FID fallback.}
+\item{clusterFile}{Deprecated optional two-column cluster file retained for
+backward compatibility. Prefer repeated subject IDs for longitudinal data
+and PLINK FID for family/pedigree clustering.}
 }
 \value{
 Invisibly returns a character vector of written file paths.

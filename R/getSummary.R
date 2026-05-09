@@ -43,13 +43,12 @@
 #'   after missingness filtering and before imputation. Use `NULL` (default) to
 #'   skip writing this file.
 #' @param correct Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.
-#' @param useCluster Logical; if `TRUE`, uses clustering in Step2.1. When
-#'   `clusterFile` is not provided, PLINK input falls back to FID from `.fam`.
-#'   Defaults to `FALSE`.
-#' @param clusterFile Optional two-column cluster file. The first column is
-#'   sample IID and the second column is cluster ID. A header row with
-#'   `IID` and `cluster` is accepted but not required. When provided, this
-#'   enables clustering and overrides the PLINK FID fallback.
+#' @param useCluster Logical; if `TRUE`, uses PLINK FID clustering in Step2.1
+#'   when PLINK FID is available. Longitudinal NULL models with repeated
+#'   subject IDs automatically use clustering even when this is `FALSE`.
+#' @param clusterFile Deprecated optional two-column cluster file retained for
+#'   backward compatibility. Prefer repeated subject IDs for longitudinal data
+#'   and PLINK FID for family/pedigree clustering.
 #'
 #' @return Invisibly returns a character vector of written file paths.
 #' @export
@@ -171,7 +170,7 @@ getSummary <- function(genoFile,
     null_subset
   }
 
-  extract_null_sample_ids <- function(null_obj) {
+  extract_null_row_ids <- function(null_obj) {
     if (!is.list(null_obj) || length(null_obj) < 1L) {
       return(NULL)
     }
@@ -187,6 +186,14 @@ getSummary <- function(genoFile,
       }
     }
     NULL
+  }
+
+  extract_null_subject_ids <- function(null_obj, row_ids) {
+    subject_ids <- attr(null_obj, "subject_ids", exact = TRUE)
+    if (!is.null(subject_ids) && length(subject_ids) == length(row_ids)) {
+      return(as.character(subject_ids))
+    }
+    row_ids
   }
 
   read_cluster_file <- function(path) {
@@ -236,11 +243,16 @@ getSummary <- function(genoFile,
     cluster
   }
 
-  null_sample_ids <- extract_null_sample_ids(modglmm)
-  if (is.null(null_sample_ids)) {
+  null_row_ids <- extract_null_row_ids(modglmm)
+  null_sample_ids <- if (is.null(null_row_ids)) NULL else extract_null_subject_ids(modglmm, null_row_ids)
+  if (is.null(null_row_ids)) {
     message("Could not infer sample IDs from NULL model; using genotype rows as-is.")
   } else {
-    message("NULL model sample count: ", length(null_sample_ids))
+    message("NULL model row count: ", length(null_sample_ids))
+    if (anyDuplicated(null_sample_ids) > 0L) {
+      message("Repeated subject IDs detected in NULL model; Step2.1 will expand genotype rows and use clustering.")
+      useCluster <- TRUE
+    }
   }
 
   featureColList <- normalize_col_list(featureColList, "featureColList")
@@ -304,8 +316,9 @@ getSummary <- function(genoFile,
   }
   message("Cluster option requested: useCluster=", useCluster)
 
-  if (!identical(genoFormat, "plink") && isTRUE(useCluster) && is.null(clusterFile)) {
-    stop("`useCluster=TRUE` without `clusterFile` is only supported for native PLINK input.")
+  repeated_null_subjects <- !is.null(null_sample_ids) && anyDuplicated(null_sample_ids) > 0L
+  if (!identical(genoFormat, "plink") && isTRUE(useCluster) && is.null(clusterFile) && !repeated_null_subjects) {
+    stop("`useCluster=TRUE` without repeated subject IDs or `clusterFile` is only supported for native PLINK input.")
   }
   cluster <- read_cluster_file(clusterFile)
   cluster_source <- if (!is.null(cluster)) "clusterFile" else NULL
@@ -329,7 +342,7 @@ getSummary <- function(genoFile,
     fam <- paste0(genoPrefix, ".fam")
     for (f in c(bed, bim, fam)) if (!file.exists(f)) stop("Missing PLINK file: ", f)
 
-    if (useCluster && is.null(cluster)) {
+    if ((useCluster || repeated_null_subjects) && is.null(cluster)) {
       message("Reading PLINK .fam file for cluster info.")
       fam_data <- utils::read.table(fam, stringsAsFactors = FALSE)
       colnames(fam_data) <- c("FID", "IID", "PID", "MID", "SEX", "PHENO")
@@ -337,10 +350,16 @@ getSummary <- function(genoFile,
       names(cluster) <- fam_data$IID
       cluster_source <- "PLINK FID"
       if (all(!is.na(cluster) & cluster == 0)) {
-        message("All FID values are 0. No valid cluster information detected. Setting useCluster = FALSE.")
-        useCluster <- FALSE
-        cluster <- NULL
-        cluster_source <- NULL
+        if (repeated_null_subjects) {
+          message("All FID values are 0. Longitudinal clustering will use subject ID.")
+          cluster <- NULL
+          cluster_source <- NULL
+        } else {
+          message("All FID values are 0. No valid cluster information detected. Setting useCluster = FALSE.")
+          useCluster <- FALSE
+          cluster <- NULL
+          cluster_source <- NULL
+        }
       }
     }
 
@@ -365,6 +384,9 @@ getSummary <- function(genoFile,
       )
     }
     geno <- geno[null_sample_ids, , drop = FALSE]
+    if (!is.null(null_row_ids) && length(null_row_ids) == nrow(geno)) {
+      rownames(geno) <- null_row_ids
+    }
     if (!is.null(cluster)) {
       missing_cluster_ids <- setdiff(null_sample_ids, names(cluster))
       if (length(missing_cluster_ids) > 0L) {
@@ -374,11 +396,19 @@ getSummary <- function(genoFile,
         )
       }
       cluster <- cluster[null_sample_ids]
+      if (!is.null(null_row_ids) && length(null_row_ids) == length(cluster)) {
+        names(cluster) <- null_row_ids
+      }
       if (any(is.na(cluster))) {
         stop("Cluster data contains NA values after aligning to NULL-model samples.")
       }
+    } else if (repeated_null_subjects) {
+      cluster <- null_sample_ids
+      names(cluster) <- if (!is.null(null_row_ids)) null_row_ids else null_sample_ids
+      cluster_source <- "subject ID"
+      useCluster <- TRUE
     }
-    message("Genotype matrix after aligning to NULL model samples: ", nrow(geno), " samples x ", ncol(geno), " SNPs.")
+    message("Genotype matrix after aligning/expanding to NULL model rows: ", nrow(geno), " rows x ", ncol(geno), " SNPs.")
   } else if (!is.null(cluster)) {
     missing_cluster_ids <- setdiff(rownames(geno), names(cluster))
     if (length(missing_cluster_ids) > 0L) {
