@@ -26,7 +26,7 @@ RUN curl -fsSL https://pixi.sh/install.sh | sh && \
 # ---- deps ----
 RUN pixi run Rscript -e 'install.packages("abess", repos="https://cloud.r-project.org")'
 
-# ---- install PALM (only if PALMmGWAS depends on it) ----
+# ---- install PALM (only if PALMGWAS depends on it) ----
 # RUN pixi run Rscript - << 'EOF'
 # tarball <- "thirdParty/PALM_0.1.0.tar.gz"
 # if (!file.exists(tarball)) stop("PALM tarball not found: ", tarball)
@@ -43,7 +43,7 @@ RUN pixi run env PKG_LIBS="-L/app/.pixi/envs/default/lib -lopenblas -llapack -lb
 # smoke test
 RUN pixi run Rscript -e 'library(PALM); cat("PALM loaded OK\n")'
 
-# ---- install PALMmGWAS ----
+# ---- install PALMGWAS ----
 RUN pixi run R CMD INSTALL .
 
 # ---- wrapper scripts (optional) ----

@@ -1,6 +1,6 @@
-# PALM-mGWAS
+# PALMGWAS
 
-`PALM-mGWAS` is an R package and command-line workflow for microbiome
+`PALMGWAS` is an R package and command-line workflow for microbiome
 genome-wide association studies based on the `PALM` framework. It supports
 input checking, PALM null model fitting, per-study association summary
 generation, multi-study meta-analysis, and downstream reporting.
@@ -11,7 +11,7 @@ Current genotype input support includes PLINK (`.bed/.bim/.fam`) and VCF
 For installation, command-line usage, input formats, examples, Docker, and HPC
 instructions, see the full guide:
 
-<https://cheeselee888.github.io/PALM-mGWAS/>
+<https://cheeselee888.github.io/PALMGWAS/>
 
 ## Feedback
 
@@ -20,7 +20,7 @@ For questions, bug reports, or user feedback, please contact:
 
 ## Package Information
 
-- R package name: `PALMmGWAS`
+- R package name: `PALMGWAS`
 - Version: `1.0`
 - License: `GPL (>= 2)`
 - Required R version: `R >= 4.1.0`
@@ -103,12 +103,12 @@ intended to be committed.
 
 | Path | Purpose |
 | --- | --- |
-| `docker/Dockerfile` | Docker recipe for building a PALM-mGWAS runtime with pixi, PALM, PALMmGWAS, and R dependencies installed. |
+| `docker/Dockerfile` | Docker recipe for building a PALMGWAS runtime with pixi, PALM, PALMGWAS, and R dependencies installed. |
 | `thirdParty/PALM_0.1.0.tar.gz` | Bundled PALM source package used by the local and container installation workflows. |
 | `thirdParty/README_PALM.md` | Notes about the bundled PALM materials. |
 | `thirdParty/*.pdf` | PALM package and manuscript reference materials. |
 
-Large local runtime artifacts such as `PALMmGWAS.sif` and Docker archive tarballs
+Large local runtime artifacts such as `PALMGWAS.sif` and Docker archive tarballs
 are ignored and should not be committed.
 
 ## Development Notes

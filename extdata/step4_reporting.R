@@ -1,5 +1,5 @@
 suppressPackageStartupMessages({
-    library(PALMmGWAS)
+    library(PALMGWAS)
     library(optparse)
 })
 

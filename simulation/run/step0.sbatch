@@ -10,7 +10,7 @@
 
 set -euo pipefail
 WORK="${WORK:-${SLURM_SUBMIT_DIR:-$PWD}}"
-SIF="${SIF:-${WORK}/PALMmGWAS.sif}"
+SIF="${SIF:-${WORK}/PALMGWAS.sif}"
 cd "${WORK}"
 
 STUDY="${STUDY:-study1}"

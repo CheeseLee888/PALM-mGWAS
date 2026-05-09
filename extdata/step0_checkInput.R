@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 suppressPackageStartupMessages({
-  library(PALMmGWAS)
+  library(PALMGWAS)
   library(optparse)
   library(data.table)
 })
@@ -160,14 +160,14 @@ read_fam_cluster <- function(prefix) {
 }
 
 read_geno_iid <- function(geno_file) {
-  geno_format <- PALMmGWAS:::infer_geno_format(geno_file)
+  geno_format <- PALMGWAS:::infer_geno_format(geno_file)
   if (identical(geno_format, "vcf")) {
-    ids <- PALMmGWAS:::read_vcf_header(geno_file)$sample_ids
+    ids <- PALMGWAS:::read_vcf_header(geno_file)$sample_ids
     if (anyDuplicated(ids)) stop("Duplicated IID in VCF header: ", geno_file)
     return(list(ids = ids, cleanup = character(0)))
   }
 
-  geno_input <- PALMmGWAS:::prepare_plink_input(
+  geno_input <- PALMGWAS:::prepare_plink_input(
     genoFile = geno_file,
     tempLabel = "check_tmp"
   )
@@ -363,7 +363,7 @@ cat("Matched abd/cov row count: ", length(abd_ids), ".\n", sep = "")
 
 # 2) Use genotype sample order as the reference order; genotype may contain extra samples
 changed <- FALSE
-geno_format <- PALMmGWAS:::infer_geno_format(opt$genoFile)
+geno_format <- PALMGWAS:::infer_geno_format(opt$genoFile)
 geno_input <- read_geno_iid(
   geno_file = opt$genoFile
 )
@@ -456,7 +456,7 @@ if (!is.null(opt$SeqDepthInfoFile)) {
   if (anyNA(final_depth)) {
     stop("Internal error: final retained row(s) missing depth values.")
   }
-  seqdepth_df <- PALMmGWAS:::seqdepth_info_from_values(abd_ids2, final_depth)
+  seqdepth_df <- PALMGWAS:::seqdepth_info_from_values(abd_ids2, final_depth)
   dir.create(dirname(opt$SeqDepthInfoFile), recursive = TRUE, showWarnings = FALSE)
   fwrite(seqdepth_df, file = opt$SeqDepthInfoFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
   cat(

@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 suppressPackageStartupMessages({
-  library(PALMmGWAS)
+  library(PALMGWAS)
   library(optparse)
 })
 

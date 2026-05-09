@@ -12,7 +12,7 @@ That directory should contain:
 - `run/`
 - `generate_simulation_data.R`
 
-Users generate `input/` and `output/` locally by running the simulation workflow. `PALMmGWAS.sif` is not shipped in this directory and should be built by following the container instructions in the guide.
+Users generate `input/` and `output/` locally by running the simulation workflow. `PALMGWAS.sif` is not shipped in this directory and should be built by following the container instructions in the guide.
 
 Directory layout:
 

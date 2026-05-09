@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>PALM-mGWAS Usage Guide</title>
+  <title>PALMGWAS Usage Guide</title>
   <style>
     body {font-family: "Helvetica Neue", Arial, sans-serif; margin: 0; color: #222; line-height: 1.6; background: #f7fafc;}
     h1, h2, h3 {color: #0f3b66; margin-top: 1.2em;}
@@ -62,14 +62,14 @@
     <a href="#example-step4" class="sub">Example Step4</a>
   </div>
   <div class="content">
-  <h1>PALM-mGWAS Usage Guide</h1>
-  <p>This page explains how to run the PALM-mGWAS R package: key functions, required inputs, outputs, and the Step0-Step4 workflow.</p>
+  <h1>PALMGWAS Usage Guide</h1>
+  <p>This page explains how to run the PALMGWAS R package: key functions, required inputs, outputs, and the Step0-Step4 workflow.</p>
 
   <h2 id="feedback">Feedback</h2>
   <p>For questions, bug reports, or user feedback, please contact <a href="mailto:cheese.lee.888@gmail.com">cheese.lee.888@gmail.com</a>.</p>
 
   <h2 id="env">Environment & Dependencies</h2>
-  <p>Set up the runtime environment before installing or running any PALM-mGWAS command. The package depends on compiled R libraries, so the most reliable workflow is to keep <code>R</code>, <code>PALM</code>, and all supporting packages inside one isolated environment instead of mixing system-level and project-level installs.</p>
+  <p>Set up the runtime environment before installing or running any PALMGWAS command. The package depends on compiled R libraries, so the most reliable workflow is to keep <code>R</code>, <code>PALM</code>, and all supporting packages inside one isolated environment instead of mixing system-level and project-level installs.</p>
   <div class="env-grid">
     <div class="card">
       <strong>Recommended runtime</strong><br>
@@ -77,17 +77,17 @@
     </div>
     <div class="card">
       <strong>Supported alternative</strong><br>
-      Use the published Docker image if you want a prebuilt runtime with PALM-mGWAS, PALM, <code>abess</code>, and the R package dependencies already installed.
+      Use the published Docker image if you want a prebuilt runtime with PALMGWAS, PALM, <code>abess</code>, and the R package dependencies already installed.
     </div>
     <div class="card">
       <strong>What to avoid</strong><br>
-      Do not install <code>PALM</code> into a different R library and then run PALM-mGWAS from another environment. Mixed BLAS or mixed R libraries are the main source of setup failures.
+      Do not install <code>PALM</code> into a different R library and then run PALMGWAS from another environment. Mixed BLAS or mixed R libraries are the main source of setup failures.
     </div>
   </div>
   <ul>
     <li><strong>R version:</strong> use <code>R &gt;= 4.1.0</code>, matching the package <code>DESCRIPTION</code>. The bundled pixi setup already provides a compatible runtime.</li>
     <li><strong>Core R packages:</strong> <code>PALM</code>, <code>Matrix</code>, <code>data.table</code>, <code>dplyr</code>, <code>ggplot2</code>, <code>metafor</code>, <code>qqman</code>, <code>snpStats</code>, <code>stringr</code>, <code>tibble</code>, <code>optparse</code>, and <code>abess</code>.</li>
-    <li><strong>System consistency:</strong> install PALM and PALM-mGWAS into the same library tree that will be used at runtime.</li>
+    <li><strong>System consistency:</strong> install PALM and PALMGWAS into the same library tree that will be used at runtime.</li>
     <li><strong>If you do not use pixi or Docker:</strong> you can run from local R source, but you must create a clean R environment yourself and install all required packages into the same R library before running the CLI.</li>
   </ul>
   <p>In practice, you should choose exactly one execution mode for a project directory: local <code>pixi run ...</code> commands, local system-R commands, or Docker/Apptainer commands. The workflow examples below show pixi and Docker commands because those are the most reproducible modes.</p>
@@ -102,8 +102,8 @@ curl -fsSL https://pixi.sh/install.sh | bash
 export PATH="$HOME/.pixi/bin:$PATH"
 
 # clone the repository and enter the source tree
-git clone git@github.com:CheeseLee888/PALM-mGWAS.git
-cd PALM-mGWAS
+git clone git@github.com:CheeseLee888/PALMGWAS.git
+cd PALMGWAS
 
 # create the base pixi environment
 pixi install
@@ -113,17 +113,17 @@ pixi run install-abess
 pixi run env PKG_LIBS="-L$PWD/.pixi/envs/default/lib -lopenblas -llapack -lblas" \
   R CMD INSTALL thirdParty/PALM_0.1.0.tar.gz
 
-# install PALM-mGWAS itself into the same pixi R library
+# install PALMGWAS itself into the same pixi R library
 pixi run R CMD INSTALL .</code></pre>
-  <p><strong>One-time setup:</strong> <code>pixi install</code> only creates the base environment. Before running the workflow scripts, you should also install <code>abess</code>, the bundled <code>PALM</code> tarball, and the local <code>PALMmGWAS</code> package into that pixi-managed R library.</p>
+  <p><strong>One-time setup:</strong> <code>pixi install</code> only creates the base environment. Before running the workflow scripts, you should also install <code>abess</code>, the bundled <code>PALM</code> tarball, and the local <code>PALMGWAS</code> package into that pixi-managed R library.</p>
   <p><strong>Command prefix for routine runs:</strong> after the one-time setup above, most commands in this guide can be run as <code>pixi run Rscript extdata/&lt;script&gt;.R ...</code> from the repository root.</p>
   <p><strong>Do not use the system R for PALM installation:</strong> install <code>PALM</code> through <code>pixi run</code> so that it links against the BLAS/LAPACK libraries inside the pixi environment. On macOS, avoid wrapping the install command in <code>pixi run bash -lc '...'</code> because a login shell can resolve <code>R</code> back to the system binary and trigger errors such as missing <code>libopenblas.0.dylib</code> when <code>library(PALM)</code> is loaded.</p>
 
   <h3 id="install-r">Option B: local R source installation without pixi</h3>
-  <p>Use this method only if you want to manage R and compiled libraries yourself. Compared with pixi, this mode requires manual package installation and manual control of BLAS/LAPACK compatibility. Install <code>PALM</code>, <code>PALMmGWAS</code>, and all dependencies into the same R library that will be used when running <code>Rscript</code>.</p>
+  <p>Use this method only if you want to manage R and compiled libraries yourself. Compared with pixi, this mode requires manual package installation and manual control of BLAS/LAPACK compatibility. Install <code>PALM</code>, <code>PALMGWAS</code>, and all dependencies into the same R library that will be used when running <code>Rscript</code>.</p>
   <pre><code class="language-bash"># clone the repository and enter the source tree
-git clone git@github.com:CheeseLee888/PALM-mGWAS.git
-cd PALM-mGWAS
+git clone git@github.com:CheeseLee888/PALMGWAS.git
+cd PALMGWAS
 
 # install CRAN dependencies into your active R library
 Rscript -e 'install.packages(c("Matrix", "data.table", "dplyr", "ggplot2", "metafor", "qqman", "stringr", "tibble", "optparse", "abess"), repos="https://cloud.r-project.org")'
@@ -134,55 +134,55 @@ Rscript -e 'if (!requireNamespace("BiocManager", quietly=TRUE)) install.packages
 # install the bundled PALM source package
 R CMD INSTALL thirdParty/PALM_0.1.0.tar.gz
 
-# install PALM-mGWAS itself
+# install PALMGWAS itself
 R CMD INSTALL .
 
 # smoke test that all packages load from the same R library
-Rscript -e 'library(PALM); library(PALMmGWAS); library(snpStats); cat("PALM-mGWAS local R installation OK\n")'</code></pre>
+Rscript -e 'library(PALM); library(PALMGWAS); library(snpStats); cat("PALMGWAS local R installation OK\n")'</code></pre>
   <p><strong>Command prefix for routine runs:</strong> with local R source installation, replace the pixi prefix with plain <code>Rscript</code>, for example <code>Rscript extdata/step0_checkInput.R ...</code> from the repository root.</p>
   <p><strong>When to prefer pixi:</strong> if <code>PALM</code> fails to install or load because of BLAS/LAPACK linking errors, use Option A. Pixi pins the compiler-facing libraries and installs <code>PALM</code> with explicit link flags, which avoids most local system-R library mismatches.</p>
 
   <h3 id="install-docker">Option C: Docker image</h3>
   <pre><code class="language-bash"># pull the published image
-docker pull --platform=linux/amd64 cheeselee/palm-mgwas:latest
+docker pull --platform=linux/amd64 cheeselee/palmgwas:latest
 
 # enter the repository example directory
-cd /path/to/PALM-mGWAS
+cd /path/to/PALMGWAS
 
 # run a packaged script inside the container
 docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step1_null.R --help</code></pre>
-  <p>This published Docker image already contains pixi, <code>abess</code>, PALM, <code>PALMmGWAS</code>, and the R package dependencies, so Docker users do not need to repeat the local source installation steps from Option A or Option B. Mount your local project directory to <code>/work</code> and pass paths under <code>/work</code>, such as <code>/work/example/input/study1/abd.txt</code>. The Docker image supplies the scripts and runtime; the data files are read from and written to your mounted local directory.</p>
+  <p>This published Docker image already contains pixi, <code>abess</code>, PALM, <code>PALMGWAS</code>, and the R package dependencies, so Docker users do not need to repeat the local source installation steps from Option A or Option B. Mount your local project directory to <code>/work</code> and pass paths under <code>/work</code>, such as <code>/work/example/input/study1/abd.txt</code>. The Docker image supplies the scripts and runtime; the data files are read from and written to your mounted local directory.</p>
 
   <h3 id="sif">Option D: Build an Apptainer/SIF image for HPC</h3>
-  <p>Use this method when the target cluster runs Apptainer/Singularity instead of Docker. First build or pull the Docker image on a machine with Docker, save it as a Docker archive, then convert the archive to <code>PALMmGWAS.sif</code>.</p>
+  <p>Use this method when the target cluster runs Apptainer/Singularity instead of Docker. First build or pull the Docker image on a machine with Docker, save it as a Docker archive, then convert the archive to <code>PALMGWAS.sif</code>.</p>
   <pre><code class="language-bash"># Option D1: build the Docker image locally from this repository
 DOCKER_DEFAULT_PLATFORM=linux/amd64 \
 docker buildx build --platform linux/amd64 \
-  -t palm-mgwas:latest --load \
+  -t palmgwas:latest --load \
   -f docker/Dockerfile .
 
 # Option D2: or use the published Docker image
-docker pull --platform=linux/amd64 cheeselee/palm-mgwas:latest
+docker pull --platform=linux/amd64 cheeselee/palmgwas:latest
 
 # save one of the Docker images as an archive
-docker save cheeselee/palm-mgwas:latest -o PALMmGWAS.tar
+docker save cheeselee/palmgwas:latest -o PALMGWAS.tar
 # or, if you built the local image above:
-docker save palm-mgwas:latest -o PALMmGWAS.tar
+docker save palmgwas:latest -o PALMGWAS.tar
 
 # convert the Docker archive to an Apptainer/SIF image
 docker run --rm -it --privileged \
   --platform=linux/amd64 \
   -v "$PWD":/work ghcr.io/apptainer/apptainer:latest \
   apptainer build --arch amd64 \
-    /work/PALMmGWAS.sif \
-    docker-archive:///work/PALMmGWAS.tar</code></pre>
-  <p>Copy <code>PALMmGWAS.sif</code> to the cluster project directory and run workflow scripts with <code>apptainer exec</code>. The simulation workflow under <code>simulation/</code> uses this SIF image when submitting the provided <code>.sbatch</code> scripts. Those templates expect the default image path <code>${WORK}/PALMmGWAS.sif</code>, or you can override it by setting <code>SIF=/path/to/PALMmGWAS.sif</code>.</p>
+    /work/PALMGWAS.sif \
+    docker-archive:///work/PALMGWAS.tar</code></pre>
+  <p>Copy <code>PALMGWAS.sif</code> to the cluster project directory and run workflow scripts with <code>apptainer exec</code>. The simulation workflow under <code>simulation/</code> uses this SIF image when submitting the provided <code>.sbatch</code> scripts. Those templates expect the default image path <code>${WORK}/PALMGWAS.sif</code>, or you can override it by setting <code>SIF=/path/to/PALMGWAS.sif</code>.</p>
 
   <h2 id="workflow">Workflow</h2>
-  <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALM-mGWAS</code> package root. The workflow below goes from <code>Step0</code> to <code>Step4</code>. Pixi commands use local project-relative paths. Docker commands mount the same local project at <code>/work</code>, so their input and output arguments use <code>/work/...</code> paths.</p>
+  <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALMGWAS</code> package root. The workflow below goes from <code>Step0</code> to <code>Step4</code>. Pixi commands use local project-relative paths. Docker commands mount the same local project at <code>/work</code>, so their input and output arguments use <code>/work/...</code> paths.</p>
   <p>In the parameter tables below, parameter names shown in bold are required.</p>
   <div class="steps">
     <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> removes rows with missing abundance or required covariate/depth values, optionally filters low-depth rows, handles repeated subject IDs for longitudinal microbiome data, expands subject-level covariates when needed, aligns rows to genotype subject order, and can write sequencing-depth summaries.</div>
@@ -209,7 +209,7 @@ docker run --rm -it --privileged \
     --clusterFile=${clusterFile}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step0_checkInput.R \
     --abdFile=${abdFile} \
     --covFile=${covFile} \
@@ -263,7 +263,7 @@ docker run --rm -it --privileged \
   </ul>
 
   <h3 id="clustering-inputs">Clustering and Repeated Measures</h3>
-  <p>PALM-mGWAS distinguishes two clustering situations. In family or pedigree data, multiple subjects can belong to the same family; genotype input has one row per subject, abundance usually has one row per subject, and Step2.1 uses PLINK <code>.fam</code> FID as the cluster when <code>--useCluster=TRUE</code>. In longitudinal microbiome data, one subject can have multiple abundance rows over time while genotype has one row per subject. In that case the first column <code>IID</code> is the subject ID, not a sample ID, and Step2.1 automatically expands each genotype row to match the repeated abundance rows and uses subject ID as the cluster.</p>
+  <p>PALMGWAS distinguishes two clustering situations. In family or pedigree data, multiple subjects can belong to the same family; genotype input has one row per subject, abundance usually has one row per subject, and Step2.1 uses PLINK <code>.fam</code> FID as the cluster when <code>--useCluster=TRUE</code>. In longitudinal microbiome data, one subject can have multiple abundance rows over time while genotype has one row per subject. In that case the first column <code>IID</code> is the subject ID, not a sample ID, and Step2.1 automatically expands each genotype row to match the repeated abundance rows and uses subject ID as the cluster.</p>
   <p>When both situations occur together, meaning repeated microbiome rows per subject and subjects nested in families, Step2.1 uses the expanded PLINK FID cluster. No separate cluster file is needed for the standard workflow.</p>
   <p>For longitudinal inputs, <code>abdFile</code> must include <code>--timeCol</code>. If repeated-measured covariates are supplied, <code>covFile</code> must include the same subject ID and time ID pairs as <code>abdFile</code>. If covariates are subject-level only, such as sex or genetic ancestry PCs, <code>covFile</code> should contain one row per subject; Step0 expands those covariates to match the abundance rows.</p>
 
@@ -279,7 +279,7 @@ docker run --rm -it --privileged \
     --NULLObjPrefix=${NULLObjPrefix}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step1_null.R \
     --abdFile=${abdFile} \
     --covFile=${covFile} \
@@ -334,7 +334,7 @@ docker run --rm -it --privileged \
     --clusterFile=${clusterFile}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step2_1_summary.R \
     --genoFile=${genoFile} \
     --NULLObjPrefix=${NULLObjPrefix} \
@@ -394,7 +394,7 @@ docker run --rm -it --privileged \
     --correct=${step2CorrectMode}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step2_2_correction.R \
     --inputPrefix=${inputPrefix} \
     --chrom=${chrom} \
@@ -429,7 +429,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --metaPrefix=${metaPrefix}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step3_meta.R \
     --studyDirFile=${studyDirFile} \
     --inputPrefix=${inputPrefix} \
@@ -494,7 +494,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
   <pre><code class="language-bash"># Docker commands access the mounted local project under /work
 docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step4_reporting.R \
     --metaDir=${metaDir} \
     --plotPrefix=${plotPrefix} \
@@ -589,7 +589,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --SeqDepthInfoFile=NULL</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step0_checkInput.R \
     --abdFile=/work/example/input/study1/abd.txt \
     --covFile=/work/example/input/study1/cov.txt \
@@ -625,7 +625,7 @@ ID_004	318</code></pre>
     --NULLObjPrefix=example/output/study1/step1_allpheno</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step1_null.R \
     --abdFile=/work/example/input/study1/abd_aligned.txt \
     --covFile=/work/example/input/study1/cov_aligned.txt \
@@ -663,7 +663,7 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --clusterFile=NULL</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step2_1_summary.R \
     --genoFile=/work/example/input/study1/geno \
     --NULLObjPrefix=/work/example/output/study1/step1_allpheno \
@@ -688,7 +688,7 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --correct=median</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step2_2_correction.R \
     --inputPrefix=/work/example/output/study1/step2 \
     --chrom=NULL \
@@ -724,7 +724,7 @@ chr1:14985097:C:T	1	14985097	100	0.111742358350986	0.113523070073392	0.324961099
     --metaPrefix=example/output/meta/meta</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step3_meta.R \
     --studyDirFile=/work/example/input/study_dirs_docker.txt \
     --inputPrefix=/work/example/output/study1/step2 \
@@ -751,7 +751,7 @@ chr1:14678191:A:C	1	14678191	-0.184697893992603	0.0333318764894014	3.00441911000
     --pCut=5e-8</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step4_reporting.R \
     --metaDir=/work/example/output/meta \
     --plotPrefix=/work/example/output/plot/ \
@@ -774,7 +774,7 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
     --feature=g_Bifidobacterium</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step4_reporting.R \
     --metaDir=/work/example/output/meta \
     --plotPrefix=/work/example/output/plot/ \
@@ -801,7 +801,7 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
     --pCut=5e-8</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step4_reporting.R \
     --metaDir=/work/example/output/meta \
     --plotPrefix=/work/example/output/plot/ \
@@ -829,7 +829,7 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
     --snp=chr1:14678191:A:C</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palm-mgwas:latest \
+  cheeselee/palmgwas:latest \
   step4_reporting.R \
     --metaDir=/work/example/output/meta \
     --plotPrefix=/work/example/output/plot/ \

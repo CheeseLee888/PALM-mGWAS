@@ -10,7 +10,7 @@ set -euo pipefail
 WORK="${WORK:-${SLURM_SUBMIT_DIR:-$PWD}}"
 cd "${WORK}"
 
-SIF="${SIF:-${WORK}/PALMmGWAS.sif}"
+SIF="${SIF:-${WORK}/PALMGWAS.sif}"
 META_DIR="${META_DIR:-${WORK}/output/meta}"
 PLOT_PREFIX="${PLOT_PREFIX:-${WORK}/output/plot/}"
 FEATURE="${FEATURE:-g_Acinetobacter}"

@@ -8,7 +8,7 @@
 
 set -euo pipefail
 WORK="${WORK:-${SLURM_SUBMIT_DIR:-$PWD}}"
-SIF="${SIF:-${WORK}/PALMmGWAS.sif}"
+SIF="${SIF:-${WORK}/PALMGWAS.sif}"
 META_DIR="${META_DIR:-${WORK}/output/meta}"
 STUDY_FILE="${STUDY_FILE:-${META_DIR}/study_dirs.tsv}"
 META_PREFIX="step3_meta_"
