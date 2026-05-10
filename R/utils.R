@@ -1,7 +1,7 @@
 #' Read a tabular file and set the first column as row names
 #'
 #' Convenience helper used throughout the package for reading abundance and
-#' covariate tables that store sample IDs in the first column.
+#' covariate tables that store subject IDs in the first column.
 #'
 #' @param file Path to a delimited text file readable by `data.table::fread()`.
 #'

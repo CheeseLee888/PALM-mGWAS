@@ -28,9 +28,7 @@ option_list <- list(
   make_option("--SeqDepthInfoFile", type = "character", default = "NULL",
               help = "Optional output file for sequencing depth info used by Step0 filtering [default %default]"),
   make_option("--useCluster", type = "logical", default = FALSE,
-              help = "Whether Step2.1 will use clustering; repeated subject IDs use subject ID, otherwise PLINK FID is used when available [default %default]"),
-  make_option("--clusterFile", type = "character", default = "NULL",
-              help = "Deprecated; clustering is inferred from repeated subject IDs or PLINK FID [default %default]")
+              help = "Whether Step2.1 will use PLINK FID clustering for family/pedigree data; repeated subject IDs use subject ID automatically [default %default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
@@ -174,48 +172,6 @@ read_geno_iid <- function(geno_file) {
   list(ids = read_fam_iid(geno_input$prefix), cleanup = geno_input$cleanup)
 }
 
-read_cluster_file <- function(path) {
-  if (is.null(path) || !nzchar(path)) {
-    return(NULL)
-  }
-  if (!file.exists(path)) {
-    stop("Cluster file not found: ", path)
-  }
-
-  first_line <- readLines(path, n = 1L, warn = FALSE)
-  if (!length(first_line)) {
-    stop("Cluster file is empty: ", path)
-  }
-  first_fields <- strsplit(trimws(first_line), "\\s+")[[1]]
-  has_header <- length(first_fields) >= 2L &&
-    identical(toupper(first_fields[1]), "IID") &&
-    identical(toupper(first_fields[2]), "CLUSTER")
-
-  cluster_data <- fread(
-    path,
-    data.table = FALSE,
-    header = has_header,
-    check.names = FALSE
-  )
-  if (ncol(cluster_data) != 2L) {
-    stop("Cluster file must contain exactly two columns: IID and cluster. File: ", path)
-  }
-  colnames(cluster_data) <- c("IID", "cluster")
-  cluster_data$IID <- as.character(cluster_data$IID)
-  cluster_data$cluster <- as.character(cluster_data$cluster)
-  if (anyNA(cluster_data$IID) || any(!nzchar(cluster_data$IID))) {
-    stop("Cluster file contains missing/empty IID values: ", path)
-  }
-  duplicated_iid <- unique(cluster_data$IID[duplicated(cluster_data$IID)])
-  if (length(duplicated_iid) > 0L) {
-    stop("Cluster file contains duplicated IID(s): ", paste(utils::head(duplicated_iid, 5), collapse = ", "))
-  }
-
-  cluster <- cluster_data$cluster
-  names(cluster) <- cluster_data$IID
-  cluster
-}
-
 order_rows_by_subject_ref <- function(ids, ref_ids) {
   unlist(lapply(ref_ids, function(id) which(ids == id)), use.names = FALSE)
 }
@@ -231,12 +187,6 @@ cat(
 )
 if (is.null(opt$SeqDepthInfoFile) || !nzchar(opt$SeqDepthInfoFile) || toupper(opt$SeqDepthInfoFile) == "NULL") {
   opt$SeqDepthInfoFile <- NULL
-}
-if (is.null(opt$clusterFile) || !nzchar(opt$clusterFile) || toupper(opt$clusterFile) == "NULL") {
-  opt$clusterFile <- NULL
-}
-if (!is.null(opt$clusterFile)) {
-  opt$useCluster <- TRUE
 }
 opt$covarColList <- normalize_col_list(opt$covarColList, "covarColList")
 opt$depthCol <- normalize_col_list(opt$depthCol, "depthCol")
@@ -375,13 +325,9 @@ cat("Genotype sample count: ", length(geno_ids), ".\n", sep = "")
 
 cluster <- NULL
 cluster_source <- NULL
-if (!is.null(opt$clusterFile)) {
-  cluster <- read_cluster_file(opt$clusterFile)
-  cluster_source <- opt$clusterFile
-  cat("Cluster filter source: clusterFile ", opt$clusterFile, ".\n", sep = "")
-} else if (isTRUE(opt$useCluster)) {
+if (isTRUE(opt$useCluster)) {
   if (!identical(geno_format, "plink")) {
-    stop("--useCluster=TRUE without --clusterFile is only supported for native PLINK input.")
+    stop("--useCluster=TRUE is only supported for native PLINK input, where clustering uses .fam FID.")
   }
   cluster <- read_fam_cluster(opt$genoFile)
   cluster_source <- "PLINK .fam FID"

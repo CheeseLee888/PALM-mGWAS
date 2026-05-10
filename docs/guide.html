@@ -205,8 +205,7 @@ docker run --rm -it --privileged \
     --depth.filter=${depth_filter} \
     --genoFile=${genoFile} \
     --SeqDepthInfoFile=${SeqDepthInfoFile} \
-    --useCluster=${useCluster} \
-    --clusterFile=${clusterFile}</code></pre>
+    --useCluster=${useCluster}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:latest \
@@ -221,8 +220,7 @@ docker run --rm -it --privileged \
     --depth.filter=${depth_filter} \
     --genoFile=${genoFile} \
     --SeqDepthInfoFile=${SeqDepthInfoFile} \
-    --useCluster=${useCluster} \
-    --clusterFile=${clusterFile}</code></pre>
+    --useCluster=${useCluster}</code></pre>
   <ul>
     <li><strong>Purpose:</strong> remove rows with missing values needed by Step1, optionally filter low-depth rows, resolve longitudinal repeated subject IDs, then verify that abundance, covariates, and genotype input remain aligned before modeling.</li>
     <li><strong>Missingness rule:</strong> rows with missing values in any abundance feature column are removed. Rows with missing values in Step1-required covariate/depth columns are also removed. When a row is removed from one table, the matching row is removed from the other table before genotype matching.</li>
@@ -245,7 +243,6 @@ docker run --rm -it --privileged \
     <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Row-level depth threshold applied after missingness filtering and before genotype subject matching; rows with depth <code>&lt;=</code> this value are removed</td></tr>
     <tr><td><code>--SeqDepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>DepthInfo</code>, written for the final Step0 filtered/aligned row set in genotype subject order. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
     <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether family/pedigree clustering is planned for non-longitudinal data. Longitudinal repeated subject IDs are detected automatically in Step2.1</td></tr>
-    <tr><td><code>--clusterFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Deprecated compatibility argument. Prefer repeated subject IDs for longitudinal clustering and PLINK <code>.fam</code> FID for family/pedigree clustering</td></tr>
   </table>
   <p><strong>Step0 examples:</strong></p>
   <ul>
@@ -259,12 +256,12 @@ docker run --rm -it --privileged \
     <li><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></li>
     <li><code>--SeqDepthInfoFile=example/output/study1/info_seqdepth.txt</code>; <code>--SeqDepthInfoFile=NULL</code></li>
     <li><code>--timeCol=VISIT</code> for longitudinal abundance tables with repeated subject IDs; <code>--timeCol=NULL</code> for one row per subject.</li>
-    <li><code>--useCluster=TRUE --clusterFile=NULL</code> uses PLINK <code>.fam</code> FID values as family/pedigree clusters for PLINK genotype input.</li>
+    <li><code>--useCluster=TRUE</code> uses PLINK <code>.fam</code> FID values as family/pedigree clusters for PLINK genotype input.</li>
   </ul>
 
   <h3 id="clustering-inputs">Clustering and Repeated Measures</h3>
-  <p>PALMGWAS distinguishes two clustering situations. In family or pedigree data, multiple subjects can belong to the same family; genotype input has one row per subject, abundance usually has one row per subject, and Step2.1 uses PLINK <code>.fam</code> FID as the cluster when <code>--useCluster=TRUE</code>. In longitudinal microbiome data, one subject can have multiple abundance rows over time while genotype has one row per subject. In that case the first column <code>IID</code> is the subject ID, not a sample ID, and Step2.1 automatically expands each genotype row to match the repeated abundance rows and uses subject ID as the cluster.</p>
-  <p>When both situations occur together, meaning repeated microbiome rows per subject and subjects nested in families, Step2.1 uses the expanded PLINK FID cluster. No separate cluster file is needed for the standard workflow.</p>
+  <p>PALMGWAS distinguishes two clustering situations. In family or pedigree data, multiple subjects can belong to the same family; genotype input has one row per subject, abundance usually has one row per subject, and Step2.1 uses PLINK <code>.fam</code> FID as the cluster when <code>--useCluster=TRUE</code>. In longitudinal microbiome data, one subject can have multiple abundance rows over time while genotype has one row per subject. In that case the first column <code>IID</code> is the subject ID, not a row-unique measurement ID, and Step2.1 automatically expands each genotype row to match the repeated abundance rows and uses subject ID as the cluster.</p>
+  <p>When both situations occur together, meaning repeated microbiome rows per subject and subjects nested in families, Step2.1 uses the expanded PLINK FID cluster.</p>
   <p>For longitudinal inputs, <code>abdFile</code> must include <code>--timeCol</code>. If repeated-measured covariates are supplied, <code>covFile</code> must include the same subject ID and time ID pairs as <code>abdFile</code>. If covariates are subject-level only, such as sex or genetic ancestry PCs, <code>covFile</code> should contain one row per subject; Step0 expands those covariates to match the abundance rows.</p>
 
   <h2 id="step1">Step1: Fit Null Model</h2>
@@ -330,8 +327,7 @@ docker run --rm -it --privileged \
     --maxMissing=${maxMissing} \
     --impute_method=${impute_method} \
     --SnpInfoFile=${SnpInfoFile} \
-    --useCluster=${useCluster} \
-    --clusterFile=${clusterFile}</code></pre>
+    --useCluster=${useCluster}</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:latest \
@@ -346,8 +342,7 @@ docker run --rm -it --privileged \
     --maxMissing=${maxMissing} \
     --impute_method=${impute_method} \
     --SnpInfoFile=${SnpInfoFile} \
-    --useCluster=${useCluster} \
-    --clusterFile=${clusterFile}</code></pre>
+    --useCluster=${useCluster}</code></pre>
   <ul>
     <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>.</li>
     <li><strong>Outputs:</strong> generates many per-feature <code>.txt</code> files, one file for each tested feature, with columns <code>SNP, CHR, POS, N, est, stderr, pval</code>.</li>
@@ -368,7 +363,6 @@ docker run --rm -it --privileged \
     <tr><td><code>--impute_method</code></td><td><code>character</code></td><td><code>"best_guess"</code></td><td>Missing genotype imputation for SNPs that pass <code>--maxMissing</code>. Supported values are <code>best_guess</code>, <code>mean</code>, <code>minor</code>, and <code>false</code>. Use <code>false</code> to skip imputation and keep remaining missing genotypes</td></tr>
     <tr><td><code>--SnpInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for genotype/SNP summary. <code>SNPInfo</code> contains the final SNP set used by Step2.1 after NULL-model sample alignment, optional chromosome filtering, missingness filtering, imputation, and <code>minMAF</code>/<code>minMAC</code> filtering. Its <code>MissingRate</code> column is computed after missingness filtering and before imputation</td></tr>
     <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether to use family/pedigree clustering in Step2.1. For PLINK input, Step2.1 uses FID from the <code>.fam</code> file. Longitudinal repeated subject IDs are detected from the NULL model and enable clustering automatically</td></tr>
-    <tr><td><code>--clusterFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Deprecated compatibility argument for a two-column <code>IID</code>/<code>cluster</code> file. The standard workflow no longer requires an additional cluster file</td></tr>
   </table>
   <p><strong>Step2.1 examples:</strong></p>
   <ul>
@@ -383,7 +377,6 @@ docker run --rm -it --privileged \
     <li><code>--impute_method=best_guess</code>; <code>--impute_method=mean</code>; <code>--impute_method=minor</code>; <code>--impute_method=false</code></li>
     <li><code>--SnpInfoFile=example/output/study1/info_snp.txt</code>; <code>--SnpInfoFile=NULL</code></li>
     <li><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></li>
-    <li><code>--clusterFile=NULL</code> for the standard workflow. Longitudinal clustering is inferred from repeated subject IDs; family/pedigree clustering uses PLINK FID when <code>--useCluster=TRUE</code>.</li>
   </ul>
 
   <h3>Step2.2: compositional correction on one Step2 scope</h3>
@@ -659,8 +652,7 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --maxMissing=0.15 \
     --impute_method=best_guess \
     --SnpInfoFile=NULL \
-    --useCluster=FALSE \
-    --clusterFile=NULL</code></pre>
+    --useCluster=FALSE</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:latest \
@@ -674,8 +666,7 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --maxMissing=0.15 \
     --impute_method=best_guess \
     --SnpInfoFile=NULL \
-    --useCluster=FALSE \
-    --clusterFile=NULL</code></pre>
+    --useCluster=FALSE</code></pre>
   <p><strong>Output:</strong> one file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on.</p>
   <p><strong>Current example files:</strong> in this repository the Step2.1 outputs use real feature names, for example <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
 

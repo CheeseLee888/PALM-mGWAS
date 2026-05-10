@@ -19,7 +19,6 @@ MIN_MAC="${MIN_MAC:-5}"
 MAX_MISSING="${MAX_MISSING:-0.15}"
 IMPUTE_METHOD="${IMPUTE_METHOD:-best_guess}"
 USE_CLUSTER="${USE_CLUSTER:-FALSE}"
-CLUSTER_FILE="${CLUSTER_FILE:-NULL}"
 
 INPUT_DIR="${WORK}/input/${STUDY}"
 OUTPUT_DIR="${WORK}/output/${STUDY}"
@@ -54,7 +53,7 @@ echo "step2_1: chrom=NULL (all chromosomes)"
 echo "step2_1: feature=${FEATURE}"
 echo "step2_1: feature list=${FEATURE_FILE}"
 echo "step2_1: SummaryPrefix=${STEP2_SUMMARY_PREFIX}"
-echo "step2_1: cluster file=${CLUSTER_FILE}"
+echo "step2_1: useCluster=${USE_CLUSTER}"
 
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   step2_1_summary.R \
@@ -68,5 +67,4 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   --maxMissing="${MAX_MISSING}" \
   --impute_method="${IMPUTE_METHOD}" \
   --SnpInfoFile=NULL \
-  --useCluster="${USE_CLUSTER}" \
-  --clusterFile="${CLUSTER_FILE}"
+  --useCluster="${USE_CLUSTER}"

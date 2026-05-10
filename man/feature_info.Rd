@@ -7,7 +7,7 @@
 feature_info(abd_file)
 }
 \arguments{
-\item{abd_file}{Path to abundance table (tab-separated, first column sample ID).}
+\item{abd_file}{Path to abundance table (tab-separated, first column subject ID).}
 }
 \value{
 A data frame with FeatureID, Prevalence, AvgProportion.

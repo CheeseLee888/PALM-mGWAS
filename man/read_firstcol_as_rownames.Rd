@@ -15,5 +15,5 @@ A `data.frame` with row names taken from the first column and that
 }
 \description{
 Convenience helper used throughout the package for reading abundance and
-covariate tables that store sample IDs in the first column.
+covariate tables that store subject IDs in the first column.
 }

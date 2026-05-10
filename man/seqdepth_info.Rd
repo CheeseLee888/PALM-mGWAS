@@ -2,16 +2,16 @@
 % Please edit documentation in R/generateInfo.R
 \name{seqdepth_info}
 \alias{seqdepth_info}
-\title{Compute sequencing depth per sample}
+\title{Compute sequencing depth per abundance row}
 \usage{
 seqdepth_info(abd_file)
 }
 \arguments{
-\item{abd_file}{Path to abundance table (tab-separated, first column sample ID).}
+\item{abd_file}{Path to abundance table (tab-separated, first column subject ID).}
 }
 \value{
 A data frame with SampleID and SeqDepth.
 }
 \description{
-Compute sequencing depth per sample
+Compute sequencing depth per abundance row
 }

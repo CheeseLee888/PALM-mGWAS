@@ -17,8 +17,7 @@ getSummary(
   impute_method = "best_guess",
   SnpInfoFile = NULL,
   correct = NULL,
-  useCluster = FALSE,
-  clusterFile = NULL
+  useCluster = FALSE
 )
 }
 \arguments{
@@ -74,12 +73,8 @@ skip writing this file.}
 \item{correct}{Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.}
 
 \item{useCluster}{Logical; if `TRUE`, uses PLINK FID clustering in Step2.1
-when PLINK FID is available. Longitudinal NULL models with repeated
-subject IDs automatically use clustering even when this is `FALSE`.}
-
-\item{clusterFile}{Deprecated optional two-column cluster file retained for
-backward compatibility. Prefer repeated subject IDs for longitudinal data
-and PLINK FID for family/pedigree clustering.}
+for family/pedigree data. Longitudinal NULL models with repeated subject
+IDs automatically use clustering even when this is `FALSE`.}
 }
 \value{
 Invisibly returns a character vector of written file paths.

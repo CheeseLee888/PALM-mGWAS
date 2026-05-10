@@ -73,7 +73,7 @@ snp_info_from_geno_matrix <- function(geno, snp_ids = colnames(geno), missing_ra
 
 #' Compute feature-level prevalence and average proportion
 #'
-#' @param abd_file Path to abundance table (tab-separated, first column sample ID).
+#' @param abd_file Path to abundance table (tab-separated, first column subject ID).
 #' @return A data frame with FeatureID, Prevalence, AvgProportion.
 #' @export
 feature_info <- function(abd_file) {
@@ -95,9 +95,9 @@ feature_info <- function(abd_file) {
 }
 
 
-#' Compute sequencing depth per sample
+#' Compute sequencing depth per abundance row
 #'
-#' @param abd_file Path to abundance table (tab-separated, first column sample ID).
+#' @param abd_file Path to abundance table (tab-separated, first column subject ID).
 #' @return A data frame with SampleID and SeqDepth.
 #' @export
 seqdepth_info <- function(abd_file) {

@@ -44,11 +44,8 @@
 #'   skip writing this file.
 #' @param correct Passed to `PALM::palm.get.summary()`; defaults to `"NULL"`.
 #' @param useCluster Logical; if `TRUE`, uses PLINK FID clustering in Step2.1
-#'   when PLINK FID is available. Longitudinal NULL models with repeated
-#'   subject IDs automatically use clustering even when this is `FALSE`.
-#' @param clusterFile Deprecated optional two-column cluster file retained for
-#'   backward compatibility. Prefer repeated subject IDs for longitudinal data
-#'   and PLINK FID for family/pedigree clustering.
+#'   for family/pedigree data. Longitudinal NULL models with repeated subject
+#'   IDs automatically use clustering even when this is `FALSE`.
 #'
 #' @return Invisibly returns a character vector of written file paths.
 #' @export
@@ -64,8 +61,7 @@ getSummary <- function(genoFile,
                        impute_method = "best_guess",
                        SnpInfoFile = NULL,
                        correct = NULL,
-                       useCluster = FALSE,
-                       clusterFile = NULL) {
+                       useCluster = FALSE) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
   }
@@ -196,57 +192,10 @@ getSummary <- function(genoFile,
     row_ids
   }
 
-  read_cluster_file <- function(path) {
-    if (is.null(path) || !nzchar(path)) {
-      return(NULL)
-    }
-    if (!file.exists(path)) {
-      stop("Cluster file not found: ", path)
-    }
-
-    first_line <- readLines(path, n = 1L, warn = FALSE)
-    if (!length(first_line)) {
-      stop("Cluster file is empty: ", path)
-    }
-    first_fields <- strsplit(trimws(first_line), "\\s+")[[1]]
-    has_header <- length(first_fields) >= 2L &&
-      identical(toupper(first_fields[1]), "IID") &&
-      identical(toupper(first_fields[2]), "CLUSTER")
-
-    cluster_data <- utils::read.table(
-      path,
-      header = has_header,
-      stringsAsFactors = FALSE,
-      check.names = FALSE,
-      comment.char = "",
-      quote = "\""
-    )
-    if (ncol(cluster_data) != 2L) {
-      stop("Cluster file must contain exactly two columns: IID and cluster. File: ", path)
-    }
-    colnames(cluster_data) <- c("IID", "cluster")
-    cluster_data$IID <- as.character(cluster_data$IID)
-    cluster_data$cluster <- as.character(cluster_data$cluster)
-    if (anyNA(cluster_data$IID) || any(!nzchar(cluster_data$IID))) {
-      stop("Cluster file contains missing/empty IID values: ", path)
-    }
-    duplicated_iid <- unique(cluster_data$IID[duplicated(cluster_data$IID)])
-    if (length(duplicated_iid) > 0L) {
-      stop(
-        "Cluster file contains duplicated IID(s): ",
-        paste(utils::head(duplicated_iid, 5), collapse = ", ")
-      )
-    }
-
-    cluster <- cluster_data$cluster
-    names(cluster) <- cluster_data$IID
-    cluster
-  }
-
   null_row_ids <- extract_null_row_ids(modglmm)
   null_sample_ids <- if (is.null(null_row_ids)) NULL else extract_null_subject_ids(modglmm, null_row_ids)
   if (is.null(null_row_ids)) {
-    message("Could not infer sample IDs from NULL model; using genotype rows as-is.")
+    message("Could not infer subject IDs from NULL model; using genotype rows as-is.")
   } else {
     message("NULL model row count: ", length(null_sample_ids))
     if (anyDuplicated(null_sample_ids) > 0L) {
@@ -307,21 +256,14 @@ getSummary <- function(genoFile,
   } else {
     message("Compositional correction enabled: correct=", correct)
   }
-  if (!is.null(clusterFile) && (!nzchar(clusterFile) || toupper(clusterFile) == "NULL")) {
-    clusterFile <- NULL
-  }
-  if (!is.null(clusterFile)) {
-    message("Cluster file provided: ", clusterFile)
-    useCluster <- TRUE
-  }
   message("Cluster option requested: useCluster=", useCluster)
 
   repeated_null_subjects <- !is.null(null_sample_ids) && anyDuplicated(null_sample_ids) > 0L
-  if (!identical(genoFormat, "plink") && isTRUE(useCluster) && is.null(clusterFile) && !repeated_null_subjects) {
-    stop("`useCluster=TRUE` without repeated subject IDs or `clusterFile` is only supported for native PLINK input.")
+  if (!identical(genoFormat, "plink") && isTRUE(useCluster) && !repeated_null_subjects) {
+    stop("`useCluster=TRUE` is only supported for native PLINK input, where clustering uses .fam FID.")
   }
-  cluster <- read_cluster_file(clusterFile)
-  cluster_source <- if (!is.null(cluster)) "clusterFile" else NULL
+  cluster <- NULL
+  cluster_source <- NULL
   chr_map <- NULL
   if (identical(genoFormat, "vcf")) {
     vcf_input <- read_vcf_genotypes(genoFile, vcfField = vcfField)

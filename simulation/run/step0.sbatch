@@ -20,7 +20,6 @@ TIME_COL="${TIME_COL:-NULL}"
 DEPTH_FILTER="${DEPTH_FILTER:-0}"
 SEQDEPTH_INFO_FILE="${SEQDEPTH_INFO_FILE:-NULL}"
 USE_CLUSTER="${USE_CLUSTER:-FALSE}"
-CLUSTER_FILE="${CLUSTER_FILE:-NULL}"
 
 INPUT_DIR="${WORK}/input/${STUDY}"
 OUTPUT_DIR="${WORK}/output/${STUDY}"
@@ -39,7 +38,7 @@ echo "step0_align_inputs: covarColList=${COVAR_COL_LIST}"
 echo "step0_align_inputs: depthCol=${DEPTH_COL}, depth.filter=${DEPTH_FILTER}"
 echo "step0_align_inputs: timeCol=${TIME_COL}"
 echo "step0_align_inputs: SeqDepthInfoFile=${SEQDEPTH_INFO_FILE}"
-echo "step0_align_inputs: useCluster=${USE_CLUSTER}, clusterFile=${CLUSTER_FILE}"
+echo "step0_align_inputs: useCluster=${USE_CLUSTER}"
 
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   step0_checkInput.R \
@@ -53,8 +52,7 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   --depth.filter="${DEPTH_FILTER}" \
   --genoFile="${GENO_PREFIX}" \
   --SeqDepthInfoFile="${SEQDEPTH_INFO_FILE}" \
-  --useCluster="${USE_CLUSTER}" \
-  --clusterFile="${CLUSTER_FILE}"
+  --useCluster="${USE_CLUSTER}"
 
 echo "step0_align_inputs: finished"
 echo "step0_align_inputs: aligned outputs"
