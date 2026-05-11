@@ -201,7 +201,7 @@ docker run --rm -it --privileged \
     --covAlignedFile=${covAlignedFile} \
     --covarColList=${covarColList} \
     --depthCol=${depthCol} \
-    --timeCol=${timeCol} \
+    --timeIDCol=${timeIDCol} \
     --depth.filter=${depth_filter} \
     --genoFile=${genoFile} \
     --SeqDepthInfoFile=${SeqDepthInfoFile} \
@@ -216,7 +216,7 @@ docker run --rm -it --privileged \
     --covAlignedFile=${covAlignedFile} \
     --covarColList=${covarColList} \
     --depthCol=${depthCol} \
-    --timeCol=${timeCol} \
+    --timeIDCol=${timeIDCol} \
     --depth.filter=${depth_filter} \
     --genoFile=${genoFile} \
     --SeqDepthInfoFile=${SeqDepthInfoFile} \
@@ -224,7 +224,7 @@ docker run --rm -it --privileged \
   <ul>
     <li><strong>Purpose:</strong> remove rows with missing values needed by Step1, optionally filter low-depth rows, resolve longitudinal repeated subject IDs, then verify that abundance, covariates, and genotype input remain aligned before modeling.</li>
     <li><strong>Missingness rule:</strong> rows with missing values in any abundance feature column are removed. Rows with missing values in Step1-required covariate/depth columns are also removed. When a row is removed from one table, the matching row is removed from the other table before genotype matching.</li>
-    <li><strong>Longitudinal rule:</strong> the first column, usually <code>IID</code>, is the subject ID. If <code>abdFile</code> contains repeated subject IDs, pass <code>--timeCol</code>. If <code>covFile</code> also contains repeated subject IDs, it must contain the same <code>--timeCol</code> and the same set of <code>(subject ID, time ID)</code> rows. If <code>covFile</code> has one row per subject, Step0 expands each subject-level covariate row to match the repeated abundance rows.</li>
+    <li><strong>Longitudinal rule:</strong> the first column, usually <code>IID</code>, is the subject ID. If <code>abdFile</code> contains repeated subject IDs, pass <code>--timeIDCol</code>. If <code>covFile</code> also contains repeated subject IDs, it must contain the same <code>--timeIDCol</code> and the same set of <code>(subject ID, time ID)</code> rows. If <code>covFile</code> has one row per subject, Step0 expands each subject-level covariate row to match the repeated abundance rows.</li>
     <li><strong>Alignment rule:</strong> after missingness and depth filtering, the step keeps subjects present in genotype input, ignores extra genotype-only subjects, and writes aligned abundance and covariate rows grouped by genotype subject order. For repeated subject IDs, within-subject row order follows the abundance input.</li>
     <li><strong>Covariate columns:</strong> <code>--covarColList</code> is used only to decide which covariate columns must be non-missing for sample filtering before Step1. It does not subset columns in the aligned covariate output; <code>covAlignedFile</code> keeps all columns from <code>covFile</code>.</li>
     <li><strong>Genotype subject count:</strong> genotype input may contain extra subjects, but it must not miss any subject retained from <code>abdFile</code>/<code>covFile</code> after filtering.</li>
@@ -239,7 +239,7 @@ docker run --rm -it --privileged \
     <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the subject-order reference. Accepted values are a PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code>. For VCF, Step0 reads subject IDs from the sample columns in the <code>#CHROM</code> header line, checks that every retained subject is present, ignores extra VCF-only subjects, and reorders aligned rows by that VCF subject-column order</td></tr>
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated covariate columns required by Step1. Step0 uses these columns only for missingness-based sample filtering before ID matching. It does not remove other columns from <code>covAlignedFile</code>. If omitted or set to <code>NULL</code>, all non-ID columns in <code>covFile</code> are checked for missingness</td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td></tr>
-    <tr><td><code>--timeCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Time ID column required when <code>abdFile</code> contains repeated subject IDs. Step0 uses it to match repeated-measured covariates by <code>(subject ID, time ID)</code>; the time column is removed from aligned Step1 model inputs</td></tr>
+    <tr><td><code>--timeIDCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Time ID column required when <code>abdFile</code> contains repeated subject IDs. The subject ID column is still the first column of <code>abdFile</code> and <code>covFile</code>; <code>--timeIDCol</code> only names the visit/time column used to match repeated-measured covariates by <code>(subject ID, time ID)</code>. The time ID column is removed from aligned Step1 model inputs</td></tr>
     <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Row-level depth threshold applied after missingness filtering and before genotype subject matching; rows with depth <code>&lt;=</code> this value are removed</td></tr>
     <tr><td><code>--SeqDepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>DepthInfo</code>, written for the final Step0 filtered/aligned row set in genotype subject order. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
     <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether family/pedigree clustering is planned for non-longitudinal data. Longitudinal repeated subject IDs are detected automatically in Step2.1</td></tr>
@@ -255,14 +255,14 @@ docker run --rm -it --privileged \
     <li><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></li>
     <li><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></li>
     <li><code>--SeqDepthInfoFile=example/output/study1/info_seqdepth.txt</code>; <code>--SeqDepthInfoFile=NULL</code></li>
-    <li><code>--timeCol=VISIT</code> for longitudinal abundance tables with repeated subject IDs; <code>--timeCol=NULL</code> for one row per subject.</li>
+    <li><code>--timeIDCol=VISIT</code> for longitudinal abundance tables with repeated subject IDs; <code>--timeIDCol=NULL</code> for one row per subject.</li>
     <li><code>--useCluster=TRUE</code> uses PLINK <code>.fam</code> FID values as family/pedigree clusters for PLINK genotype input.</li>
   </ul>
 
   <h3 id="clustering-inputs">Clustering and Repeated Measures</h3>
   <p>PALMGWAS distinguishes two clustering situations. In family or pedigree data, multiple subjects can belong to the same family; genotype input has one row per subject, abundance usually has one row per subject, and Step2.1 uses PLINK <code>.fam</code> FID as the cluster when <code>--useCluster=TRUE</code>. In longitudinal microbiome data, one subject can have multiple abundance rows over time while genotype has one row per subject. In that case the first column <code>IID</code> is the subject ID, not a row-unique measurement ID, and Step2.1 automatically expands each genotype row to match the repeated abundance rows and uses subject ID as the cluster.</p>
   <p>When both situations occur together, meaning repeated microbiome rows per subject and subjects nested in families, Step2.1 uses the expanded PLINK FID cluster.</p>
-  <p>For longitudinal inputs, <code>abdFile</code> must include <code>--timeCol</code>. If repeated-measured covariates are supplied, <code>covFile</code> must include the same subject ID and time ID pairs as <code>abdFile</code>. If covariates are subject-level only, such as sex or genetic ancestry PCs, <code>covFile</code> should contain one row per subject; Step0 expands those covariates to match the abundance rows.</p>
+  <p>For longitudinal inputs, <code>abdFile</code> must include <code>--timeIDCol</code>. If repeated-measured covariates are supplied, <code>covFile</code> must include the same subject ID and time ID pairs as <code>abdFile</code>. If covariates are subject-level only, such as sex or genetic ancestry PCs, <code>covFile</code> should contain one row per subject; Step0 expands those covariates to match the abundance rows.</p>
 
   <h2 id="step1">Step1: Fit Null Model</h2>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R \
@@ -537,7 +537,7 @@ ID_001	178	81	59	0	74	32	0	49	0	0
 ID_002	0	43	0	73	96	0	0	0	0	82
 ID_003	235	81	0	92	110	81	54	0	63	0
 ID_004	152	0	0	0	75	91	0	0	0	0</code></pre>
-  <p>The first column is subject ID (<code>IID</code>), and each remaining column is a microbial feature. In longitudinal data, the subject ID can be repeated and a separate time ID column must be supplied through <code>--timeCol</code>. The actual <code>study1</code> example contains many genus-, family-, and order-level features, so the table above is intentionally truncated after the first few feature columns.</p>
+  <p>The first column is subject ID (<code>IID</code>), and each remaining column is a microbial feature. In longitudinal data, the subject ID can be repeated and a separate time ID column must be supplied through <code>--timeIDCol</code>. The actual <code>study1</code> example contains many genus-, family-, and order-level features, so the table above is intentionally truncated after the first few feature columns.</p>
 
   <h3>Example Input: covariates</h3>
   <pre><code class="language-tsv"># file: example/input/study1/cov.txt
@@ -576,7 +576,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --covAlignedFile=example/input/study1/cov_aligned.txt \
     --covarColList=NULL \
     --depthCol=NULL \
-    --timeCol=NULL \
+    --timeIDCol=NULL \
     --depth.filter=0 \
     --genoFile=example/input/study1/geno \
     --SeqDepthInfoFile=NULL</code></pre>
@@ -590,7 +590,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --covAlignedFile=/work/example/input/study1/cov_aligned.txt \
     --covarColList=NULL \
     --depthCol=NULL \
-    --timeCol=NULL \
+    --timeIDCol=NULL \
     --depth.filter=0 \
     --genoFile=/work/example/input/study1/geno \
     --SeqDepthInfoFile=NULL</code></pre>
@@ -604,6 +604,128 @@ ID_002	294
 ID_003	716
 ID_004	318</code></pre>
   <p>This optional table is written by Step0 when <code>--SeqDepthInfoFile</code> is set. It contains the final filtered/aligned rows in genotype subject order. With <code>--depthCol=NULL</code>, <code>SeqDepth</code> values are computed from row sums of <code>abdFile</code>.</p>
+
+  <h3>Step0 ID-only examples</h3>
+  <p>The commands in this subsection are only for checking and aligning input IDs. They are useful when preparing your own files, but they do not need to be followed by Step1-Step4 unless you want to run the full association workflow on those same aligned outputs.</p>
+
+  <p><strong>Case A: one row per subject.</strong> The first column of <code>abdFile</code> and <code>covFile</code> is the subject ID, and <code>--timeIDCol=NULL</code>.</p>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
+    --abdFile=example/input/study1/abd.txt \
+    --covFile=example/input/study1/cov.txt \
+    --abdAlignedFile=example/input/study1/abd_aligned.txt \
+    --covAlignedFile=example/input/study1/cov_aligned.txt \
+    --covarColList=NULL \
+    --depthCol=NULL \
+    --timeIDCol=NULL \
+    --depth.filter=0 \
+    --genoFile=example/input/study1/geno \
+    --SeqDepthInfoFile=NULL</code></pre>
+
+  <p><strong>Case B: abundance/covariate rows are not in genotype order.</strong> Use the same command as Case A. Step0 will keep subjects present in genotype input and write the aligned outputs in genotype subject order.</p>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
+    --abdFile=mydata/abd_shuffled.txt \
+    --covFile=mydata/cov_shuffled.txt \
+    --abdAlignedFile=mydata/abd_aligned.txt \
+    --covAlignedFile=mydata/cov_aligned.txt \
+    --covarColList=AGE,SEX,PC01,PC02,PC03 \
+    --depthCol=NULL \
+    --timeIDCol=NULL \
+    --depth.filter=0 \
+    --genoFile=mydata/geno \
+    --SeqDepthInfoFile=mydata/info_seqdepth.txt</code></pre>
+
+  <p><strong>Case C: longitudinal abundance with subject-level covariates.</strong> The first column is still subject ID. The abundance file has repeated subject IDs and a visit/time column such as <code>VISIT</code>; the covariate file has one row per subject, so Step0 expands covariates to match abundance rows.</p>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
+    --abdFile=mydata/abd_longitudinal.txt \
+    --covFile=mydata/cov_subject_level.txt \
+    --abdAlignedFile=mydata/abd_longitudinal_aligned.txt \
+    --covAlignedFile=mydata/cov_longitudinal_aligned.txt \
+    --covarColList=SEX,PC01,PC02,PC03 \
+    --depthCol=NULL \
+    --timeIDCol=VISIT \
+    --depth.filter=0 \
+    --genoFile=mydata/geno \
+    --SeqDepthInfoFile=mydata/info_seqdepth.txt</code></pre>
+
+  <p><strong>Case D: longitudinal abundance with repeated-measured covariates.</strong> Both files contain the same subject ID column and the same <code>--timeIDCol</code>. Step0 matches rows by <code>(subject ID, time ID)</code>.</p>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
+    --abdFile=mydata/abd_longitudinal.txt \
+    --covFile=mydata/cov_longitudinal.txt \
+    --abdAlignedFile=mydata/abd_longitudinal_aligned.txt \
+    --covAlignedFile=mydata/cov_longitudinal_aligned.txt \
+    --covarColList=AGE,MEDICATION,PC01,PC02,PC03 \
+    --depthCol=NULL \
+    --timeIDCol=VISIT \
+    --depth.filter=0 \
+    --genoFile=mydata/geno \
+    --SeqDepthInfoFile=mydata/info_seqdepth.txt</code></pre>
+
+  <p><strong>Case E: VCF genotype input.</strong> Pass the VCF file path to <code>--genoFile</code>. Step0 reads subject IDs from the VCF sample columns and reorders abundance/covariate rows to that sample order.</p>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
+    --abdFile=mydata/abd.txt \
+    --covFile=mydata/cov.txt \
+    --abdAlignedFile=mydata/abd_aligned.txt \
+    --covAlignedFile=mydata/cov_aligned.txt \
+    --covarColList=NULL \
+    --depthCol=NULL \
+    --timeIDCol=NULL \
+    --depth.filter=0 \
+    --genoFile=mydata/genotypes.vcf.gz \
+    --SeqDepthInfoFile=NULL</code></pre>
+
+  <p><strong>Case F: family/pedigree clustering from PLINK FID.</strong> Use <code>--useCluster=TRUE</code> when Step2.1 should use PLINK <code>.fam</code> FID values as clusters. For non-longitudinal data, Step0 removes subjects with missing cluster values before writing aligned files.</p>
+  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
+    --abdFile=mydata/abd.txt \
+    --covFile=mydata/cov.txt \
+    --abdAlignedFile=mydata/abd_aligned.txt \
+    --covAlignedFile=mydata/cov_aligned.txt \
+    --covarColList=NULL \
+    --depthCol=NULL \
+    --timeIDCol=NULL \
+    --depth.filter=0 \
+    --genoFile=mydata/geno \
+    --SeqDepthInfoFile=NULL \
+    --useCluster=TRUE</code></pre>
+
+  <p><strong>Case G: expected ID errors.</strong> These are intentional Step0 failures used to diagnose input files. Fix the inputs and rerun Step0; do not continue to Step1-Step4 from failed Step0 outputs.</p>
+  <pre><code class="language-bash"># Repeated subject IDs in abdFile but no time ID column was specified.
+pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
+    --abdFile=mydata/abd_repeated_subjects.txt \
+    --covFile=mydata/cov.txt \
+    --abdAlignedFile=mydata/abd_aligned.txt \
+    --covAlignedFile=mydata/cov_aligned.txt \
+    --covarColList=NULL \
+    --depthCol=NULL \
+    --timeIDCol=NULL \
+    --depth.filter=0 \
+    --genoFile=mydata/geno \
+    --SeqDepthInfoFile=NULL
+
+# Genotype input is missing at least one retained subject from abd/cov.
+pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
+    --abdFile=mydata/abd.txt \
+    --covFile=mydata/cov.txt \
+    --abdAlignedFile=mydata/abd_aligned.txt \
+    --covAlignedFile=mydata/cov_aligned.txt \
+    --covarColList=NULL \
+    --depthCol=NULL \
+    --timeIDCol=NULL \
+    --depth.filter=0 \
+    --genoFile=mydata/geno_missing_subject \
+    --SeqDepthInfoFile=NULL
+
+# Longitudinal covariates are missing one or more required subject-time rows.
+pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
+    --abdFile=mydata/abd_longitudinal.txt \
+    --covFile=mydata/cov_longitudinal_missing_visit.txt \
+    --abdAlignedFile=mydata/abd_longitudinal_aligned.txt \
+    --covAlignedFile=mydata/cov_longitudinal_aligned.txt \
+    --covarColList=NULL \
+    --depthCol=NULL \
+    --timeIDCol=VISIT \
+    --depth.filter=0 \
+    --genoFile=mydata/geno \
+    --SeqDepthInfoFile=NULL</code></pre>
 
   <h3 id="example-step1">Step1: fit the null model</h3>
   <p><strong>Input:</strong> aligned abundance and covariate tables from the previous step.</p>
@@ -707,6 +829,7 @@ chr1:14985097:C:T	1	14985097	100	0.111742358350986	0.113523070073392	0.324961099
 
   <h3 id="example-step3">Step3: multiple Step2 folders to meta-analysis tables</h3>
   <p><strong>Input:</strong> <code>example/input/study_dirs.txt</code> for pixi runs or <code>example/input/study_dirs_docker.txt</code> for Docker runs, plus Step2 outputs from <code>example/output/study1</code>, <code>study2</code>, and <code>study3</code>.</p>
+  <p><strong>Note:</strong> The Step3 example output shown below uses the uncorrected Step2.1 files. If you run Step2.2 with <code>--overwriteOutput=TRUE</code> on the same study directory before Step3, Step3 will meta-analyze the corrected files instead and the numeric results will differ from this example.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
     --studyDirFile=example/input/study_dirs.txt \
     --inputPrefix=example/output/study1/step2 \

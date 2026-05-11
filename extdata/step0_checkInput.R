@@ -19,7 +19,7 @@ option_list <- list(
               help = "Optional comma-separated covariate columns used in Step1; if NULL, all non-ID covariate columns are used. Samples missing these columns are removed [default %default]"),
   make_option("--depthCol", type = "character", default = "NULL",
               help = "Optional covariate column name used as sequencing depth [default %default]"),
-  make_option("--timeCol", type = "character", default = "NULL",
+  make_option("--timeIDCol", type = "character", default = "NULL",
               help = "Optional time ID column required when abdFile contains repeated subject IDs [default %default]"),
   make_option("--depth.filter", type = "double", default = 0,
               help = "Row-level depth threshold; rows with depth <= threshold are removed before ID matching [default %default]"),
@@ -71,7 +71,7 @@ make_pair_key <- function(subject_id, time_id) {
 
 validate_time_col <- function(df, time_col, label) {
   if (is.null(time_col) || !(time_col %in% colnames(df))) {
-    stop(label, " contains repeated subject IDs, so --timeCol must name a time ID column present in that file.")
+    stop(label, " contains repeated subject IDs, so --timeIDCol must name a time ID column present in that file.")
   }
   time_id <- as.character(df[[time_col]])
   if (anyNA(time_id) || any(!nzchar(time_id))) {
@@ -193,16 +193,16 @@ opt$depthCol <- normalize_col_list(opt$depthCol, "depthCol")
 if (!is.null(opt$depthCol) && length(opt$depthCol) != 1L) {
   stop("'depthCol' must specify exactly one column name.")
 }
-opt$timeCol <- normalize_col_list(opt$timeCol, "timeCol")
-if (!is.null(opt$timeCol) && length(opt$timeCol) != 1L) {
-  stop("'timeCol' must specify exactly one column name.")
+opt$timeIDCol <- normalize_col_list(opt$timeIDCol, "timeIDCol")
+if (!is.null(opt$timeIDCol) && length(opt$timeIDCol) != 1L) {
+  stop("'timeIDCol' must specify exactly one column name.")
 }
 if (!is.numeric(opt$depth.filter) || length(opt$depth.filter) != 1L || is.na(opt$depth.filter) || opt$depth.filter < 0) {
   stop("--depth.filter must be a single non-negative numeric value.")
 }
 
 if (is.null(opt$covarColList)) {
-  opt$covarColList <- default_covariate_cols(cov_df, opt$timeCol)
+  opt$covarColList <- default_covariate_cols(cov_df, opt$timeIDCol)
   if (length(opt$covarColList) > 0L) {
     cat("covarColList not provided: defaulting to all covariate columns in covFile.\n")
   } else {
@@ -226,7 +226,7 @@ if (length(required_cov_cols) > 0L) {
 
 filtered <- FALSE
 
-abd_non_id_cols <- setdiff(colnames(abd_df), c(colnames(abd_df)[1], opt$timeCol))
+abd_non_id_cols <- setdiff(colnames(abd_df), c(colnames(abd_df)[1], opt$timeIDCol))
 if (length(abd_non_id_cols) > 0L) {
   keep_abd_complete <- stats::complete.cases(abd_df[, abd_non_id_cols, drop = FALSE])
   removed_n <- sum(!keep_abd_complete)
@@ -242,7 +242,7 @@ if (length(abd_non_id_cols) > 0L) {
 
 abd_repeated_subjects <- anyDuplicated(as.character(abd_df[[1]])) > 0L
 cat("Abundance repeated subject IDs after abundance filtering: ", abd_repeated_subjects, ".\n", sep = "")
-matched <- match_longitudinal_covariates(abd_df, cov_df, opt$timeCol)
+matched <- match_longitudinal_covariates(abd_df, cov_df, opt$timeIDCol)
 abd_df <- matched$abd
 cov_df <- matched$cov
 cat(
@@ -418,9 +418,9 @@ dir.create(dirname(opt$abdAlignedFile), recursive = TRUE, showWarnings = FALSE)
 dir.create(dirname(opt$covAlignedFile), recursive = TRUE, showWarnings = FALSE)
 abd_out <- abd_df
 cov_out <- cov_df
-if (!is.null(opt$timeCol)) {
-  abd_out <- abd_out[, setdiff(colnames(abd_out), opt$timeCol), drop = FALSE]
-  cov_out <- cov_out[, setdiff(colnames(cov_out), opt$timeCol), drop = FALSE]
+if (!is.null(opt$timeIDCol)) {
+  abd_out <- abd_out[, setdiff(colnames(abd_out), opt$timeIDCol), drop = FALSE]
+  cov_out <- cov_out[, setdiff(colnames(cov_out), opt$timeIDCol), drop = FALSE]
 }
 fwrite(abd_out, file = opt$abdAlignedFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
 fwrite(cov_out, file = opt$covAlignedFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
