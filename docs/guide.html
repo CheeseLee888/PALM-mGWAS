@@ -605,127 +605,19 @@ ID_003	716
 ID_004	318</code></pre>
   <p>This optional table is written by Step0 when <code>--SeqDepthInfoFile</code> is set. It contains the final filtered/aligned rows in genotype subject order. With <code>--depthCol=NULL</code>, <code>SeqDepth</code> values are computed from row sums of <code>abdFile</code>.</p>
 
-  <h3>Step0 ID-only examples</h3>
-  <p>The commands in this subsection are only for checking and aligning input IDs. They are useful when preparing your own files, but they do not need to be followed by Step1-Step4 unless you want to run the full association workflow on those same aligned outputs.</p>
-
-  <p><strong>Case A: one row per subject.</strong> The first column of <code>abdFile</code> and <code>covFile</code> is the subject ID, and <code>--timeIDCol=NULL</code>.</p>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
-    --abdFile=example/input/study1/abd.txt \
-    --covFile=example/input/study1/cov.txt \
-    --abdAlignedFile=example/input/study1/abd_aligned.txt \
-    --covAlignedFile=example/input/study1/cov_aligned.txt \
-    --covarColList=NULL \
-    --depthCol=NULL \
-    --timeIDCol=NULL \
-    --depth.filter=0 \
-    --genoFile=example/input/study1/geno \
-    --SeqDepthInfoFile=NULL</code></pre>
-
-  <p><strong>Case B: abundance/covariate rows are not in genotype order.</strong> Use the same command as Case A. Step0 will keep subjects present in genotype input and write the aligned outputs in genotype subject order.</p>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
-    --abdFile=mydata/abd_shuffled.txt \
-    --covFile=mydata/cov_shuffled.txt \
-    --abdAlignedFile=mydata/abd_aligned.txt \
-    --covAlignedFile=mydata/cov_aligned.txt \
-    --covarColList=AGE,SEX,PC01,PC02,PC03 \
-    --depthCol=NULL \
-    --timeIDCol=NULL \
-    --depth.filter=0 \
-    --genoFile=mydata/geno \
-    --SeqDepthInfoFile=mydata/info_seqdepth.txt</code></pre>
-
-  <p><strong>Case C: longitudinal abundance with subject-level covariates.</strong> The first column is still subject ID. The abundance file has repeated subject IDs and a visit/time column such as <code>VISIT</code>; the covariate file has one row per subject, so Step0 expands covariates to match abundance rows.</p>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
-    --abdFile=mydata/abd_longitudinal.txt \
-    --covFile=mydata/cov_subject_level.txt \
-    --abdAlignedFile=mydata/abd_longitudinal_aligned.txt \
-    --covAlignedFile=mydata/cov_longitudinal_aligned.txt \
-    --covarColList=SEX,PC01,PC02,PC03 \
-    --depthCol=NULL \
-    --timeIDCol=VISIT \
-    --depth.filter=0 \
-    --genoFile=mydata/geno \
-    --SeqDepthInfoFile=mydata/info_seqdepth.txt</code></pre>
-
-  <p><strong>Case D: longitudinal abundance with repeated-measured covariates.</strong> Both files contain the same subject ID column and the same <code>--timeIDCol</code>. Step0 matches rows by <code>(subject ID, time ID)</code>.</p>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
-    --abdFile=mydata/abd_longitudinal.txt \
-    --covFile=mydata/cov_longitudinal.txt \
-    --abdAlignedFile=mydata/abd_longitudinal_aligned.txt \
-    --covAlignedFile=mydata/cov_longitudinal_aligned.txt \
-    --covarColList=AGE,MEDICATION,PC01,PC02,PC03 \
-    --depthCol=NULL \
-    --timeIDCol=VISIT \
-    --depth.filter=0 \
-    --genoFile=mydata/geno \
-    --SeqDepthInfoFile=mydata/info_seqdepth.txt</code></pre>
-
-  <p><strong>Case E: VCF genotype input.</strong> Pass the VCF file path to <code>--genoFile</code>. Step0 reads subject IDs from the VCF sample columns and reorders abundance/covariate rows to that sample order.</p>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
-    --abdFile=mydata/abd.txt \
-    --covFile=mydata/cov.txt \
-    --abdAlignedFile=mydata/abd_aligned.txt \
-    --covAlignedFile=mydata/cov_aligned.txt \
-    --covarColList=NULL \
-    --depthCol=NULL \
-    --timeIDCol=NULL \
-    --depth.filter=0 \
-    --genoFile=mydata/genotypes.vcf.gz \
-    --SeqDepthInfoFile=NULL</code></pre>
-
-  <p><strong>Case F: family/pedigree clustering from PLINK FID.</strong> Use <code>--useCluster=TRUE</code> when Step2.1 should use PLINK <code>.fam</code> FID values as clusters. For non-longitudinal data, Step0 removes subjects with missing cluster values before writing aligned files.</p>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
-    --abdFile=mydata/abd.txt \
-    --covFile=mydata/cov.txt \
-    --abdAlignedFile=mydata/abd_aligned.txt \
-    --covAlignedFile=mydata/cov_aligned.txt \
-    --covarColList=NULL \
-    --depthCol=NULL \
-    --timeIDCol=NULL \
-    --depth.filter=0 \
-    --genoFile=mydata/geno \
-    --SeqDepthInfoFile=NULL \
-    --useCluster=TRUE</code></pre>
-
-  <p><strong>Case G: expected ID errors.</strong> These are intentional Step0 failures used to diagnose input files. Fix the inputs and rerun Step0; do not continue to Step1-Step4 from failed Step0 outputs.</p>
-  <pre><code class="language-bash"># Repeated subject IDs in abdFile but no time ID column was specified.
-pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
-    --abdFile=mydata/abd_repeated_subjects.txt \
-    --covFile=mydata/cov.txt \
-    --abdAlignedFile=mydata/abd_aligned.txt \
-    --covAlignedFile=mydata/cov_aligned.txt \
-    --covarColList=NULL \
-    --depthCol=NULL \
-    --timeIDCol=NULL \
-    --depth.filter=0 \
-    --genoFile=mydata/geno \
-    --SeqDepthInfoFile=NULL
-
-# Genotype input is missing at least one retained subject from abd/cov.
-pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
-    --abdFile=mydata/abd.txt \
-    --covFile=mydata/cov.txt \
-    --abdAlignedFile=mydata/abd_aligned.txt \
-    --covAlignedFile=mydata/cov_aligned.txt \
-    --covarColList=NULL \
-    --depthCol=NULL \
-    --timeIDCol=NULL \
-    --depth.filter=0 \
-    --genoFile=mydata/geno_missing_subject \
-    --SeqDepthInfoFile=NULL
-
-# Longitudinal covariates are missing one or more required subject-time rows.
-pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
-    --abdFile=mydata/abd_longitudinal.txt \
-    --covFile=mydata/cov_longitudinal_missing_visit.txt \
-    --abdAlignedFile=mydata/abd_longitudinal_aligned.txt \
-    --covAlignedFile=mydata/cov_longitudinal_aligned.txt \
-    --covarColList=NULL \
-    --depthCol=NULL \
-    --timeIDCol=VISIT \
-    --depth.filter=0 \
-    --genoFile=mydata/geno \
-    --SeqDepthInfoFile=NULL</code></pre>
+  <h3>Longitudinal ID Workflow</h3>
+  <p>This logic is handled during Step0 and Step2.1; it does not require separate user commands beyond setting <code>--timeIDCol</code> when abundance rows contain repeated subject IDs.</p>
+  <ul>
+    <li>Step0 first removes low-depth rows and rows with missing abundance values or missing Step1-required covariate/depth values.</li>
+    <li>After filtering, Step0 checks whether <code>abdFile</code> has repeated subject IDs in its first column.</li>
+    <li>If <code>abdFile</code> has no repeated subject IDs, Step0 treats the data as one row per subject and aligns abundance and covariate rows to genotype subject order.</li>
+    <li>If <code>abdFile</code> has repeated subject IDs, <code>--timeIDCol</code> must name the visit/time column. Step0 then checks whether <code>covFile</code> also has repeated subject IDs.</li>
+    <li>If <code>covFile</code> also has repeated subject IDs, Step0 requires matching <code>(subject ID, time ID)</code> rows between abundance and covariates. If those pairs do not match, Step0 stops with an error.</li>
+    <li>If <code>covFile</code> has one row per subject, Step0 expands the covariate rows to match the repeated abundance rows.</li>
+    <li>Step0 then aligns the filtered abundance and covariate files to the genotype input by subject ID. Here, align means matching the order of subjects across files; genotype-only extra subjects are ignored, but genotype must contain every retained abundance/covariate subject.</li>
+    <li>Step1 remains unchanged and fits the null model from the Step0-aligned abundance and covariate files.</li>
+    <li>In Step2.1, if the null model contains repeated subject IDs, each genotype variable is expanded to match the abundance rows, and clustering is set to subject ID.</li>
+  </ul>
 
   <h3 id="example-step1">Step1: fit the null model</h3>
   <p><strong>Input:</strong> aligned abundance and covariate tables from the previous step.</p>
