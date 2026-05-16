@@ -13,7 +13,7 @@ metaSummary(
   out_prefix = "step3_meta",
   out_suffix = ".txt",
   keep_het = TRUE,
-  meta.method = NULL
+  meta.method = "EE"
 )
 }
 \arguments{
@@ -39,7 +39,8 @@ meta-analyze one chromosome-specific shard across all studies.}
 
 \item{keep_het}{If TRUE and multi-study, keep pval.het column; if FALSE, drop it to match 6-column step2 format exactly.}
 
-\item{meta.method}{(deprecated) no longer used; meta-analysis now uses fixed-effect inverse-variance weighting.}
+\item{meta.method}{Meta-analysis method passed to \code{metafor::rma.uni()}.
+Defaults to \code{"EE"}.}
 }
 \value{
 Named list: each element is a data.frame/tibble in step2 format.

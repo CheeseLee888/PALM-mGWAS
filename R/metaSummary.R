@@ -14,7 +14,8 @@
 #' @param out_prefix Output meta file prefix, e.g. "step3_meta". A trailing underscore is ignored.
 #' @param out_suffix Output file suffix, default ".txt"
 #' @param keep_het If TRUE and multi-study, keep pval.het column; if FALSE, drop it to match 6-column step2 format exactly.
-#' @param meta.method (deprecated) no longer used; meta-analysis now uses fixed-effect inverse-variance weighting.
+#' @param meta.method Meta-analysis method passed to `metafor::rma.uni()`.
+#'   Defaults to `"EE"`.
 #'
 #' @return Named list: each element is a data.frame/tibble in step2 format.
 #' @import dplyr
@@ -27,9 +28,12 @@ metaSummary <- function(study_dirs,
                         out_prefix = "step3_meta",
                         out_suffix = ".txt",
                         keep_het = TRUE,
-                        meta.method = NULL) {
+                        meta.method = "EE") {
   if (!requireNamespace("dplyr", quietly = TRUE)) {
     stop("Package 'dplyr' is required but not installed.")
+  }
+  if (!requireNamespace("metafor", quietly = TRUE)) {
+    stop("Package 'metafor' is required but not installed.")
   }
 
   if (is.null(names(study_dirs)) || any(names(study_dirs) == "")) {
@@ -41,6 +45,10 @@ metaSummary <- function(study_dirs,
   if (!is.null(chrom) && length(chrom) != 1L) {
     stop("'chrom' must be NULL or a single chromosome value.")
   }
+  if (is.null(meta.method) || length(meta.method) != 1L || !nzchar(trimws(meta.method))) {
+    stop("'meta.method' must be a single non-empty method name for metafor::rma.uni().")
+  }
+  meta.method <- trimws(meta.method)
   study.ID <- names(study_dirs)
 
   escape_regex <- function(x) {
@@ -326,30 +334,46 @@ metaSummary <- function(study_dirs,
     # }
 
     if (length(used_studies) > 1) {
-      # fixed-effect inverse-variance weighting in matrix form (whole-column ops)
-      w <- 1 / AA.var
-      # rows with all NA will have wsum=0; guard to avoid inf
-      wsum <- rowSums(w, na.rm = TRUE)
-      wsum[wsum == 0] <- NA_real_
-
-      meta_est <- rowSums(w * AA.est, na.rm = TRUE) / wsum
-      meta_stderr <- sqrt(1 / wsum)
-      z <- meta_est / meta_stderr
-      meta_pval <- 2 * stats::pnorm(-abs(z))
-
-      # heterogeneity Q (still vectorized)
-      centered <- AA.est - meta_est
-      Q <- rowSums(w * centered * centered, na.rm = TRUE)
-      df <- rowSums(!is.na(AA.est)) - 1
-      meta_pval.het <- stats::pchisq(Q, df = df, lower.tail = FALSE)
-
       meta_fits <- data.frame(
-        est = meta_est,
-        stderr = meta_stderr,
-        pval = meta_pval,
-        pval.het = meta_pval.het,
+        est = rep(NA_real_, length(snp.ID)),
+        stderr = rep(NA_real_, length(snp.ID)),
+        pval = rep(NA_real_, length(snp.ID)),
+        pval.het = rep(NA_real_, length(snp.ID)),
         stringsAsFactors = FALSE
       )
+      for (i in seq_along(snp.ID)) {
+        keep <- !is.na(AA.est[i, ]) & !is.na(AA.var[i, ]) & AA.var[i, ] > 0
+        if (!any(keep)) {
+          next
+        }
+        if (sum(keep) == 1L) {
+          beta.coef <- AA.est[i, keep][[1L]]
+          std.coef <- sqrt(AA.var[i, keep][[1L]])
+          meta_fits$est[i] <- beta.coef
+          meta_fits$stderr[i] <- std.coef
+          meta_fits$pval[i] <- 1 - stats::pchisq((beta.coef / std.coef)^2, df = 1)
+          next
+        }
+        fit <- tryCatch(
+          metafor::rma.uni(
+            yi = as.numeric(AA.est[i, keep]),
+            vi = as.numeric(AA.var[i, keep]),
+            method = meta.method
+          ),
+          error = function(e) {
+            stop(
+              "metafor::rma.uni() failed for feature '", feat,
+              "', SNP '", snp.ID[[i]], "' with meta.method='", meta.method,
+              "': ", conditionMessage(e),
+              call. = FALSE
+            )
+          }
+        )
+        meta_fits$est[i] <- as.numeric(fit$b)
+        meta_fits$stderr[i] <- fit$se
+        meta_fits$pval[i] <- fit$pval
+        meta_fits$pval.het[i] <- fit$QEp
+      }
 
       out <- dplyr::tibble(
         SNP = snp.ID,

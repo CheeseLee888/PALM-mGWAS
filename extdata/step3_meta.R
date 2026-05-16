@@ -24,6 +24,8 @@ option_list <- list(
               help="Step2 scope: NULL for allchr, or 1..22 [default %default]"),
   make_option("--featureList", type="character", default="NULL",
               help="Optional comma-separated feature name(s) to meta-analyze [default %default]"),
+  make_option("--meta.method", type="character", default="EE",
+              help="Meta-analysis method passed to metafor::rma.uni() [default %default]"),
   make_option("--outputPrefix", type="character", default="",
               help="Full output prefix for meta files, e.g. example/output/meta/step3_meta")
 )
@@ -70,5 +72,6 @@ metaSummary(
   featureList = feature_subset,
   out_dir    = meta_out_dir,
   out_prefix = meta_out_prefix,
-  keep_het   = TRUE
+  keep_het   = TRUE,
+  meta.method = opt$meta.method
 )
