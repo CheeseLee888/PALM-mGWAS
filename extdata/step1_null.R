@@ -22,19 +22,19 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
+    make_option("--clusterCol",
+        type = "character", default = "",
+        help = ""
+    ),
     make_option("--prev.filter",
         type = "double", default = 0.1,
         help = ""
     ),
-    make_option("--NULLObjPrefix",
+    make_option("--nullModelPrefix",
         type = "character", default = "",
         help = ""
     ),
-    make_option("--FeatureInfoFile",
-        type = "character", default = "NULL",
-        help = ""
-    ),
-    make_option("--FeatureNameListFile",
+    make_option("--featureInfoFile",
         type = "character", default = "NULL",
         help = ""
     )
@@ -51,11 +51,11 @@ if (is.null(opt$covarColList) || !nzchar(opt$covarColList) || toupper(opt$covarC
 if (is.null(opt$depthCol) || !nzchar(opt$depthCol) || toupper(opt$depthCol) == "NULL") {
   opt$depthCol <- NULL
 }
-if (is.null(opt$FeatureInfoFile) || !nzchar(opt$FeatureInfoFile) || toupper(opt$FeatureInfoFile) == "NULL") {
-  opt$FeatureInfoFile <- NULL
+if (is.null(opt$clusterCol) || !nzchar(opt$clusterCol) || toupper(opt$clusterCol) == "NULL") {
+  opt$clusterCol <- NULL
 }
-if (is.null(opt$FeatureNameListFile) || !nzchar(opt$FeatureNameListFile) || toupper(opt$FeatureNameListFile) == "NULL") {
-  opt$FeatureNameListFile <- NULL
+if (is.null(opt$featureInfoFile) || !nzchar(opt$featureInfoFile) || toupper(opt$featureInfoFile) == "NULL") {
+  opt$featureInfoFile <- NULL
 }
 
 fitNULL(
@@ -63,8 +63,8 @@ fitNULL(
   covFile = opt$covFile,
   covarColList = opt$covarColList,
   depthCol = opt$depthCol,
+  clusterCol = opt$clusterCol,
   prev.filter = opt$prev.filter,
-  FeatureInfoFile = opt$FeatureInfoFile,
-  FeatureNameListFile = opt$FeatureNameListFile,
-  NULLObjPrefix = opt$NULLObjPrefix
+  featureInfoFile = opt$featureInfoFile,
+  nullModelPrefix = opt$nullModelPrefix
 )

@@ -4,10 +4,10 @@
 \alias{discover_meta_files}
 \title{Discover meta-analysis result files}
 \usage{
-discover_meta_files(metaDir)
+discover_meta_files(inputPrefix)
 }
 \arguments{
-\item{metaDir}{Directory containing meta files.}
+\item{inputPrefix}{Directory containing Step3 meta files or single-study Step2 files.}
 }
 \value{
 A data frame with columns `pheno`, `scope`, `file`, and `files`.
@@ -26,5 +26,5 @@ files. If one or more `_chrN_` files exist for a feature, all matched
 chromosome files are stored in chromosome order and the matching `allchr`
 file, if present, is ignored. If no chromosome-specific file exists, the
 single `allchr` file is used. Text files that do not match either naming
-convention are ignored unless no valid result files are found.
+convention are ignored.
 }

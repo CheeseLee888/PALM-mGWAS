@@ -15,13 +15,22 @@
     table th:nth-child(2), table td:nth-child(2) {width: 14%;}
     table th:nth-child(3), table td:nth-child(3) {width: 14%;}
     table th:nth-child(4), table td:nth-child(4) {width: 52%;}
+    table.install-compare th:nth-child(1), table.install-compare td:nth-child(1) {width: 20%;}
+    table.install-compare th:nth-child(2), table.install-compare td:nth-child(2) {width: 20%;}
+    table.install-compare th:nth-child(3), table.install-compare td:nth-child(3) {width: 28%;}
+    table.install-compare th:nth-child(4), table.install-compare td:nth-child(4) {width: 32%;}
     .steps {display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;}
     .env-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 16px 0;}
     .gallery {display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 16px 0;}
     .gallery figure {margin: 0; border: 1px solid #d0d7de; border-radius: 8px; background: #fbfdff; padding: 10px;}
     .gallery img {width: 80%; height: auto; border-radius: 6px; display: block; margin: 0 auto;}
     .gallery figcaption {font-size: 13px; color: #555; margin-top: 8px;}
+    .workflow-figure {margin: 18px auto; border: 1px solid #d0d7de; border-radius: 8px; background: #fbfdff; padding: 12px; max-width: 720px;}
+    .workflow-figure img {width: 80%; max-width: 520px; height: auto; display: block; margin: 0 auto; border-radius: 6px;}
+    .workflow-figure figcaption {font-size: 13px; color: #555; margin-top: 8px; text-align: center;}
     .card {border: 1px solid #d0d7de; border-radius: 8px; padding: 12px; background: #fbfdff;}
+    .warning {border: 1px solid #d8a800; border-left: 5px solid #d8a800; border-radius: 6px; background: #fff8d6; padding: 12px 14px; margin: 12px 0;}
+    .warning strong {color: #6b4e00;}
     .sidebar {position: fixed; top: 0; left: 0; bottom: 0; z-index: 10; width: 260px; overflow-y: auto; padding: 22px 20px; border-right: 1px solid #d0d7de; background: rgba(251, 253, 255, 0.96); backdrop-filter: blur(8px);}
     .content {max-width: 900px; margin: 0 auto; padding: 24px 32px 48px 332px;}
     .sidebar h3 {margin: 0 0 14px; color: #0f3b66; font-size: 15px;}
@@ -42,22 +51,25 @@
     <a href="#feedback">Feedback</a>
     <a href="#env">Environment & Dependencies</a>
     <a href="#install">Installation</a>
-    <a href="#install-pixi" class="sub">Option A: pixi</a>
-    <a href="#install-r" class="sub">Option B: local R</a>
-    <a href="#install-docker" class="sub">Option C: Docker</a>
+    <a href="#install-comparison" class="sub">Installation Comparison</a>
+    <a href="#install-docker" class="sub">Option A: Docker</a>
+    <a href="#install-pixi" class="sub">Option B: pixi</a>
+    <a href="#install-r" class="sub">Option C: local R</a>
     <a href="#sif" class="sub">Option D: SIF for HPC</a>
     <a href="#workflow">Workflow</a>
-    <a href="#step0" class="sub">Step0: Check and Align Input IDs</a>
-    <a href="#step1" class="sub">Step1: Fit Null Model</a>
-    <a href="#step2" class="sub">Step2: Per-study Summary</a>
-    <a href="#step3" class="sub">Step3: Meta Analysis</a>
-    <a href="#reporting" class="sub">Step4: Reporting</a>
+    <a href="#step0" class="sub">Step0: Sample ID Alignment and QC</a>
+    <a href="#step1" class="sub">Step1: Null Model</a>
+    <a href="#step2-1" class="sub">Step2.1: Association Tests</a>
+    <a href="#step2-2" class="sub">Step2.2: Compositional Correction</a>
+    <a href="#step3" class="sub">Step3: Meta-analysis</a>
+    <a href="#reporting" class="sub">Step4: Reports</a>
     <a href="#exampledata">Example Data in This Repo</a>
     <a href="#example-input" class="sub">Example Input</a>
     <a href="#example-workflow" class="sub">Example Workflow</a>
     <a href="#example-step0" class="sub">Example Step0</a>
     <a href="#example-step1" class="sub">Example Step1</a>
-    <a href="#example-step2" class="sub">Example Step2</a>
+    <a href="#example-step2-1" class="sub">Example Step2.1</a>
+    <a href="#example-step2-2" class="sub">Example Step2.2</a>
     <a href="#example-step3" class="sub">Example Step3</a>
     <a href="#example-step4" class="sub">Example Step4</a>
   </div>
@@ -69,31 +81,74 @@
   <p>For questions, bug reports, or user feedback, please contact <a href="mailto:cheese.lee.888@gmail.com">cheese.lee.888@gmail.com</a>.</p>
 
   <h2 id="env">Environment & Dependencies</h2>
-  <p>Set up the runtime environment before installing or running any PALMGWAS command. The package depends on compiled R libraries, so the most reliable workflow is to keep <code>R</code>, <code>PALM</code>, and all supporting packages inside one isolated environment instead of mixing system-level and project-level installs.</p>
+  <p>Set up the runtime environment before installing or running any PALMGWAS command. The package depends on compiled R libraries, so the most reliable workflow is to keep <code>R</code> and all R package dependencies inside one isolated environment instead of mixing system-level and project-level installs.</p>
   <div class="env-grid">
     <div class="card">
-      <strong>Recommended runtime</strong><br>
-      Use the repository's <code>pixi</code> environment for local source runs. It keeps the R version, BLAS/LAPACK libraries, and package installation path aligned with the scripts in this guide.
+      <strong>Recommended setup for local runs</strong><br>
+      Use the repository's <code>pixi</code> environment when running PALMGWAS from source. Pixi sets up the correct R version and required packages in one isolated environment, which helps avoid conflicts with other R installations on your computer.
     </div>
     <div class="card">
-      <strong>Supported alternative</strong><br>
-      Use the published Docker image if you want a prebuilt runtime with PALMGWAS, PALM, <code>abess</code>, and the R package dependencies already installed.
+      <strong>Alternative: Docker</strong><br>
+      Use Docker if you want a ready-to-use version of PALMGWAS. The Docker image already includes PALMGWAS and its R package dependencies, so you do not need to install them manually.
     </div>
     <div class="card">
-      <strong>What to avoid</strong><br>
-      Do not install <code>PALM</code> into a different R library and then run PALMGWAS from another environment. Mixed BLAS or mixed R libraries are the main source of setup failures.
+      <strong>Avoid mixing R environments</strong><br>
+      Install all R package dependencies in the same R environment that will be used to run PALMGWAS. Mixing packages installed under different R versions or package libraries is a common cause of setup errors.
     </div>
   </div>
   <ul>
-    <li><strong>R version:</strong> use <code>R &gt;= 4.1.0</code>, matching the package <code>DESCRIPTION</code>. The bundled pixi setup already provides a compatible runtime.</li>
-    <li><strong>Core R packages:</strong> <code>PALM</code>, <code>Matrix</code>, <code>data.table</code>, <code>dplyr</code>, <code>ggplot2</code>, <code>metafor</code>, <code>qqman</code>, <code>snpStats</code>, <code>stringr</code>, <code>tibble</code>, <code>optparse</code>, and <code>abess</code>.</li>
-    <li><strong>System consistency:</strong> install PALM and PALMGWAS into the same library tree that will be used at runtime.</li>
-    <li><strong>If you do not use pixi or Docker:</strong> you can run from local R source, but you must create a clean R environment yourself and install all required packages into the same R library before running the CLI.</li>
+    <li><strong>R version:</strong> PALMGWAS requires <code>R &gt;= 4.1.0</code>, as specified in the package <code>DESCRIPTION</code>. The pixi environment already provides a compatible R version.</li>
+    <li><strong>Required R packages:</strong> PALMGWAS and its R package dependencies. The installation commands below install these packages into the selected runtime environment.</li>
+    <li><strong>System consistency:</strong> install PALMGWAS and its R package dependencies in the same R environment that will be used to run the workflow scripts.</li>
+    <li><strong>If you do not use pixi or Docker:</strong> create a clean local R environment yourself, install all required packages into that environment, and run PALMGWAS workflow scripts with the same R installation.</li>
   </ul>
-  <p>In practice, you should choose exactly one execution mode for a project directory: local <code>pixi run ...</code> commands, local system-R commands, or Docker/Apptainer commands. The workflow examples below show pixi and Docker commands because those are the most reproducible modes.</p>
+  <p>For each analysis, choose one setup and use it consistently: pixi, local R, or Docker/Apptainer. Avoid switching between these setups in the same project folder because each one may use a different R installation, package library, and file-path convention.</p>
 
   <h2 id="install">Installation</h2>
-  <h3 id="install-pixi">Option A: pixi source installation</h3>
+  <h3 id="install-comparison">Installation Comparison</h3>
+  <table class="install-compare">
+    <tr><th>Method</th><th>Platform</th><th>Dependencies</th><th>Best For</th></tr>
+    <tr>
+      <td><strong>Docker image</strong></td>
+      <td>All platforms with Docker</td>
+      <td>Docker image only</td>
+      <td>Reproducible runs without local R package setup</td>
+    </tr>
+    <tr>
+      <td><strong>pixi source</strong></td>
+      <td>Linux, macOS</td>
+      <td>pixi-managed R environment</td>
+      <td>Recommended local runs from the source tree</td>
+    </tr>
+    <tr>
+      <td><strong>local R source</strong></td>
+      <td>Linux, macOS</td>
+      <td>R &gt;= 4.1.0 plus compiled R package dependencies</td>
+      <td>Users who manage their own R and system libraries</td>
+    </tr>
+    <tr>
+      <td><strong>Apptainer/SIF</strong></td>
+      <td>HPC clusters</td>
+      <td>Apptainer/Singularity image</td>
+      <td>Cluster jobs where Docker is unavailable</td>
+    </tr>
+  </table>
+
+  <h3 id="install-docker">Option A: Docker image</h3>
+  <pre><code class="language-bash"># pull the published image
+docker pull --platform=linux/amd64 cheeselee/palmgwas:latest
+
+# enter the repository example directory
+cd /path/to/PALMGWAS
+
+# run a packaged script inside the container
+docker run --rm --platform=linux/amd64 \
+  -v "$PWD":/work -w /work \
+  cheeselee/palmgwas:latest \
+  step1_null.R --help</code></pre>
+  <p>This published Docker image already contains PALMGWAS and its R package dependencies, so Docker users do not need to repeat the local source installation steps from Option B or Option C. Mount your local project directory to <code>/work</code> and pass paths under <code>/work</code>, such as <code>/work/example/input/study1/abd.txt</code>. The Docker image supplies the scripts and runtime; the data files are read from and written to your mounted local directory.</p>
+
+  <h3 id="install-pixi">Option B: pixi source installation</h3>
   <p>Use this method if you want to run the workflow directly from the source tree with the pixi-managed R environment.</p>
   <pre><code class="language-bash"># install pixi (if not yet)
 curl -fsSL https://pixi.sh/install.sh | bash
@@ -115,12 +170,12 @@ pixi run env PKG_LIBS="-L$PWD/.pixi/envs/default/lib -lopenblas -llapack -lblas"
 
 # install PALMGWAS itself into the same pixi R library
 pixi run R CMD INSTALL .</code></pre>
-  <p><strong>One-time setup:</strong> <code>pixi install</code> only creates the base environment. Before running the workflow scripts, you should also install <code>abess</code>, the bundled <code>PALM</code> tarball, and the local <code>PALMGWAS</code> package into that pixi-managed R library.</p>
-  <p><strong>Command prefix for routine runs:</strong> after the one-time setup above, most commands in this guide can be run as <code>pixi run Rscript extdata/&lt;script&gt;.R ...</code> from the repository root.</p>
+  <p><strong>Setup note:</strong> <code>pixi install</code> only creates the base environment. Before running the workflow scripts, install PALMGWAS and its R package dependencies into that pixi-managed R library.</p>
+  <p><strong>Command prefix for routine runs:</strong> after the setup above, most commands in this guide can be run as <code>pixi run Rscript extdata/&lt;script&gt;.R ...</code> from the repository root.</p>
   <p><strong>Do not use the system R for PALM installation:</strong> install <code>PALM</code> through <code>pixi run</code> so that it links against the BLAS/LAPACK libraries inside the pixi environment. On macOS, avoid wrapping the install command in <code>pixi run bash -lc '...'</code> because a login shell can resolve <code>R</code> back to the system binary and trigger errors such as missing <code>libopenblas.0.dylib</code> when <code>library(PALM)</code> is loaded.</p>
 
-  <h3 id="install-r">Option B: local R source installation without pixi</h3>
-  <p>Use this method only if you want to manage R and compiled libraries yourself. Compared with pixi, this mode requires manual package installation and manual control of BLAS/LAPACK compatibility. Install <code>PALM</code>, <code>PALMGWAS</code>, and all dependencies into the same R library that will be used when running <code>Rscript</code>.</p>
+  <h3 id="install-r">Option C: local R source installation without pixi</h3>
+  <p>Use this method only if you want to manage R and compiled libraries yourself. Compared with pixi, this mode requires manual package installation and manual control of BLAS/LAPACK compatibility. Install all dependencies into the same R library that will be used when running <code>Rscript</code>.</p>
   <pre><code class="language-bash"># clone the repository and enter the source tree
 git clone git@github.com:CheeseLee888/PALMGWAS.git
 cd PALMGWAS
@@ -140,21 +195,7 @@ R CMD INSTALL .
 # smoke test that all packages load from the same R library
 Rscript -e 'library(PALM); library(PALMGWAS); library(snpStats); cat("PALMGWAS local R installation OK\n")'</code></pre>
   <p><strong>Command prefix for routine runs:</strong> with local R source installation, replace the pixi prefix with plain <code>Rscript</code>, for example <code>Rscript extdata/step0_checkInput.R ...</code> from the repository root.</p>
-  <p><strong>When to prefer pixi:</strong> if <code>PALM</code> fails to install or load because of BLAS/LAPACK linking errors, use Option A. Pixi pins the compiler-facing libraries and installs <code>PALM</code> with explicit link flags, which avoids most local system-R library mismatches.</p>
-
-  <h3 id="install-docker">Option C: Docker image</h3>
-  <pre><code class="language-bash"># pull the published image
-docker pull --platform=linux/amd64 cheeselee/palmgwas:latest
-
-# enter the repository example directory
-cd /path/to/PALMGWAS
-
-# run a packaged script inside the container
-docker run --rm --platform=linux/amd64 \
-  -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
-  step1_null.R --help</code></pre>
-  <p>This published Docker image already contains pixi, <code>abess</code>, PALM, <code>PALMGWAS</code>, and the R package dependencies, so Docker users do not need to repeat the local source installation steps from Option A or Option B. Mount your local project directory to <code>/work</code> and pass paths under <code>/work</code>, such as <code>/work/example/input/study1/abd.txt</code>. The Docker image supplies the scripts and runtime; the data files are read from and written to your mounted local directory.</p>
+  <p><strong>When to prefer pixi:</strong> if <code>PALM</code> fails to install or load because of BLAS/LAPACK linking errors, use Option B. Pixi pins the compiler-facing libraries and installs <code>PALM</code> with explicit link flags, which avoids most local system-R library mismatches.</p>
 
   <h3 id="sif">Option D: Build an Apptainer/SIF image for HPC</h3>
   <p>Use this method when the target cluster runs Apptainer/Singularity instead of Docker. First build or pull the Docker image on a machine with Docker, save it as a Docker archive, then convert the archive to <code>PALMGWAS.sif</code>.</p>
@@ -182,351 +223,181 @@ docker run --rm -it --privileged \
   <p>Copy <code>PALMGWAS.sif</code> to the cluster project directory and run workflow scripts with <code>apptainer exec</code>. The simulation workflow under <code>simulation/</code> uses this SIF image when submitting the provided <code>.sbatch</code> scripts. Those templates expect the default image path <code>${WORK}/PALMGWAS.sif</code>, or you can override it by setting <code>SIF=/path/to/PALMGWAS.sif</code>.</p>
 
   <h2 id="workflow">Workflow</h2>
-  <p>Run the packaged CLI directly after completing the one-time installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALMGWAS</code> package root. The workflow below goes from <code>Step0</code> to <code>Step4</code>. Pixi commands use local project-relative paths. Docker commands mount the same local project at <code>/work</code>, so their input and output arguments use <code>/work/...</code> paths.</p>
-  <p>In the parameter tables below, parameter names shown in bold are required.</p>
-  <div class="steps">
-    <div class="card"><strong>Step0 Check</strong><br><code>step0_checkInput.R</code> removes rows with missing abundance or required covariate/depth values, optionally filters low-depth rows, handles repeated subject IDs for longitudinal microbiome data, expands subject-level covariates when needed, aligns rows to genotype subject order, and can write sequencing-depth summaries.</div>
-    <div class="card"><strong>Step1 Null</strong><br><code>step1_null.R</code> fits the PALM null model from the Step0-aligned abundance and covariate tables and can write feature summaries.</div>
-    <div class="card"><strong>Step2.1 Summary</strong><br><code>step2_1_summary.R</code> reads genotype input, runs PALM score tests without compositional correction, writes one association file per feature, and can write genotype/SNP summaries.</div>
-    <div class="card"><strong>Step2.2 Correction</strong><br><code>step2_2_correction.R</code> reads one Step2 scope at a time and applies median- or tune-based compositional correction across features for each SNP.</div>
-    <div class="card"><strong>Step3 Meta</strong><br><code>step3_meta.R</code> meta-analyzes multiple studies and adds <code>meta_*</code> columns.</div>
-    <div class="card"><strong>Step4 Reporting</strong><br><code>step4_reporting.R</code> generates Manhattan and forest plots.</div>
-  </div>
+  <p>Run the packaged command-line interface (CLI) directly after completing the installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALMGWAS</code> package root. Figure 1 summarizes the Step0-Step3 association workflow; Step4 adds downstream reporting.</p>
+  <figure class="workflow-figure">
+    <img src="assets/fig1.png" alt="PALMGWAS workflow overview">
+    <figcaption>Figure 1. Overview of the Step0-Step3 association workflow.</figcaption>
+  </figure>
 
-  <h2 id="step0">Step0: Check and Align Input IDs</h2>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
-    --abdFile=${abdFile} \
-    --covFile=${covFile} \
-    --abdAlignedFile=${abdAlignedFile} \
-    --covAlignedFile=${covAlignedFile} \
-    --covarColList=${covarColList} \
-    --depthCol=${depthCol} \
-    --timeIDCol=${timeIDCol} \
-    --depth.filter=${depth_filter} \
-    --genoFile=${genoFile} \
-    --SeqDepthInfoFile=${SeqDepthInfoFile} \
-    --useCluster=${useCluster}</code></pre>
-  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
-  -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
-  step0_checkInput.R \
-    --abdFile=${abdFile} \
-    --covFile=${covFile} \
-    --abdAlignedFile=${abdAlignedFile} \
-    --covAlignedFile=${covAlignedFile} \
-    --covarColList=${covarColList} \
-    --depthCol=${depthCol} \
-    --timeIDCol=${timeIDCol} \
-    --depth.filter=${depth_filter} \
-    --genoFile=${genoFile} \
-    --SeqDepthInfoFile=${SeqDepthInfoFile} \
-    --useCluster=${useCluster}</code></pre>
-  <ul>
-    <li><strong>Purpose:</strong> remove rows with missing values needed by Step1, optionally filter low-depth rows, resolve longitudinal repeated subject IDs, then verify that abundance, covariates, and genotype input remain aligned before modeling.</li>
-    <li><strong>Missingness rule:</strong> rows with missing values in any abundance feature column are removed. Rows with missing values in Step1-required covariate/depth columns are also removed. When a row is removed from one table, the matching row is removed from the other table before genotype matching.</li>
-    <li><strong>Longitudinal rule:</strong> the first column, usually <code>IID</code>, is the subject ID. If <code>abdFile</code> contains repeated subject IDs, pass <code>--timeIDCol</code>. If <code>covFile</code> also contains repeated subject IDs, it must contain the same <code>--timeIDCol</code> and the same set of <code>(subject ID, time ID)</code> rows. If <code>covFile</code> has one row per subject, Step0 expands each subject-level covariate row to match the repeated abundance rows.</li>
-    <li><strong>Alignment rule:</strong> after missingness and depth filtering, the step keeps subjects present in genotype input, ignores extra genotype-only subjects, and writes aligned abundance and covariate rows grouped by genotype subject order. For repeated subject IDs, within-subject row order follows the abundance input.</li>
-    <li><strong>Covariate columns:</strong> <code>--covarColList</code> is used only to decide which covariate columns must be non-missing for sample filtering before Step1. It does not subset columns in the aligned covariate output; <code>covAlignedFile</code> keeps all columns from <code>covFile</code>.</li>
-    <li><strong>Genotype subject count:</strong> genotype input may contain extra subjects, but it must not miss any subject retained from <code>abdFile</code>/<code>covFile</code> after filtering.</li>
-    <li><strong>Failure cases:</strong> missing/empty subject IDs, duplicated <code>(subject ID, time ID)</code> rows, requested covariate/depth/time columns not found, non-numeric depth values, no rows left after filtering, or genotype input missing retained subjects.</li>
-  </ul>
+  <h2 id="step0">Step0 (<code>step0_checkInput.R</code>): Align Sample IDs with Genotype Data and Perform Sample QC</h2>
+  <h3>1. One-sentence purpose</h3>
+  <p>Step0 checks the abundance, covariate, and genotype inputs; removes rows with missing required values or low sequencing depth; handles longitudinal repeated-measure structure when present; and matches the sample IDs in the abundance and covariate files to the subject IDs in the genotype file before writing aligned files for downstream modeling.</p>
+  <p>In the parameter tables below, parameter names shown in bold are required.</p>
+  <h3>2. Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose first column is subject ID; rows with missing values in any abundance feature column are removed</td></tr>
+    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose first column is subject ID. All non-ID abundance feature columns must contain numeric data; rows with missing values in any abundance feature column are removed</td></tr>
     <tr><td><strong><code>--covFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Covariate table whose first column is subject ID. It may have one row per subject or, for repeated-measured covariates, one row per subject-time pair</td></tr>
     <tr><td><strong><code>--abdAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned abundance table; original input is not overwritten</td></tr>
     <tr><td><strong><code>--covAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned covariate table; original input is not overwritten</td></tr>
     <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the subject-order reference. Accepted values are a PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code>. For VCF, Step0 reads subject IDs from the sample columns in the <code>#CHROM</code> header line, checks that every retained subject is present, ignores extra VCF-only subjects, and reorders aligned rows by that VCF subject-column order</td></tr>
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated covariate columns required by Step1. Step0 uses these columns only for missingness-based sample filtering before ID matching. It does not remove other columns from <code>covAlignedFile</code>. If omitted or set to <code>NULL</code>, all non-ID columns in <code>covFile</code> are checked for missingness</td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td></tr>
-    <tr><td><code>--timeIDCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Time ID column required when <code>abdFile</code> contains repeated subject IDs. The subject ID column is still the first column of <code>abdFile</code> and <code>covFile</code>; <code>--timeIDCol</code> only names the visit/time column used to match repeated-measured covariates by <code>(subject ID, time ID)</code>. The time ID column is removed from aligned Step1 model inputs</td></tr>
+    <tr><td><code>--timeIDCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Visit/time column required when <code>abdFile</code> contains repeated subject IDs. Step0 uses this column only to match abundance and covariate rows by <code>(subject ID, time ID)</code>. The aligned files written for Step1 keep one row per retained observation but do not include the time ID column, because Step1 fits the null model from the abundance features and selected covariates rather than from the visit label itself</td></tr>
+    <tr><td><code>--clusterCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional column in <code>covFile</code> used as the family/pedigree cluster ID. If provided, this column is checked for missingness during Step0 and should also be passed to Step1 so Step2.1 can use it for clustered association testing. This is recommended for VCF input or whenever PLINK <code>.fam</code> FID values are missing, all 0, or otherwise not the intended cluster ID</td></tr>
     <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Row-level depth threshold applied after missingness filtering and before genotype subject matching; rows with depth <code>&lt;=</code> this value are removed</td></tr>
     <tr><td><code>--SeqDepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>DepthInfo</code>, written for the final Step0 filtered/aligned row set in genotype subject order. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
-    <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether family/pedigree clustering is planned for non-longitudinal data. Longitudinal repeated subject IDs are detected automatically in Step2.1</td></tr>
   </table>
-  <p><strong>Step0 examples:</strong></p>
+  <h3>3. Common usage patterns</h3>
   <ul>
-    <li><code>--abdFile=example/input/study1/abd.txt</code></li>
-    <li><code>--covFile=example/input/study1/cov.txt</code></li>
-    <li><code>--abdAlignedFile=example/input/study1/abd_aligned.txt</code></li>
-    <li><code>--covAlignedFile=example/input/study1/cov_aligned.txt</code></li>
-    <li><code>--genoFile=example/input/study1/geno</code>; VCF input is also supported by passing your own <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code> file path</li>
-    <li><code>--covarColList=NULL</code> checks all covariate columns for missingness; <code>--covarColList=AGE,SEX,PC01</code> checks only those columns. In both cases, <code>covAlignedFile</code> still keeps all original covariate columns.</li>
-    <li><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></li>
-    <li><code>--depth.filter=0</code>; <code>--depth.filter=1000</code></li>
-    <li><code>--SeqDepthInfoFile=example/output/study1/info_seqdepth.txt</code>; <code>--SeqDepthInfoFile=NULL</code></li>
-    <li><code>--timeIDCol=VISIT</code> for longitudinal abundance tables with repeated subject IDs; <code>--timeIDCol=NULL</code> for one row per subject.</li>
-    <li><code>--useCluster=TRUE</code> uses PLINK <code>.fam</code> FID values as family/pedigree clusters for PLINK genotype input.</li>
+    <li>For one row per subject, set <code>--timeIDCol=NULL</code>.</li>
+    <li>For longitudinal abundance data with repeated subject IDs, set <code>--timeIDCol</code> to the visit/time column, such as <code>--timeIDCol=VISIT</code>.</li>
+    <li>Use <code>--covarColList=NULL</code> if all covariate columns should be checked for missingness before modeling.</li>
+    <li>Use <code>--covarColList=AGE,SEX,PC01</code> if only selected covariates should be required to be non-missing.</li>
+    <li>Use <code>--depthCol=SeqDepth</code> if sequencing depth is already included in the covariate file; otherwise use <code>--depthCol=NULL</code> to compute depth from row sums of the abundance table.</li>
+    <li>Use <code>--depth.filter=0</code> to keep all rows after missingness filtering; use a larger value, such as <code>--depth.filter=1000</code>, to remove low-depth rows.</li>
+    <li>For family or pedigree clustering, add a cluster column to <code>covFile</code> and set <code>--clusterCol=FID</code> in Step0 and Step1. If <code>--clusterCol=NULL</code>, PLINK input can fall back to valid <code>.fam</code> FID values; VCF input requires <code>--clusterCol</code> because VCF files do not contain FID.</li>
   </ul>
-
-  <h3 id="clustering-inputs">Clustering and Repeated Measures</h3>
-  <p>PALMGWAS distinguishes two clustering situations. In family or pedigree data, multiple subjects can belong to the same family; genotype input has one row per subject, abundance usually has one row per subject, and Step2.1 uses PLINK <code>.fam</code> FID as the cluster when <code>--useCluster=TRUE</code>. In longitudinal microbiome data, one subject can have multiple abundance rows over time while genotype has one row per subject. In that case the first column <code>IID</code> is the subject ID, not a row-unique measurement ID, and Step2.1 automatically expands each genotype row to match the repeated abundance rows and uses subject ID as the cluster.</p>
-  <p>When both situations occur together, meaning repeated microbiome rows per subject and subjects nested in families, Step2.1 uses the expanded PLINK FID cluster.</p>
-  <p>For longitudinal inputs, <code>abdFile</code> must include <code>--timeIDCol</code>. If repeated-measured covariates are supplied, <code>covFile</code> must include the same subject ID and time ID pairs as <code>abdFile</code>. If covariates are subject-level only, such as sex or genetic ancestry PCs, <code>covFile</code> should contain one row per subject; Step0 expands those covariates to match the abundance rows.</p>
-
-  <h2 id="step1">Step1: Fit Null Model</h2>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R \
-    --abdFile=${abdFile} \
-    --covFile=${covFile} \
-    --covarColList=${covarColList} \
-    --depthCol=${depthCol} \
-    --prev.filter=${prev_filter} \
-    --FeatureInfoFile=${FeatureInfoFile} \
-    --FeatureNameListFile=${FeatureNameListFile} \
-    --NULLObjPrefix=${NULLObjPrefix}</code></pre>
-  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
-  -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
-  step1_null.R \
-    --abdFile=${abdFile} \
-    --covFile=${covFile} \
-    --covarColList=${covarColList} \
-    --depthCol=${depthCol} \
-    --prev.filter=${prev_filter} \
-    --FeatureInfoFile=${FeatureInfoFile} \
-    --FeatureNameListFile=${FeatureNameListFile} \
-    --NULLObjPrefix=${NULLObjPrefix}</code></pre>
-  <ul>
-    <li><strong>Inputs:</strong> the Step0-aligned abundance table plus the aligned covariate table.</li>
-    <li><strong>Outputs:</strong> <code>NULLObjPrefix</code> containing <code>modglmm</code>; directories are created if missing.</li>
-    <li><strong>Tips:</strong> use abundance counts; run Step0 first so repeated subject IDs are handled consistently; keep sessionInfo for reproducibility.</li>
-  </ul>
+  <h3 id="clustering-inputs">Special Case: Family Clustering and Longitudinal Repeated Measures</h3>
+  <p>PALMGWAS distinguishes two sources of within-cluster dependence.</p>
+  <p>First, in family or pedigree data, different subjects may belong to the same family. We recommend storing the family or pedigree cluster ID as a column in <code>covFile</code> and specifying it with <code>--clusterCol</code>, for example <code>--clusterCol=FID</code>. If <code>--clusterCol</code> is provided in Step0 and Step1, PALMGWAS uses that covariate column as the cluster ID even when PLINK <code>.fam</code> FID values are available. VCF input has no PLINK-style FID field, so VCF-based family clustering requires <code>--clusterCol</code>. For PLINK input without <code>--clusterCol</code>, Step2.1 can fall back to valid <code>.fam</code> FID values, but it warns and disables family clustering if the FID values are all 0, missing, or identical.</p>
+  <p>Second, in longitudinal microbiome data, one subject may have multiple abundance rows over time while genotype input has one row per subject. In this case, the first column of the abundance file is the subject ID, not a row-unique sample ID, and <code>--timeIDCol</code> should specify the visit or time column. PALMGWAS expands each subject's genotype values to match that subject's repeated microbiome rows and accounts for correlated samples from the same subject in the association test.</p>
+  <p>When both family/pedigree clustering and longitudinal repeated measures are present, PALMGWAS uses the family/pedigree cluster ID for the clustered association test when <code>--clusterCol</code> is provided or when valid PLINK FID values are available. Step0 checks and aligns the subject IDs, time IDs, covariates, and any covariate-based cluster IDs before downstream analysis.</p>
+  <p>If the abundance file has repeated subject IDs but the covariate file has one row per subject, PALMGWAS treats the covariates as subject-level variables. Step0 repeats each subject's covariate row to match that subject's repeated abundance rows. For example, if subject <code>ID_001</code> has three abundance rows at visits <code>V1</code>, <code>V2</code>, and <code>V3</code>, and <code>covFile</code> has one row for <code>ID_001</code>, Step0 creates three aligned covariate rows for <code>ID_001</code>, one for each abundance row. Subject-level covariates should be constant within subject. Time-varying covariates should instead be provided in <code>covFile</code> with one row per subject-time pair and the same time ID column specified by <code>--timeIDCol</code>.</p>
+  <h2 id="step1">Step1 (<code>step1_null.R</code>): Fit the Null Model</h2>
+  <h3>1. One-sentence purpose</h3>
+  <p>Step1 fits the PALM null model using the Step0-aligned abundance and covariate files and saves the fitted null object for SNP-feature association testing in the next steps.</p>
+  <h3>2. Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Aligned abundance table used to fit the null model</td></tr>
-    <tr><td><strong><code>--NULLObjPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for the fitted PALM null model, not a complete filename. Step1 writes <code>${NULLObjPrefix}.rda</code>; if <code>.rda</code> is supplied accidentally, it is normalized back to the prefix</td></tr>
+    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Step0-aligned abundance table used to fit the null model. The first column must be subject ID, and the remaining columns are numeric abundance features</td></tr>
+    <tr><td><strong><code>--nullModelPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for the fitted PALM null model, not a complete filename. Step1 writes <code>${nullModelPrefix}.rda</code>; if <code>.rda</code> is supplied accidentally, it is normalized back to the prefix</td></tr>
     <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional aligned covariate file; the CLI also accepts empty string or <code>NULL</code> to omit covariates</td></tr>
-    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code>; names must match the header exactly. If omitted or set to <code>NULL</code> while <code>covFile</code> is provided, Step1 uses all covariate columns in <code>covFile</code> except <code>depthCol</code>. If <code>covFile=NULL</code>, Step1 fits the null model without covariates</td></tr>
-    <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as PALM <code>depth</code>; if omitted, PALM uses row sums of <code>abdFile</code>. This column is excluded from <code>covariate.adjust</code></td></tr>
-    <tr><td><code>--prev.filter</code></td><td><code>double</code></td><td><code>0.1</code></td><td>Feature prevalence threshold forwarded to <code>PALM::palm.null.model()</code></td></tr>
-    <tr><td><code>--FeatureInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>FeatureInfo</code>, computed from the final Step1 modeled feature set after <code>prev.filter</code> removes low-prevalence features</td></tr>
-    <tr><td><code>--FeatureNameListFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for modeled feature IDs retained after prevalence filtering</td></tr>
+    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code>; names must match the header exactly. If omitted or set to <code>NULL</code> while <code>covFile</code> is provided, Step1 uses all covariate columns in <code>covFile</code> except <code>depthCol</code> and <code>clusterCol</code>. If <code>covFile=NULL</code>, Step1 fits the null model without covariates</td></tr>
+    <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as sequencing depth; if omitted, sequencing depth is computed from row sums of <code>abdFile</code>. This column is not used as an adjustment covariate</td></tr>
+    <tr><td><code>--clusterCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as the Step2.1 cluster ID. This column is saved in the null model and is not used as an adjustment covariate</td></tr>
+    <tr><td><code>--prev.filter</code></td><td><code>double</code></td><td><code>0.1</code></td><td>Feature prevalence threshold used when fitting the null model</td></tr>
+    <tr><td><code>--featureInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for the feature summary table after prevalence filtering. This file contains feature ID, prevalence, and average proportion</td></tr>
   </table>
-  <p><strong>Step1 examples:</strong></p>
+  <h3>3. Common usage patterns</h3>
   <ul>
-    <li><code>--abdFile=example/input/study1/abd_aligned.txt</code></li>
-    <li><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code> writes <code>example/output/study1/step1_allpheno.rda</code></li>
-    <li><code>--covFile=example/input/study1/cov_aligned.txt</code>; <code>--covFile=NULL</code></li>
-    <li><code>--covarColList=NULL</code> uses all covariate columns from <code>covFile</code> except <code>depthCol</code>; use <code>--covarColList=AGE,SEX,PC01</code> only when selecting specific covariates</li>
-    <li><code>--depthCol=SeqDepth</code>; <code>--depthCol=NULL</code></li>
-    <li><code>--prev.filter=0.1</code>; <code>--prev.filter=0</code></li>
-    <li><code>--FeatureInfoFile=example/output/study1/info_feature.txt</code>; <code>--FeatureInfoFile=NULL</code></li>
-    <li><code>--FeatureNameListFile=example/output/study1/feature_list.txt</code>; <code>--FeatureNameListFile=NULL</code></li>
+    <li>Run Step1 on the aligned files produced by Step0, not on the original raw abundance and covariate files.</li>
+    <li>Use count abundance data as input; do not use relative abundance or proportion data.</li>
+    <li>Use <code>--covarColList=NULL</code> to adjust for all variables in <code>covFile</code> except the first column, which is subject ID, and any columns specified by <code>--depthCol</code> or <code>--clusterCol</code>.</li>
+    <li>Use <code>--covarColList=AGE,SEX,PC01</code> to adjust for only selected covariates.</li>
+    <li>Use <code>--depthCol=SeqDepth</code> if the sequencing depth column is available in <code>covFile</code>; otherwise use <code>--depthCol=NULL</code>.</li>
+    <li>Use <code>--clusterCol=FID</code> to save covariate-based family/pedigree cluster IDs for Step2.1; use <code>--clusterCol=NULL</code> if no covariate-based cluster column is available.</li>
+    <li>Use <code>--prev.filter=0.1</code> to remove features present in fewer than 10% of samples; use <code>--prev.filter=0</code> to keep all features.</li>
+    <li>Use <code>--featureInfoFile</code> when you want to record which features were retained after prevalence filtering. This file contains feature ID, prevalence, and average proportion.</li>
+    <li><code>--nullModelPrefix=example/output/study1/step1_allpheno</code> writes <code>example/output/study1/step1_allpheno.rda</code>.</li>
   </ul>
-
-  <h2 id="step2">Step2: Per-study Summary</h2>
-  <h3>Step2.1: null model + genotype to per-feature association files</h3>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_1_summary.R \
-    --genoFile=${genoFile} \
-    --NULLObjPrefix=${NULLObjPrefix} \
-    --SummaryPrefix=${SummaryPrefix} \
-    --chrom=${chrom} \
-    --featureColList=${featureColList} \
-    --minMAF=${minMAF} \
-    --minMAC=${minMAC} \
-    --maxMissing=${maxMissing} \
-    --impute_method=${impute_method} \
-    --SnpInfoFile=${SnpInfoFile} \
-    --useCluster=${useCluster}</code></pre>
-  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
-  -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
-  step2_1_summary.R \
-    --genoFile=${genoFile} \
-    --NULLObjPrefix=${NULLObjPrefix} \
-    --SummaryPrefix=${SummaryPrefix} \
-    --chrom=${chrom} \
-    --featureColList=${featureColList} \
-    --minMAF=${minMAF} \
-    --minMAC=${minMAC} \
-    --maxMissing=${maxMissing} \
-    --impute_method=${impute_method} \
-    --SnpInfoFile=${SnpInfoFile} \
-    --useCluster=${useCluster}</code></pre>
-  <ul>
-    <li><strong>Inputs:</strong> genotype input plus null model <code>.rda</code>.</li>
-    <li><strong>Outputs:</strong> generates many per-feature <code>.txt</code> files, one file for each tested feature, with columns <code>SNP, CHR, POS, N, est, stderr, pval</code>.</li>
-    <li><strong>Genotype QC order:</strong> Step2.1 reads genotype data, aligns and, for longitudinal data, expands genotype rows to the NULL model rows, optionally filters by chromosome, computes per-SNP <code>MissingRate</code>, applies <code>--maxMissing</code>, preserves the passing SNPs' pre-imputation <code>MissingRate</code>, applies <code>--impute_method</code> unless set to <code>false</code>, applies <code>--minMAF</code>/<code>--minMAC</code>, writes <code>--SnpInfoFile</code> for the final tested SNP set if requested, then runs <code>PALM::palm.get.summary()</code>.</li>
-    <li><strong>SNP format:</strong> dots are replaced by colons, e.g., <code>chr1:12345:REF:ALT</code>.</li>
-    <li><strong>Parallelization pattern:</strong> the software exposes <code>--chrom</code> and <code>--featureColList</code> so users can decompose Step2.1 into independent jobs. In other words, <code>chrom x feature</code> parallelism is achieved by scheduler-level job submission, not by internal multithreading within one Step2.1 process.</li>
-  </ul>
+  <h2 id="step2-1">Step2.1 (<code>step2_1_summary.R</code>): Run Per-Study SNP-Feature Association Tests</h2>
+  <h3>1. One-sentence purpose</h3>
+  <p>Step2.1 reads the fitted null model and genotype input, performs PALM tests for selected SNPs and microbial features, and writes one association result file per feature.</p>
+  <h3>2. Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
     <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input for association testing: PLINK prefix or VCF. VCF input is read directly; Step2.1 auto-detects <code>DS</code> or <code>GT</code> from the FORMAT field and prefers <code>DS</code> when present</td></tr>
-    <tr><td><strong><code>--NULLObjPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Null model prefix generated by Step1; Step2.1 reads <code>${NULLObjPrefix}.rda</code></td></tr>
-    <tr><td><strong><code>--SummaryPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 summary prefix, not a complete output filename. Step2.1 removes any trailing <code>_</code>, appends <code>_chr&lt;chrom&gt;</code> or <code>_allchr</code>, then appends <code>_&lt;feature&gt;.txt</code></td></tr>
+    <tr><td><strong><code>--nullModelPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Null model prefix generated by Step1; Step2.1 reads <code>${nullModelPrefix}.rda</code></td></tr>
+    <tr><td><strong><code>--outputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 output prefix, not a complete output filename. Step2.1 removes any trailing <code>_</code>, appends <code>_chr&lt;chrom&gt;</code> or <code>_allchr</code>, then appends <code>_&lt;feature&gt;.txt</code></td></tr>
     <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>""</code></td><td>Optional chromosome subset; use <code>--chrom=1</code> to restrict to one chromosome, or leave empty/use <code>NULL</code> to keep all chromosomes</td></tr>
-    <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated feature IDs to test from the Step1 null model; <code>NULL</code> keeps all modeled features</td></tr>
+    <tr><td><code>--featureList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated feature IDs to test from the Step1 null model; <code>NULL</code> keeps all modeled features</td></tr>
     <tr><td><code>--minMAF</code></td><td><code>double</code></td><td><code>0.05</code></td><td>Optional minimum minor allele frequency threshold for SNP filtering; <code>0</code> disables this filter</td></tr>
     <tr><td><code>--minMAC</code></td><td><code>integer</code></td><td><code>5</code></td><td>Optional minimum minor allele count threshold for SNP filtering; <code>0</code> disables this filter</td></tr>
     <tr><td><code>--maxMissing</code></td><td><code>double</code></td><td><code>0.15</code></td><td>Maximum per-SNP missing genotype rate. Step2.1 removes SNPs above this rate before imputation; <code>1</code> disables this filter</td></tr>
-    <tr><td><code>--impute_method</code></td><td><code>character</code></td><td><code>"best_guess"</code></td><td>Missing genotype imputation for SNPs that pass <code>--maxMissing</code>. Supported values are <code>best_guess</code>, <code>mean</code>, <code>minor</code>, and <code>false</code>. Use <code>false</code> to skip imputation and keep remaining missing genotypes</td></tr>
-    <tr><td><code>--SnpInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for genotype/SNP summary. <code>SNPInfo</code> contains the final SNP set used by Step2.1 after NULL-model sample alignment, optional chromosome filtering, missingness filtering, imputation, and <code>minMAF</code>/<code>minMAC</code> filtering. Its <code>MissingRate</code> column is computed after missingness filtering and before imputation</td></tr>
-    <tr><td><code>--useCluster</code></td><td><code>logical</code></td><td><code>FALSE</code></td><td>Whether to use family/pedigree clustering in Step2.1. For PLINK input, Step2.1 uses FID from the <code>.fam</code> file. Longitudinal repeated subject IDs are detected from the NULL model and enable clustering automatically</td></tr>
+    <tr><td><code>--impute_method</code></td><td><code>character</code></td><td><code>"best_guess"</code></td><td>Missing genotype imputation for SNPs that pass <code>--maxMissing</code>. Supported values are <code>best_guess</code>, <code>mean</code>, <code>minor</code>, and <code>false</code>. Use <code>false</code> to skip imputation; Step2.1 does not remove sample-specific missing genotypes for each SNP, and any remaining missing genotype values are left as missing values in the association input</td></tr>
+    <tr><td><code>--snpInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for genotype/SNP summary. <code>SNPInfo</code> contains the final SNP set used by Step2.1 after NULL-model sample alignment, optional chromosome filtering, missingness filtering, imputation, and <code>minMAF</code>/<code>minMAC</code> filtering. Its <code>MissingRate</code> column is computed after missingness filtering and before imputation</td></tr>
   </table>
-  <p><strong>Step2.1 examples:</strong></p>
+  <h3>3. Common usage patterns</h3>
   <ul>
-    <li><code>--genoFile=example/input/study1/geno</code>; VCF input is also supported by passing your own <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code> file path</li>
-    <li><code>--NULLObjPrefix=example/output/study1/step1_allpheno</code></li>
-    <li><code>--SummaryPrefix=example/output/study1/step2 --chrom=1</code> writes one file per tested feature, such as <code>example/output/study1/step2_chr1_g_Bifidobacterium.txt</code> and <code>example/output/study1/step2_chr1_g_Peptoniphilus_unclassified.txt</code>; <code>--SummaryPrefix=example/output/study1/step2_ --chrom=NULL</code> writes all-chromosome files such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code> and <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code></li>
-    <li><code>--chrom=1</code>; <code>--chrom=NULL</code>; omit it or set <code>--chrom=</code> for all chromosomes</li>
-    <li><code>--featureColList=g_Bifidobacterium,g_Peptoniphilus_unclassified</code>; <code>--featureColList=NULL</code></li>
-    <li><code>--minMAF=0.05</code>; <code>--minMAF=0</code></li>
-    <li><code>--minMAC=5</code>; <code>--minMAC=0</code></li>
-    <li><code>--maxMissing=0.15</code>; <code>--maxMissing=1</code></li>
-    <li><code>--impute_method=best_guess</code>; <code>--impute_method=mean</code>; <code>--impute_method=minor</code>; <code>--impute_method=false</code></li>
-    <li><code>--SnpInfoFile=example/output/study1/info_snp.txt</code>; <code>--SnpInfoFile=NULL</code></li>
-    <li><code>--useCluster=TRUE</code>; <code>--useCluster=FALSE</code></li>
+    <li>Use <code>--chrom=1</code>, <code>--chrom=2</code>, etc. to run one chromosome at a time for easier parallelization.</li>
+    <li>Use <code>--chrom=NULL</code> to test all chromosomes in one run.</li>
+    <li>Use <code>--featureList=NULL</code> to test all features retained from Step1.</li>
+    <li>Use <code>--featureList=g_Bifidobacterium,g_Lactobacillus</code> to test only selected features.</li>
+    <li>Use <code>--minMAF=0.05</code> and <code>--minMAC=5</code> for standard SNP filtering; use <code>0</code> for either argument to disable that filter.</li>
+    <li>Use <code>--maxMissing=0.15</code> to remove SNPs with more than 15% missing genotype values before imputation.</li>
+    <li>Use <code>--impute_method=best_guess</code> or <code>--impute_method=mean</code> for missing genotype imputation. Use <code>--impute_method=false</code> only if you want to pass remaining missing genotype values through after the <code>--maxMissing</code> SNP-level filter; it does not remove different samples separately for each SNP.</li>
+    <li>For large analyses, parallelize by chromosome and/or feature at the scheduler level rather than expecting one Step2.1 job to use internal multithreading.</li>
+    <li>For longitudinal data, PALMGWAS repeats each subject's genotype values across that subject's microbiome visits and accounts for repeated rows from the same subject in the association test.</li>
+    <li>For family or pedigree clustering, ensure that the cluster IDs have been supplied consistently, either through the covariate file or, for PLINK input, through valid <code>.fam</code> FID values.</li>
   </ul>
-
-  <h3>Step2.2: compositional correction on one Step2 scope</h3>
-  <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_2_correction.R \
-    --inputPrefix=${inputPrefix} \
-    --chrom=${chrom} \
-    --overwriteOutput=${overwriteOutput} \
-    --correct=${step2CorrectMode}</code></pre>
-  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
-  -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
-  step2_2_correction.R \
-    --inputPrefix=${inputPrefix} \
-    --chrom=${chrom} \
-    --overwriteOutput=${overwriteOutput} \
-    --correct=${step2CorrectMode}</code></pre>
-  <ul>
-    <li><strong>Why separate:</strong> Step2.1 can test multiple features in one run when <code>--featureColList=NULL</code>, but it still writes one result file per feature. Compositional correction must be applied across all feature result files for each SNP, so Step2.2 is kept as a separate step that runs after the selected scope has all feature files available. That scope can be one chromosome or <code>allchr</code>.</li>
-    <li><strong>Correction method:</strong> Step2.2 supports <code>median</code> and <code>tune</code>. For <code>tune</code>, Step2.2 infers the sample size from the Step2.1 <code>N</code> column. The <code>tune</code> mode is very slow, so use it only for small runs or when sufficient compute time is available.</li>
-  </ul>
+  <h2 id="step2-2">Step2.2 (<code>step2_2_correction.R</code>): Apply Compositional Correction</h2>
+  <h3>1. One-sentence purpose</h3>
+  <p>Step2.2 applies compositional correction across feature-specific Step2.1 result files for each SNP.</p>
+  <h3>2. Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
     <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for correction; use the base before <code>_allchr</code> or <code>_chrN</code>. Do not pass <code>step2_allchr</code> or <code>step2_chr1</code></td></tr>
     <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Correction scope. Use <code>NULL</code> to target <code>step2_allchr_*.txt</code> files, or <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
     <tr><td><code>--overwriteOutput</code></td><td><code>character</code></td><td><code>"TRUE"</code></td><td>If <code>TRUE</code>, overwrite the selected Step2 scope in place. If <code>FALSE</code>, keep the originals and write corrected copies as <code>&lt;inputPrefix&gt;_corrected_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td></tr>
-    <tr><td><code>--correct</code></td><td><code>character</code></td><td><code>"median"</code></td><td>Correction method. Use <code>median</code> for median-based correction or <code>tune</code> for PALM tuning-based correction. <code>tune</code> reads sample size from the Step2.1 <code>N</code> column and is very slow compared with <code>median</code></td></tr>
+    <tr><td><code>--correct</code></td><td><code>character</code></td><td><code>"median"</code></td><td>Correction method. Use <code>median</code> for median-based correction or <code>tune</code> for tune correction. <code>tune</code> reads sample size from the Step2.1 <code>N</code> column and is very slow compared with <code>median</code></td></tr>
   </table>
-  <p><strong>Step2.2 examples:</strong></p>
+  <h3>3. Common usage patterns</h3>
   <ul>
-    <li>If the selected scope contains files such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code> and <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, set <code>--inputPrefix=example/output/study1/step2</code> and <code>--chrom=NULL</code>. Step2.2 reads all matching <code>step2_allchr_&lt;feature&gt;.txt</code> files and applies correction across those features for each SNP.</li>
-    <li>If the selected scope contains chromosome-specific files such as <code>example/output/study1/step2_chr1_g_Bifidobacterium.txt</code> and <code>example/output/study1/step2_chr1_g_Peptoniphilus_unclassified.txt</code>, use the same <code>--inputPrefix=example/output/study1/step2</code> with <code>--chrom=1</code>. Step2.2 then corrects only the <code>chr1</code> feature files.</li>
-    <li>With <code>--overwriteOutput=TRUE</code>, the corrected values replace the selected input files in place, for example <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>.</li>
-    <li>With <code>--overwriteOutput=FALSE</code>, the original files are kept and corrected copies are written in the same directory, such as <code>example/output/study1/step2_corrected_allchr_g_Bifidobacterium.txt</code> or <code>example/output/study1/step2_corrected_chr1_g_Bifidobacterium.txt</code>.</li>
+    <li>Run Step2.2 only after all intended feature result files are available from Step2.1. Running correction on only a subset of features changes the correction target and may produce different corrected statistics.</li>
+    <li>For all-chromosome Step2.1 files named like <code>step2_allchr_&lt;feature&gt;.txt</code>, use <code>--inputPrefix=.../step2</code> and <code>--chrom=NULL</code>.</li>
+    <li>For chromosome-specific files named like <code>step2_chr1_&lt;feature&gt;.txt</code>, use <code>--inputPrefix=.../step2</code> and <code>--chrom=1</code>.</li>
+    <li>Use <code>--correct=median</code> for routine analyses.</li>
+    <li>Use <code>--correct=tune</code> only for special checks on a limited number of SNPs, because it can be much slower.</li>
+    <li>By default, <code>--overwriteOutput=TRUE</code>, so Step2.2 replaces the original Step2.1 summary files with compositional-effect-corrected results. To keep the original uncorrected Step2.1 files, set <code>--overwriteOutput=FALSE</code>.</li>
   </ul>
-
-  <h2 id="step3">Step3: Meta Analysis</h2>
-  <pre><code class="language-bash"># studyDirFile lines: studyID<TAB>dir (e.g., "study1\texample/output/study1")
-pixi run --manifest-path=pixi.toml Rscript extdata/step3_meta.R \
-    --studyDirFile=${studyDirFile} \
-    --inputPrefix=${inputPrefix} \
-    --chrom=${chrom} \
-    --featureColList=${featureColList} \
-    --metaPrefix=${metaPrefix}</code></pre>
-  <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
-  -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
-  step3_meta.R \
-    --studyDirFile=${studyDirFile} \
-    --inputPrefix=${inputPrefix} \
-    --chrom=${chrom} \
-    --featureColList=${featureColList} \
-    --metaPrefix=${metaPrefix}</code></pre>
-  <ul>
-    <li><strong>Outputs:</strong> one file per feature named <code>metaPrefix_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code>, where the scope and feature parts match the selected Step2 input scope. The output contains <code>meta_est</code>, <code>meta_stderr</code>, <code>meta_pval</code>, optional <code>meta_pval.het</code>, plus per-study <code>study*_est</code>/<code>study*_stderr</code>.</li>
-  </ul>
+  <h2 id="step3">Step3 (<code>step3_meta.R</code>): Meta-Analyze Study-Specific Results</h2>
+  <div class="warning"><strong>Warning:</strong> Before running Step3, make sure all studies use the same genome build and the same allele coding. The effect estimates must refer to the same effect allele across studies. PALMGWAS does not automatically resolve allele flips or genome-build mismatches.</div>
+  <h3>1. One-sentence purpose</h3>
+  <p>Step3 combines study-specific Step2 result files across multiple studies.</p>
+  <h3>2. Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--studyDirFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Study list file with two columns per line: <code>studyID</code> and Step2 output directory</td></tr>
+    <tr><td><strong><code>--studyDirFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Study list file with two columns per line: study label and Step2 output directory. The study label is used as the prefix for study-specific output columns, such as <code>America_est</code> and <code>America_stderr</code></td></tr>
     <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for meta-analysis; use the base before <code>_allchr</code> or <code>_chrN</code></td></tr>
-    <tr><td><strong><code>--metaPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Full output prefix for meta-analysis tables, including directory and filename prefix, not a complete filename. Step3 removes any trailing <code>_</code> and writes files as <code>&lt;metaPrefix&gt;_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td></tr>
-    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Meta-analysis scope. Use <code>NULL</code> to meta-analyze <code>step2_allchr_*.txt</code> files, or run Step3 once per chromosome with <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
-    <tr><td><code>--featureColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated feature IDs to meta-analyze; <code>NULL</code> keeps all features in the selected Step2 scope</td></tr>
+    <tr><td><strong><code>--outputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base output prefix for meta-analysis tables. Step3 writes files as <code>&lt;outputPrefix&gt;_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code>. Each file contains SNP position columns, combined meta-analysis effect, standard error, p-value, optional heterogeneity p-value, and study-specific effect and standard-error columns</td></tr>
+    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Meta-analysis chromosome scope. Use <code>NULL</code> to meta-analyze <code>step2_allchr_*.txt</code> files, or run Step3 once per chromosome with <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
+    <tr><td><code>--featureList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Meta-analysis feature scope. Optional comma-separated feature IDs to meta-analyze; <code>NULL</code> keeps all features found in the Step2 files selected by <code>--inputPrefix</code> and <code>--chrom</code></td></tr>
   </table>
-  <p><strong>Step3 examples:</strong></p>
-  <p>Example <code>studyDirFile</code> content:</p>
-  <pre><code>study1  example/output/study1
-study2  example/output/study2
-study3  example/output/study3</code></pre>
+  <h3>3. Common usage patterns</h3>
   <ul>
-    <li>Set <code>--studyDirFile=example/input/study_dirs.txt</code>. Step3 will search each listed study directory for matching Step2 files.</li>
-    <li>If each study directory contains all-chromosome files such as <code>step2_allchr_g_Bifidobacterium.txt</code> and <code>step2_allchr_g_Peptoniphilus_unclassified.txt</code>, set <code>--inputPrefix=example/output/study1/step2</code> and <code>--chrom=NULL</code>. If each study directory contains chromosome-specific files, run Step3 separately for each chromosome with <code>--chrom=1</code> through <code>--chrom=22</code>. Step3 uses the basename <code>step2</code> as the shared prefix and applies it inside every study directory from <code>studyDirFile</code>.</li>
-    <li>If each study directory contains chromosome-specific files such as <code>step2_chr1_g_Bifidobacterium.txt</code>, use the same <code>--inputPrefix=example/output/study1/step2</code> with <code>--chrom=1</code>. Step3 then meta-analyzes only the <code>chr1</code> scope.</li>
-    <li>Use <code>--featureColList=NULL</code> to meta-analyze all discovered features in the selected scope. Use <code>--featureColList=g_Bifidobacterium</code> to meta-analyze only that feature; missing study-feature files are skipped for that feature.</li>
-    <li>With <code>--metaPrefix=example/output/meta/meta</code> and <code>--chrom=NULL</code>, Step3 writes one meta file per feature, such as <code>example/output/meta/meta_allchr_g_Bifidobacterium.txt</code>. With <code>--chrom=1</code>, it writes files such as <code>example/output/meta/meta_chr1_g_Bifidobacterium.txt</code>.</li>
+    <li>Use a <code>studyDirFile</code> with two columns: study ID and the corresponding Step2 output directory.</li>
+    <li>Use the same <code>--inputPrefix</code> basename across studies, such as <code>step2</code>, so Step3 can locate matching files in each study directory.</li>
+    <li>Use <code>--chrom=NULL</code> to meta-analyze all-chromosome files such as <code>step2_allchr_&lt;feature&gt;.txt</code>.</li>
+    <li>Use <code>--chrom=1</code>, ..., <code>--chrom=22</code> to meta-analyze chromosome-specific files.</li>
+    <li>Use <code>--featureList=NULL</code> to meta-analyze all available features.</li>
+    <li>Use <code>--featureList=g_Bifidobacterium</code> to meta-analyze only selected features.</li>
+    <li>If Step2.2 correction was run with <code>--overwriteOutput=TRUE</code>, Step3 will use the corrected files. If corrected files were written separately, point Step3 to the corrected file prefix.</li>
   </ul>
-
-  <h2 id="reporting">Step4: Reporting</h2>
-  <pre><code class="language-bash"># case 1: combined Manhattan across features
-pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
-    --metaDir=${metaDir} \
-    --plotPrefix=${plotPrefix} \
-    --pCut=${pCut}
-
-# case 2: one feature
-pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
-    --metaDir=${metaDir} \
-    --plotPrefix=${plotPrefix} \
-    --feature=${feature} \
-    --plotMinP=${plotMinP:-NA}
-
-# case 3: one SNP across features
-pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
-    --metaDir=${metaDir} \
-    --plotPrefix=${plotPrefix} \
-    --snp=${snp} \
-    --pCut=${pCut} \
-    --showMeta=${showMeta:-TRUE} \
-    --showHet=${showHet:-TRUE}
-
-# case 4: one feature-SNP pair
-pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
-    --metaDir=${metaDir} \
-    --plotPrefix=${plotPrefix} \
-    --feature=${feature} \
-    --snp=${snp} \
-    --showMeta=${showMeta:-TRUE} \
-    --showHet=${showHet:-TRUE}</code></pre>
-  <pre><code class="language-bash"># Docker commands access the mounted local project under /work
-docker run --rm --platform=linux/amd64 \
-  -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
-  step4_reporting.R \
-    --metaDir=${metaDir} \
-    --plotPrefix=${plotPrefix} \
-    --pCut=${pCut}</code></pre>
-  <ul>
-    <li><strong>Mode selection:</strong> the plotting mode is determined by whether <code>--feature</code> and <code>--snp</code> are specified. Different combinations produce the following plot types.</li>
-    <li><strong>Case 1:</strong> no <code>--feature</code> and no <code>--snp</code> gives a combined overview in which each SNP is represented by the feature with the smallest p-value for that SNP.</li>
-    <li><strong>Case 2:</strong> <code>--feature</code> only gives a feature-specific Manhattan plot and QQ plot.</li>
-    <li><strong>Case 3:</strong> <code>--snp</code> only writes one forest plot per feature that contains the requested SNP and passes the <code>--pCut</code> filter, meaning the SNP p-value for that feature is small enough. Set <code>--pCut=NA</code>, <code>NULL</code>, or empty to keep all features containing the SNP. Each figure now includes study-level columns such as effect, standard error, weight, and effect with 95% confidence interval.</li>
-    <li><strong>Case 4:</strong> both <code>--feature</code> and <code>--snp</code> give a forest plot for one feature-SNP pair across studies.</li>
-    <li><strong>Single-study Step4:</strong> you can run Step4 directly after Step2 by pointing <code>metaDir</code> to one study's Step2 output folder; in that case the plots summarize a single study rather than a meta-analysis.</li>
-  </ul>
+  <h2 id="reporting">Step4 (<code>step4_reporting.R</code>): Result Reporting</h2>
+  <h3>1. One-sentence purpose</h3>
+  <p>Step4 reads single-study or meta-analysis result files and generates summary figures, including Manhattan, QQ, and forest plots, together with tables of associations passing a user-specified p-value threshold.</p>
+  <h3>2. Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--metaDir</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Directory containing Step3 meta files or single-study Step2 files. Step4 auto-discovers files ending in <code>_allchr_&lt;feature&gt;.txt</code> or <code>_chrN_&lt;feature&gt;.txt</code>. If any chromosome-specific files exist for a feature, Step4 reads those files in chromosome order and ignores the matching <code>allchr</code> file; otherwise it reads the single <code>allchr</code> file. Files that do not match this naming convention are ignored unless no valid result files are found</td></tr>
-    <tr><td><strong><code>--plotPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Full output prefix for plots, including directory and optional filename prefix. Use a trailing slash to keep the default plot names inside a directory, for example <code>example/output/plot/</code>; use a basename to prefix outputs, for example <code>example/output/plot/step4</code> writes <code>step4_combined_hits.png</code></td></tr>
-    <tr><td><code>--feature</code></td><td><code>character</code></td><td><code>NA</code></td><td>(Microbial) feature name. Used only in case 2 (<code>--feature</code> without <code>--snp</code>) and case 4 (<code>--feature</code> with <code>--snp</code>)</td></tr>
-    <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier. Used only in case 3 (<code>--snp</code> without <code>--feature</code>) and case 4 (<code>--feature</code> with <code>--snp</code>)</td></tr>
-    <tr><td><code>--pCut</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>"5e-8"</code></td><td>P-value cutoff accepted only in case 1 and case 3. In case 1, it controls printed/reported best SNP-feature hits; in case 3, it keeps only features where the requested SNP has a small enough p-value. <code>NA</code>, <code>NULL</code>, or empty disables this filter</td></tr>
-    <tr><td><code>--showMeta</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Used only in SNP-based forest plots, case 3 and case 4. If <code>TRUE</code>, overlay meta estimates when available</td></tr>
-    <tr><td><code>--showHet</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>Used only in SNP-based forest plots, case 3 and case 4. If <code>TRUE</code>, emphasize heterogeneity information when available</td></tr>
-    <tr><td><code>--plotMinP</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Used only in Manhattan plots, case 1 and case 2. Points with <code>P &lt; plotMinP</code> are plotted slightly above <code>-log10(plotMinP)</code> in red instead of stretching the full y-axis. Use <code>NA</code> to disable compression</td></tr>
-    <tr><td><code>--width</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Plot width in inches; <code>NA</code> lets the script auto-size</td></tr>
-    <tr><td><code>--height</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>Plot height in inches; <code>NA</code> lets the script auto-size</td></tr>
+    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base input path used to discover Step3 meta-analysis files or single-study Step2 result files</td></tr>
+    <tr><td><strong><code>--outputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base output prefix for Step4 figures and tables. Output files are named like <code>&lt;outputPrefix&gt;_&lt;plotType&gt;_&lt;feature-or-snp-if-specified&gt;.png</code></td></tr>
+    <tr><td><code>--feature</code></td><td><code>character</code></td><td><code>NA</code></td><td>Feature name</td></tr>
+    <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier</td></tr>
+    <tr><td><code>--pCut</code></td><td><code>character</code></td><td><code>"5e-8"</code></td><td>P-value threshold used for plot reference lines and association-result filtering. Use <code>NA</code>, <code>NULL</code>, or an empty value to disable where applicable</td></tr>
+    <tr><td><code>--plotMinP</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>P-value threshold used to compress extremely small p-values in Manhattan and QQ plots. Compressed points are shown in red; use <code>NA</code> to disable compression</td></tr>
+    <tr><td><code>--width</code></td><td><code>character</code></td><td><code>NA</code></td><td>Plot width in inches, parsed as numeric or <code>NA</code>; for example, use <code>--width=10</code> to set a fixed width or <code>--width=NA</code> to let the script auto-size</td></tr>
+    <tr><td><code>--height</code></td><td><code>character</code></td><td><code>NA</code></td><td>Plot height in inches, parsed as numeric or <code>NA</code>; for example, use <code>--height=6</code> to set a fixed height or <code>--height=NA</code> to let the script auto-size</td></tr>
   </table>
-  <p><strong>Step4 examples:</strong></p>
+  <h3>3. Common usage patterns</h3>
   <ul>
-    <li><code>--metaDir=example/output/meta</code></li>
-    <li><code>--plotPrefix=example/output/plot/</code>; <code>--plotPrefix=example/output/plot/step4</code></li>
+    <li>If neither <code>--feature</code> nor <code>--snp</code> is specified, Step4 generates a combined Manhattan plot using, for each SNP, the smallest p-value across all features. A reference line at the threshold specified by <code>--pCut</code> is shown on the plot. Step4 also writes a text file listing SNP-feature associations with p-values passing <code>--pCut</code>.</li>
+    <li>If <code>--feature</code> is specified but <code>--snp</code> is not specified, Step4 generates a feature-specific Manhattan plot and QQ plot for that feature. The Manhattan plot includes a reference line at the threshold specified by <code>--pCut</code>.</li>
+    <li>If <code>--snp</code> is specified but <code>--feature</code> is not specified, Step4 generates forest plots for features whose association with that SNP passes the p-value cutoff specified by <code>--pCut</code>.</li>
+    <li>If both <code>--feature</code> and <code>--snp</code> are specified, Step4 generates one forest plot for the specified SNP-feature pair.</li>
+    <li>Use <code>--plotMinP</code> to compress extremely small p-values in Manhattan and QQ plots and avoid stretching the y-axis.</li>
+    <li><code>--pCut</code> is used as a reference line or filtering threshold; points are not highlighted just because they pass <code>--pCut</code>. Red points in Manhattan or QQ plots indicate values compressed by <code>--plotMinP</code>.</li>
+    <li>Treat <code>5e-8</code> as an example <code>--pCut</code> threshold. For microbiome GWAS, users should choose a multiple-testing correction appropriate for SNP-feature testing.</li>
+    <li><strong>Single-study Step4:</strong> you can run Step4 directly after Step2 by pointing <code>inputPrefix</code> to one study's Step2 output folder; in that case the plots summarize a single study rather than a meta-analysis.</li>
+    <li><code>--inputPrefix=example/output/meta</code></li>
+    <li><code>--outputPrefix=example/output/plot/step4</code> writes files such as <code>step4_manhattan_combined.png</code>, <code>step4_manhattan_g_Bifidobacterium.png</code>, and <code>step4_forest_chr1_14678191_A_C_g_Bifidobacterium.png</code></li>
     <li><code>--feature=g_Peptoniphilus_unclassified</code>; omit it for case 1 or case 3</li>
     <li><code>--snp=chr1:14678191:A:C</code>; omit it for case 1 or case 2</li>
     <li><code>--pCut=1e-8</code>; <code>--pCut=NA</code>; <code>--pCut=NULL</code>; <code>--pCut=</code></li>
-    <li><code>--showMeta=TRUE</code>; <code>--showMeta=FALSE</code></li>
-    <li><code>--showHet=TRUE</code>; <code>--showHet=FALSE</code></li>
     <li><code>--plotMinP=1e-10</code>; <code>--plotMinP=1e-12</code>; <code>--plotMinP=NA</code></li>
     <li><code>--width=10</code>; <code>--width=NA</code></li>
     <li><code>--height=6</code>; <code>--height=NA</code></li>
   </ul>
-
   <h2 id="exampledata">Example Data in This Repo</h2>
   <p>The repository already contains a small three-study example under <code>example/input/</code> and matching outputs under <code>example/output/</code>. These files are useful for understanding the expected formats before running your own data.</p>
 
@@ -550,21 +421,21 @@ ID_004	-0.848477219368992	1	0.0108307	-0.00694051	-0.000638697	-0.0077418	0.0011
 
   <h3>Example Input: study list for meta-analysis</h3>
   <pre><code class="language-tsv"># file: example/input/study_dirs.txt
-study1  example/output/study1
-study2  example/output/study2
-study3  example/output/study3</code></pre>
-  <p>This file lists the studies included in the example meta-analysis and the location of each study's result directory. Each line maps one study ID to one local project-relative folder; whitespace separation is accepted by the current CLI.</p>
+America  example/output/study1
+Asia     example/output/study2
+Europe   example/output/study3</code></pre>
+  <p>This file lists the studies included in the example meta-analysis and the location of each study's result directory. Each line maps one study label to one local project-relative folder; the label is used in Step3 output column names and does not need to match the folder name. Whitespace separation is accepted by the current CLI.</p>
   <pre><code class="language-tsv"># file: example/input/study_dirs_docker.txt
-study1  /work/example/output/study1
-study2  /work/example/output/study2
-study3  /work/example/output/study3</code></pre>
+America  /work/example/output/study1
+Asia     /work/example/output/study2
+Europe   /work/example/output/study3</code></pre>
   <p>Use <code>study_dirs_docker.txt</code> for Docker runs because the container sees the mounted local project under <code>/work</code>.</p>
 
   <h3>Example Input: genotype</h3>
   <p>The primary genotype input for each study is stored as a PLINK dataset with prefix <code>example/input/study1/geno</code>, corresponding to the files <code>geno.bed</code>, <code>geno.bim</code>, and <code>geno.fam</code>. Step0 and Step2.1 also support VCF input when users pass their own <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code> file path.</p>
 
   <h3 id="example-workflow">Example Workflow: from input to output</h3>
-  <p>The same example data can be read as a concrete workflow: what goes in, which script is called, which parameters matter, and what files come out.</p>
+  <p>The same example data can be read as a concrete workflow: what goes in, which script is called, which parameters matter, and what files come out. The runnable example commands that follow are shown for pixi and Docker because those are the most reproducible modes. Pixi commands use local project-relative paths. Docker commands mount the same local project at <code>/work</code>, so their input and output arguments use <code>/work/...</code> paths.</p>
 
   <h3 id="example-step0">Step0: align IDs before modeling</h3>
   <p><strong>Input:</strong> <code>example/input/study1/abd.txt</code>, <code>example/input/study1/cov.txt</code>, and genotype input passed through <code>--genoFile</code>.</p>
@@ -577,6 +448,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --covarColList=NULL \
     --depthCol=NULL \
     --timeIDCol=NULL \
+    --clusterCol=NULL \
     --depth.filter=0 \
     --genoFile=example/input/study1/geno \
     --SeqDepthInfoFile=NULL</code></pre>
@@ -591,6 +463,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --covarColList=NULL \
     --depthCol=NULL \
     --timeIDCol=NULL \
+    --clusterCol=NULL \
     --depth.filter=0 \
     --genoFile=/work/example/input/study1/geno \
     --SeqDepthInfoFile=NULL</code></pre>
@@ -614,9 +487,10 @@ ID_004	318</code></pre>
     <li>If <code>abdFile</code> has repeated subject IDs, <code>--timeIDCol</code> must name the visit/time column. Step0 then checks whether <code>covFile</code> also has repeated subject IDs.</li>
     <li>If <code>covFile</code> also has repeated subject IDs, Step0 requires matching <code>(subject ID, time ID)</code> rows between abundance and covariates. If those pairs do not match, Step0 stops with an error.</li>
     <li>If <code>covFile</code> has one row per subject, Step0 expands the covariate rows to match the repeated abundance rows.</li>
+    <li>After matching, Step0 writes aligned files with one row per retained observation and drops the time ID column. The repeated rows are still preserved; the time ID column is only a matching key, not a covariate used by the Step1 null model.</li>
     <li>Step0 then aligns the filtered abundance and covariate files to the genotype input by subject ID. Here, align means matching the order of subjects across files; genotype-only extra subjects are ignored, but genotype must contain every retained abundance/covariate subject.</li>
-    <li>Step1 remains unchanged and fits the null model from the Step0-aligned abundance and covariate files.</li>
-    <li>In Step2.1, if the null model contains repeated subject IDs, each genotype variable is expanded to match the abundance rows, and clustering is set to subject ID.</li>
+    <li>Step1 fits the null model from the Step0-aligned abundance and covariate files. If <code>--clusterCol</code> is provided, Step1 saves the aligned cluster IDs in the null model for Step2.1.</li>
+    <li>In Step2.1, if the null model contains repeated subject IDs, each genotype variable is expanded to match the abundance rows. If family/pedigree cluster IDs were saved through <code>--clusterCol</code>, Step2.1 uses them; otherwise longitudinal repeated measures use subject ID clustering.</li>
   </ul>
 
   <h3 id="example-step1">Step1: fit the null model</h3>
@@ -626,10 +500,10 @@ ID_004	318</code></pre>
     --covFile=example/input/study1/cov_aligned.txt \
     --covarColList=NULL \
     --depthCol=NULL \
+    --clusterCol=NULL \
     --prev.filter=0.1 \
-    --FeatureInfoFile=example/output/study1/info_feature.txt \
-    --FeatureNameListFile=NULL \
-    --NULLObjPrefix=example/output/study1/step1_allpheno</code></pre>
+    --featureInfoFile=example/output/study1/info_feature.txt \
+    --nullModelPrefix=example/output/study1/step1_allpheno</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:latest \
@@ -638,11 +512,11 @@ ID_004	318</code></pre>
     --covFile=/work/example/input/study1/cov_aligned.txt \
     --covarColList=NULL \
     --depthCol=NULL \
+    --clusterCol=NULL \
     --prev.filter=0.1 \
-    --FeatureInfoFile=/work/example/output/study1/info_feature.txt \
-    --FeatureNameListFile=NULL \
-    --NULLObjPrefix=/work/example/output/study1/step1_allpheno</code></pre>
-  <p><strong>Output:</strong> <code>example/output/study1/step1_allpheno.rda</code>, which is then passed into Step2 as <code>--NULLObjPrefix=example/output/study1/step1_allpheno</code>. If requested, Step1 also writes <code>example/output/study1/info_feature.txt</code>.</p>
+    --featureInfoFile=/work/example/output/study1/info_feature.txt \
+    --nullModelPrefix=/work/example/output/study1/step1_allpheno</code></pre>
+  <p><strong>Output:</strong> <code>example/output/study1/step1_allpheno.rda</code>, which is then passed into Step2 as <code>--nullModelPrefix=example/output/study1/step1_allpheno</code>. If requested, Step1 also writes <code>example/output/study1/info_feature.txt</code>.</p>
 
   <h3>Example Output: Step1 feature summary</h3>
   <pre><code class="language-tsv"># file: example/output/study1/info_feature.txt
@@ -652,39 +526,37 @@ g_Lactobacillus	0.74	0.125068707867456
 g_Hungatella	0.54	0.0835005688809989
 g_Sutterella	0.5	0.0847280424401774
 g_Anaerostipes	0.65	0.10380372336141</code></pre>
-  <p>This optional table is written by Step1 when <code>--FeatureInfoFile</code> is set. Behavior definition: <code>FeatureInfo</code> is computed from the final modeled feature set after <code>prev.filter</code> removes low-prevalence features.</p>
+  <p>This optional table is written by Step1 when <code>--featureInfoFile</code> is set. It contains feature ID, prevalence, and average proportion for the final modeled feature set after <code>prev.filter</code> removes low-prevalence features.</p>
 
-  <h3 id="example-step2">Step2.1: null model + genotype to per-feature association files</h3>
+  <h3 id="example-step2-1">Step2.1: null model + genotype to per-feature association files</h3>
   <p><strong>Input:</strong> genotype input passed through <code>--genoFile</code> and null model <code>example/output/study1/step1_allpheno.rda</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_1_summary.R \
     --genoFile=example/input/study1/geno \
-    --NULLObjPrefix=example/output/study1/step1_allpheno \
-    --SummaryPrefix=example/output/study1/step2 \
+    --nullModelPrefix=example/output/study1/step1_allpheno \
+    --outputPrefix=example/output/study1/step2 \
     --chrom=NULL \
     --minMAF=0.05 \
     --minMAC=5 \
     --maxMissing=0.15 \
     --impute_method=best_guess \
-    --SnpInfoFile=NULL \
-    --useCluster=FALSE</code></pre>
+    --snpInfoFile=NULL</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:latest \
   step2_1_summary.R \
     --genoFile=/work/example/input/study1/geno \
-    --NULLObjPrefix=/work/example/output/study1/step1_allpheno \
-    --SummaryPrefix=/work/example/output/study1/step2 \
+    --nullModelPrefix=/work/example/output/study1/step1_allpheno \
+    --outputPrefix=/work/example/output/study1/step2 \
     --chrom=NULL \
     --minMAF=0.05 \
     --minMAC=5 \
     --maxMissing=0.15 \
     --impute_method=best_guess \
-    --SnpInfoFile=NULL \
-    --useCluster=FALSE</code></pre>
+    --snpInfoFile=NULL</code></pre>
   <p><strong>Output:</strong> one file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on.</p>
   <p><strong>Current example files:</strong> in this repository the Step2.1 outputs use real feature names, for example <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
 
-  <h3>Step2.2: apply compositional correction to one Step2 scope</h3>
+  <h3 id="example-step2-2">Step2.2: apply compositional correction to one Step2 scope</h3>
   <p><strong>Input:</strong> the full set of Step2 files for one correction scope. Pass the shared base prefix such as <code>example/output/study1/step2</code>, then choose <code>--chrom=NULL</code> for <code>step2_allchr_*.txt</code> or <code>--chrom=1</code> for chromosome-specific <code>step2_chr1_*.txt</code>.</p>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step2_2_correction.R \
     --inputPrefix=example/output/study1/step2 \
@@ -726,8 +598,8 @@ chr1:14985097:C:T	1	14985097	100	0.111742358350986	0.113523070073392	0.324961099
     --studyDirFile=example/input/study_dirs.txt \
     --inputPrefix=example/output/study1/step2 \
     --chrom=NULL \
-    --featureColList=NULL \
-    --metaPrefix=example/output/meta/meta</code></pre>
+    --featureList=NULL \
+    --outputPrefix=example/output/meta/meta</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:latest \
@@ -735,13 +607,13 @@ chr1:14985097:C:T	1	14985097	100	0.111742358350986	0.113523070073392	0.324961099
     --studyDirFile=/work/example/input/study_dirs_docker.txt \
     --inputPrefix=/work/example/output/study1/step2 \
     --chrom=NULL \
-    --featureColList=NULL \
-    --metaPrefix=/work/example/output/meta/meta</code></pre>
+    --featureList=NULL \
+    --outputPrefix=/work/example/output/meta/meta</code></pre>
   <p><strong>Output:</strong> one meta file per feature, such as <code>example/output/meta/meta_allchr_g_Bifidobacterium.txt</code> or <code>example/output/meta/meta_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
 
   <h3>Example Output: Step3 meta-analysis</h3>
   <pre><code class="language-tsv"># file: example/output/meta/meta_allchr_g_Bifidobacterium.txt
-SNP	CHR	POS	meta_est	meta_stderr	meta_pval	meta_pval.het	study1_est	study1_stderr	study2_est	study2_stderr	study3_est	study3_stderr
+SNP	CHR	POS	meta_est	meta_stderr	meta_pval	meta_pval.het	America_est	America_stderr	Asia_est	Asia_stderr	Europe_est	Europe_stderr
 chr1:1837340:C:T	1	1837340	-0.0973691426272029	0.049048952612313	0.0471286598099033	0.506667858265559	-0.0344752267456601	0.114517097035553	-0.206857502469477	0.110125499188437	-0.0808986345697522	0.0623840637661372
 chr1:2261200:G:C	1	2261200	0.0186514007640848	0.0335784191165953	0.578581445810475	0.703928250015528	0.00897107253479205	0.0721884879491203	-0.0211305279162632	0.0639725627347327	0.0443430697369153	0.0471056787202855
 chr1:14678191:A:C	1	14678191	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	0.160049944677326	-0.256659587735654	0.0620614677990631	-0.0919276003603556	0.0619685211533294	-0.199103972089476	0.0512963524903636</code></pre>
@@ -752,100 +624,93 @@ chr1:14678191:A:C	1	14678191	-0.184697893992603	0.0333318764894014	3.00441911000
 
   <h3>Step4 case 1: no <code>--feature</code>, no <code>--snp</code></h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
-    --metaDir=example/output/meta \
-    --plotPrefix=example/output/plot/ \
+    --inputPrefix=example/output/meta \
+    --outputPrefix=example/output/plot/step4 \
     --pCut=5e-8</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:latest \
   step4_reporting.R \
-    --metaDir=/work/example/output/meta \
-    --plotPrefix=/work/example/output/plot/ \
+    --inputPrefix=/work/example/output/meta \
+    --outputPrefix=/work/example/output/plot/step4 \
     --pCut=5e-8</code></pre>
-  <p><strong>Output:</strong> <code>example/output/plot/combined_hits.png</code> and the filtered hit list <code>example/output/plot/combined_hits_pCut.txt</code>.</p>
-  <pre><code class="language-tsv"># file: example/output/plot/combined_hits_pCut.txt
+  <p><strong>Output:</strong> <code>example/output/plot/step4_manhattan_combined.png</code> and the filtered hit list <code>example/output/plot/step4_manhattan_combined_pCut.txt</code>.</p>
+  <pre><code class="language-tsv"># file: example/output/plot/step4_manhattan_combined_pCut.txt
 SNP	est	stderr	pval	feature
 chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_Bifidobacterium</code></pre>
   <div class="gallery">
     <figure>
-      <img src="assets/plot/combined_hits.png" alt="Example combined hits plot">
-      <figcaption><code>example/output/plot/combined_hits.png</code>: combined overview across features using the best hit per SNP.</figcaption>
+      <img src="assets/plot/step4_manhattan_combined.png" alt="Example combined hits plot">
+      <figcaption><code>example/output/plot/step4_manhattan_combined.png</code>: combined overview across features using the best hit per SNP.</figcaption>
     </figure>
   </div>
 
   <h3>Step4 case 2: <code>--feature</code> only</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
-    --metaDir=example/output/meta \
-    --plotPrefix=example/output/plot/ \
+    --inputPrefix=example/output/meta \
+    --outputPrefix=example/output/plot/step4 \
     --feature=g_Bifidobacterium</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:latest \
   step4_reporting.R \
-    --metaDir=/work/example/output/meta \
-    --plotPrefix=/work/example/output/plot/ \
+    --inputPrefix=/work/example/output/meta \
+    --outputPrefix=/work/example/output/plot/step4 \
     --feature=g_Bifidobacterium</code></pre>
-  <p><strong>Output:</strong> <code>example/output/plot/manhattan_g_Bifidobacterium.png</code> and the auxiliary QQ plot <code>example/output/plot/qq_g_Bifidobacterium.png</code>.</p>
+  <p><strong>Output:</strong> <code>example/output/plot/step4_manhattan_g_Bifidobacterium.png</code> and the auxiliary QQ plot <code>example/output/plot/step4_qq_g_Bifidobacterium.png</code>.</p>
   <div class="gallery">
     <figure>
-      <img src="assets/plot/manhattan_g_Bifidobacterium.png" alt="Example Manhattan plot for g_Bifidobacterium">
-      <figcaption><code>example/output/plot/manhattan_g_Bifidobacterium.png</code>: feature-specific Manhattan plot for <code>g_Bifidobacterium</code>.</figcaption>
+      <img src="assets/plot/step4_manhattan_g_Bifidobacterium.png" alt="Example Manhattan plot for g_Bifidobacterium">
+      <figcaption><code>example/output/plot/step4_manhattan_g_Bifidobacterium.png</code>: feature-specific Manhattan plot for <code>g_Bifidobacterium</code>.</figcaption>
     </figure>
   </div>
   <div class="gallery">
     <figure>
-      <img src="assets/plot/qq_g_Bifidobacterium.png" alt="Example QQ plot for g_Bifidobacterium">
-      <figcaption><code>example/output/plot/qq_g_Bifidobacterium.png</code>: QQ plot generated alongside the feature-specific Manhattan plot.</figcaption>
+      <img src="assets/plot/step4_qq_g_Bifidobacterium.png" alt="Example QQ plot for g_Bifidobacterium">
+      <figcaption><code>example/output/plot/step4_qq_g_Bifidobacterium.png</code>: QQ plot generated alongside the feature-specific Manhattan plot.</figcaption>
     </figure>
   </div>
 
   <h3>Step4 case 3: <code>--snp</code> only</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
-    --metaDir=example/output/meta \
-    --plotPrefix=example/output/plot/ \
+    --inputPrefix=example/output/meta \
+    --outputPrefix=example/output/plot/step4 \
     --snp=chr1:14678191:A:C \
     --pCut=5e-8</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:latest \
   step4_reporting.R \
-    --metaDir=/work/example/output/meta \
-    --plotPrefix=/work/example/output/plot/ \
+    --inputPrefix=/work/example/output/meta \
+    --outputPrefix=/work/example/output/plot/step4 \
     --snp=chr1:14678191:A:C \
     --pCut=5e-8</code></pre>
-  <p><strong>Output:</strong> this mode writes one file per retained feature. In the current example output, files include <code>example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png</code> and <code>example/output/plot/forest_chr1_14678191_A_C_g_Fusobacterium.png</code>, both shown below.</p>
+  <p><strong>Output:</strong> this mode writes one file per retained feature. With the example cutoff, the retained output is <code>example/output/plot/step4_forest_chr1_14678191_A_C_g_Bifidobacterium.png</code>, shown below.</p>
   <div class="gallery">
     <figure>
-      <img src="assets/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png" alt="Example SNP-across-features forest plot for g_Bifidobacterium">
-      <figcaption><code>example/output/plot/forest_chr1_14678191_A_C_g_Bifidobacterium.png</code>: one of the feature-specific forest plots written for SNP <code>chr1:14678191:A:C</code>.</figcaption>
+      <img src="assets/plot/step4_forest_chr1_14678191_A_C_g_Bifidobacterium.png" alt="Example SNP-across-features forest plot for g_Bifidobacterium">
+      <figcaption><code>example/output/plot/step4_forest_chr1_14678191_A_C_g_Bifidobacterium.png</code>: one of the feature-specific forest plots written for SNP <code>chr1:14678191:A:C</code>.</figcaption>
     </figure>
   </div>
-  <div class="gallery">
-    <figure>
-      <img src="assets/plot/forest_chr1_14678191_A_C_g_Fusobacterium.png" alt="Example SNP-across-features forest plot for g_Fusobacterium">
-      <figcaption><code>example/output/plot/forest_chr1_14678191_A_C_g_Fusobacterium.png</code>: one of the feature-specific forest plots written for SNP <code>chr1:14678191:A:C</code>.</figcaption>
-    </figure>
-  </div>
-
   <h3>Step4 case 4: both <code>--feature</code> and <code>--snp</code></h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
-    --metaDir=example/output/meta \
-    --plotPrefix=example/output/plot/ \
+    --inputPrefix=example/output/meta \
+    --outputPrefix=example/output/plot/step4 \
     --feature=g_Bifidobacterium \
     --snp=chr1:14678191:A:C</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:latest \
   step4_reporting.R \
-    --metaDir=/work/example/output/meta \
-    --plotPrefix=/work/example/output/plot/ \
+    --inputPrefix=/work/example/output/meta \
+    --outputPrefix=/work/example/output/plot/step4 \
     --feature=g_Bifidobacterium \
     --snp=chr1:14678191:A:C</code></pre>
-  <p><strong>Output:</strong> <code>example/output/plot/forest_g_Bifidobacterium_chr1_14678191_A_C.png</code>.</p>
+  <p><strong>Output:</strong> <code>example/output/plot/step4_forest_chr1_14678191_A_C_g_Bifidobacterium.png</code>.</p>
   <div class="gallery">
     <figure>
-      <img src="assets/plot/forest_g_Bifidobacterium_chr1_14678191_A_C.png" alt="Example forest plot for g_Bifidobacterium and chr1:14678191:A:C">
-      <figcaption><code>example/output/plot/forest_g_Bifidobacterium_chr1_14678191_A_C.png</code>: one feature-SNP pair plotted across studies.</figcaption>
+      <img src="assets/plot/step4_forest_chr1_14678191_A_C_g_Bifidobacterium.png" alt="Example forest plot for g_Bifidobacterium and chr1:14678191:A:C">
+      <figcaption><code>example/output/plot/step4_forest_chr1_14678191_A_C_g_Bifidobacterium.png</code>: one feature-SNP pair plotted across studies.</figcaption>
     </figure>
   </div>
 

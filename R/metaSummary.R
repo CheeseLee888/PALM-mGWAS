@@ -8,7 +8,7 @@
 #' @param chrom Optional chromosome selector. Use `NULL` to meta-analyze
 #'   `_allchr` files. Use `1`..`22` or strings like `"chr1"` to
 #'   meta-analyze one chromosome-specific shard across all studies.
-#' @param featureColList Optional feature names (without prefix/suffix). If
+#' @param featureList Optional feature names (without prefix/suffix). If
 #'   `NULL`, infer all features from the selected Step2 scope.
 #' @param out_dir If not NULL, write per-feature meta files to this directory.
 #' @param out_prefix Output meta file prefix, e.g. "step3_meta". A trailing underscore is ignored.
@@ -22,7 +22,7 @@
 metaSummary <- function(study_dirs,
                         inputPrefix,
                         chrom = NULL,
-                        featureColList = NULL,
+                        featureList = NULL,
                         out_dir = NULL,
                         out_prefix = "step3_meta",
                         out_suffix = ".txt",
@@ -168,14 +168,14 @@ metaSummary <- function(study_dirs,
     )
   }
 
-  if (is.null(featureColList)) {
+  if (is.null(featureList)) {
     features <- feat_union
   } else {
-    features <- unique(as.character(featureColList))
+    features <- unique(as.character(featureList))
     features <- trimws(features)
     features <- features[nzchar(features)]
     if (length(features) == 0L) {
-      stop("'featureColList' must be NULL or contain at least one feature name.")
+      stop("'featureList' must be NULL or contain at least one feature name.")
     }
   }
 

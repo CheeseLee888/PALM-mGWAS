@@ -16,16 +16,16 @@
 #' @param depthCol Optional column name in `covFile` to use as sequencing depth.
 #'   If not provided, `depth = NULL` is passed to PALM so sequencing depth is
 #'   computed from row sums of `abdFile`.
+#' @param clusterCol Optional column name in `covFile` to use as the
+#'   family/pedigree cluster ID for Step2.1. This column is stored in the saved
+#'   null model and excluded from `covariate.adjust`.
 #' @param prev.filter Passed to `PALM::palm.null.model()`; features with
 #'   prevalence less than or equal to this threshold are removed. Defaults to `0.1`.
-#' @param FeatureInfoFile Optional output path for feature prevalence and
+#' @param featureInfoFile Optional output path for feature prevalence and
 #'   average proportion computed from the final Step1 modeled feature set after
 #'   prevalence filtering. Use `NULL` (default) to skip writing this file.
-#' @param FeatureNameListFile Optional output path for the modeled feature IDs
-#'   retained in the fitted Step1 null model after prevalence filtering. Use
-#'   `NULL` (default) to skip writing this file.
-#' @param NULLObjPrefix Output prefix for the saved null model object. The
-#'   function writes `<NULLObjPrefix>.rda`.
+#' @param nullModelPrefix Output prefix for the saved null model object. The
+#'   function writes `<nullModelPrefix>.rda`.
 #'
 #' @return Invisibly returns the fitted PALM null model object.
 #' @export
@@ -34,10 +34,10 @@ fitNULL <- function(abdFile,
                     covFile = NULL,
                     covarColList = NULL,
                     depthCol = NULL,
+                    clusterCol = NULL,
                     prev.filter = 0.1,
-                    FeatureInfoFile = NULL,
-                    FeatureNameListFile = NULL,
-                    NULLObjPrefix) {
+                    featureInfoFile = NULL,
+                    nullModelPrefix) {
   if (!requireNamespace("PALM", quietly = TRUE)) {
     stop("Package 'PALM' is required but not installed.")
   }
@@ -54,13 +54,16 @@ fitNULL <- function(abdFile,
   if (is.null(covFile) && !is.null(depthCol)) {
     stop("'depthCol' requires a non-NULL 'covFile'.")
   }
-  if (missing(NULLObjPrefix) || !nzchar(NULLObjPrefix)) {
-    stop("'NULLObjPrefix' must be provided.")
+  if (is.null(covFile) && !is.null(clusterCol)) {
+    stop("'clusterCol' requires a non-NULL 'covFile'.")
   }
-  null_model_file <- NULLObjPrefix
+  if (missing(nullModelPrefix) || !nzchar(nullModelPrefix)) {
+    stop("'nullModelPrefix' must be provided.")
+  }
+  null_model_file <- nullModelPrefix
   if (grepl("\\.rda$", null_model_file, ignore.case = TRUE)) {
     null_model_file <- sub("\\.rda$", "", null_model_file, ignore.case = TRUE)
-    message("NULLObjPrefix should not include .rda; normalizing to prefix: ", null_model_file)
+    message("nullModelPrefix should not include .rda; normalizing to prefix: ", null_model_file)
   }
   null_model_file <- paste0(null_model_file, ".rda")
 
@@ -164,6 +167,7 @@ fitNULL <- function(abdFile,
   }
 
   depth <- NULL
+  cluster_ids <- NULL
   if (!is.null(depthCol)) {
     if (!(depthCol %in% colnames(cov))) {
       stop("Requested depth column not found in 'covFile': ", depthCol)
@@ -180,6 +184,21 @@ fitNULL <- function(abdFile,
     message("Depth summary min/median/max=", min(depth), "/", stats::median(depth), "/", max(depth))
   } else {
     message("No depthCol provided: PALM will use row sums of abundance as depth.")
+  }
+  clusterCol <- normalize_col_list(clusterCol, "clusterCol")
+  if (!is.null(clusterCol) && length(clusterCol) != 1L) {
+    stop("'clusterCol' must specify exactly one column name.")
+  }
+  if (!is.null(clusterCol)) {
+    if (!(clusterCol %in% colnames(cov))) {
+      stop("Requested cluster column not found in 'covFile': ", clusterCol)
+    }
+    cluster_ids <- as.character(cov[[clusterCol]])
+    if (anyNA(cluster_ids) || any(!nzchar(trimws(cluster_ids)))) {
+      stop("Requested cluster column in 'covFile' contains missing or empty values: ", clusterCol)
+    }
+    names(cluster_ids) <- model_row_ids
+    message("clusterCol provided: using '", clusterCol, "' from ", covFile, " as Step2.1 cluster ID.")
   }
   message("Prevalence filter setting: prev.filter=", prev.filter)
 
@@ -214,6 +233,10 @@ fitNULL <- function(abdFile,
     } else {
       message("depthCol is NULL: no covariate column is excluded as sequencing depth.")
     }
+    if (!is.null(clusterCol) && clusterCol %in% colnames(cov)) {
+      cov <- cov[, setdiff(colnames(cov), clusterCol), drop = FALSE]
+      message("Excluding clusterCol '", clusterCol, "' from covariate.adjust.")
+    }
     message("Final covariate.adjust columns: ", format_name_list(colnames(cov)))
     if (ncol(cov) == 0L) {
       message("covFile provided, but no covariate columns remain after excluding depthCol.")
@@ -239,6 +262,10 @@ fitNULL <- function(abdFile,
   dir.create(dirname(null_model_file), recursive = TRUE, showWarnings = FALSE)
   attr(modglmm, "subject_ids") <- subject_ids
   attr(modglmm, "model_row_ids") <- model_row_ids
+  if (!is.null(cluster_ids)) {
+    attr(modglmm, "cluster_ids") <- cluster_ids
+    attr(modglmm, "cluster_col") <- clusterCol
+  }
   save(modglmm, file = null_model_file)
   message("Done. PALM null model saved to ", null_model_file)
 
@@ -247,7 +274,7 @@ fitNULL <- function(abdFile,
     stop("No modeled features found in fitted null model.")
   }
 
-  if (!is.null(FeatureInfoFile) && nzchar(FeatureInfoFile)) {
+  if (!is.null(featureInfoFile) && nzchar(featureInfoFile)) {
     missing_modeled_features <- setdiff(feature_ids, colnames(abd))
     if (length(missing_modeled_features) > 0L) {
       stop(
@@ -256,32 +283,22 @@ fitNULL <- function(abdFile,
       )
     }
     message(
-      "Generating FeatureInfo from the final Step1 modeled feature set after prev.filter. ",
-      "Output path: ", FeatureInfoFile
+      "Generating feature info from the final Step1 modeled feature set after prev.filter. ",
+      "Output path: ", featureInfoFile
     )
     feature_stats <- feature_info_from_matrix(abd[, feature_ids, drop = FALSE], feature_ids = feature_ids)
-    dir.create(dirname(FeatureInfoFile), recursive = TRUE, showWarnings = FALSE)
+    dir.create(dirname(featureInfoFile), recursive = TRUE, showWarnings = FALSE)
     data.table::fwrite(
       feature_stats,
-      file = FeatureInfoFile,
+      file = featureInfoFile,
       sep = "\t",
       quote = FALSE,
       na = "NA"
     )
-    message("FeatureInfo finished: ", nrow(feature_stats), " modeled feature(s) written to ", FeatureInfoFile)
+    message("Feature info finished: ", nrow(feature_stats), " modeled feature(s) written to ", featureInfoFile)
   } else {
-    message("FeatureInfo skipped: FeatureInfoFile is NULL.")
+    message("Feature info skipped: featureInfoFile is NULL.")
   }
 
-  if (!is.null(FeatureNameListFile) && nzchar(FeatureNameListFile)) {
-    dir.create(dirname(FeatureNameListFile), recursive = TRUE, showWarnings = FALSE)
-    writeLines(feature_ids, FeatureNameListFile, useBytes = TRUE)
-    message(
-      "FeatureList finished: ", length(feature_ids),
-      " feature(s) written to ", FeatureNameListFile
-    )
-  } else {
-    message("FeatureList skipped: FeatureNameListFile is NULL.")
-  }
   invisible(modglmm)
 }

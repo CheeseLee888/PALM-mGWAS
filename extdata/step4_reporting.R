@@ -32,9 +32,9 @@ arg_supplied <- function(flag, args = raw_args) {
 }
 
 option_list <- list(
-  make_option(c("--metaDir"), type = "character", default = "",
-              help = "Directory containing step3 meta files [default %default]"),
-  make_option(c("--plotPrefix"), type = "character", default = "",
+  make_option(c("--inputPrefix"), type = "character", default = "",
+              help = "Directory containing Step3 meta files or single-study Step2 files [default %default]"),
+  make_option(c("--outputPrefix"), type = "character", default = "",
               help = "Prefix for plot outputs, including directory and optional filename prefix [default %default]"),
   make_option(c("--feature"), type = "character", default = NA,
               help = "Feature name (suffix in step3/step2 filename)"),
@@ -42,16 +42,12 @@ option_list <- list(
               help = "SNP ID, e.g. chr1:123:A:G (must match SNP column exactly)"),
   make_option(c("--pCut"), type = "character", default = "5e-8",
               help = "When neither --feature nor --snp is given, print SNP/feature pairs whose best p across features is below this cutoff; when only --snp is given, filter features by this cutoff before writing one forest plot per feature. Use NA to disable filtering/printing [default %default]"),
-  make_option(c("--showMeta"), type = "logical", default = TRUE,
-              help = "Only valid when --snp is given; overlay meta est/stderr in black if available [default TRUE]"),
-  make_option(c("--showHet"), type = "logical", default = TRUE,
-              help = "Only valid when --snp is given; emphasize heterogeneity information in SNP-based forest plots when available [default TRUE]"),
   make_option(c("--width"), type = "character", default = NA_character_,
               help = "Plot width inches; NA lets the script auto-size"),
   make_option(c("--height"), type = "character", default = NA_character_,
               help = "Plot height inches; NA lets the script auto-size"),
   make_option(c("--plotMinP"), type = "character", default = "NA",
-              help = "Optional Manhattan plotting threshold for p-value compression; points with P < plotMinP are compressed near the threshold and colored red instead of stretching the full y-axis. Use NA to disable compression")
+              help = "Optional Manhattan and QQ plotting threshold for p-value compression; points with P < plotMinP are compressed near the threshold and colored red instead of stretching the full y-axis. Use NA to disable compression")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -107,37 +103,29 @@ height_in <- parse_dim(opt$height)
 p_cut <- parse_pcut(opt$pCut)
 plot_min_p <- parse_probability(opt$plotMinP, "--plotMinP")
 
-metaDir <- opt$metaDir
-plotPrefix <- opt$plotPrefix
-plotPrefix <- sub("_+$", "", plotPrefix)
+inputPrefix <- opt$inputPrefix
+outputPrefix <- opt$outputPrefix
+outputPrefix <- sub("_+$", "", outputPrefix)
 
 prefixed_out <- function(suffix) {
-  if (!nzchar(plotPrefix)) return(suffix)
-  if (grepl("[/\\\\]$", plotPrefix)) return(paste0(plotPrefix, suffix))
-  paste0(plotPrefix, "_", suffix)
+  if (!nzchar(outputPrefix)) return(suffix)
+  if (grepl("[/\\\\]$", outputPrefix)) return(paste0(outputPrefix, suffix))
+  paste0(outputPrefix, "_", suffix)
 }
 
-metaIndex <- discover_meta_files(metaDir)
+metaIndex <- discover_meta_files(inputPrefix)
 
 feature <- if (!is.na(opt$feature)) opt$feature else NULL
 snp   <- if (!is.na(opt$snp)) opt$snp else NULL
 
-if (arg_supplied("pCut") && !((is.null(feature) && is.null(snp)) || (is.null(feature) && !is.null(snp)))) {
-  stop("--pCut can only be used when neither --feature nor --snp is specified, or when only --snp is specified.")
-}
-
-if (arg_supplied("showMeta") && is.null(snp)) {
-  stop("--showMeta requires --snp.")
-}
-
-if (arg_supplied("showHet") && is.null(snp)) {
-  stop("--showHet requires --snp.")
+if (arg_supplied("pCut") && !is.null(feature) && !is.null(snp)) {
+  stop("--pCut is ignored when both --feature and --snp are specified.")
 }
 
 # ----------------------------- dispatch -----------------------------
 
-msg("MetaDir: %s", metaDir)
-msg("PlotPrefix: %s", plotPrefix)
+msg("InputPrefix: %s", inputPrefix)
+msg("OutputPrefix: %s", outputPrefix)
 msg("Found %d feature(s) across %d result file(s).", nrow(metaIndex), sum(lengths(metaIndex$files)))
 msg("Resolved pCut: %s", if (is.na(p_cut)) "NA" else format(p_cut, scientific = TRUE))
 msg("Resolved plotMinP: %s", if (is.na(plot_min_p)) "NA" else format(plot_min_p, scientific = TRUE))
@@ -146,7 +134,7 @@ msg("Resolved width x height: %s x %s", if (is.na(width_in)) "auto" else as.char
 if (is.null(feature) && is.null(snp)) {
   # Mode A
   # Big combined plot: show best phenotype per SNP, no significance filtering.
-  outFile <- prefixed_out("combined_hits.png")
+  outFile <- prefixed_out("manhattan_combined.png")
   dir.create(dirname(outFile), recursive = TRUE, showWarnings = FALSE)
   msg("Output file/base: %s", outFile)
   msg("Reporting mode: combined Manhattan across phenotypes.")
@@ -169,7 +157,7 @@ if (is.null(feature) && is.null(snp)) {
   msg("Output file/base: %s", outFile)
   msg("QQ output file: %s", qq_out)
   msg("Reporting mode: Manhattan and qq for feature %s.", feature)
-  msg("Mode B behavior: pCut is ignored in this mode.")
+  msg("Mode B behavior: pCut reference line %s", if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)))
   # keep auxiliary outputs aligned with main outFile
   base_no_ext <- sub("\\.[^.]+$", "", outFile)
   top_out <- paste0(base_no_ext, "_top10.txt")
@@ -182,6 +170,7 @@ if (is.null(feature) && is.null(snp)) {
     qqOutFile = qq_out,
     topOutFile = top_out,
     top_n = 10,
+    pCut = p_cut,
     plotMinP = plot_min_p
   )
 
@@ -191,9 +180,8 @@ if (is.null(feature) && is.null(snp)) {
   dir.create(dirname(outFile), recursive = TRUE, showWarnings = FALSE)
   msg("Output file/base: %s", outFile)
   msg("Reporting mode: per-phenotype forest plots for SNP %s.", snp)
-  msg("Mode C behavior: pCut %s; showMeta=%s; showHet=%s; one file is generated for each retained phenotype.",
-      if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)),
-      opt$showMeta, opt$showHet)
+  msg("Mode C behavior: pCut %s; one file is generated for each retained phenotype.",
+      if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)))
   if (!is.na(plot_min_p)) {
     msg("Mode C behavior: plotMinP is ignored in this mode.")
   }
@@ -204,17 +192,17 @@ if (is.null(feature) && is.null(snp)) {
     pCut = p_cut,
     sep = "\t",
     width = width_in, height = height_in, dpi = 300,
-    show_meta = opt$showMeta,
-    show_het = opt$showHet
+    show_meta = TRUE,
+    show_het = TRUE
   )
 
 } else {
   # Mode D
-  outFile <- prefixed_out(paste0("forest_", sanitize_filename(feature), "_", sanitize_filename(snp), ".png"))
+  outFile <- prefixed_out(paste0("forest_", sanitize_filename(snp), "_", sanitize_filename(feature), ".png"))
   dir.create(dirname(outFile), recursive = TRUE, showWarnings = FALSE)
   msg("Output file/base: %s", outFile)
   msg("Reporting mode: forest for feature %s and SNP %s.", feature, snp)
-  msg("Mode D behavior: showMeta=%s; showHet=%s; pCut is ignored in this mode.", opt$showMeta, opt$showHet)
+  msg("Mode D behavior: pCut is ignored in this mode.")
   if (!is.na(plot_min_p)) {
     msg("Mode D behavior: plotMinP is ignored in this mode.")
   }
@@ -225,8 +213,8 @@ if (is.null(feature) && is.null(snp)) {
     outFile = outFile,
     sep = "\t",
     width = width_in, height = height_in, dpi = 300,
-    show_meta = opt$showMeta,
-    show_het = opt$showHet
+    show_meta = TRUE,
+    show_het = TRUE
   )
 }
 

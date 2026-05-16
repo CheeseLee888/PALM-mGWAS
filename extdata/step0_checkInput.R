@@ -21,14 +21,14 @@ option_list <- list(
               help = "Optional covariate column name used as sequencing depth [default %default]"),
   make_option("--timeIDCol", type = "character", default = "NULL",
               help = "Optional time ID column required when abdFile contains repeated subject IDs [default %default]"),
+  make_option("--clusterCol", type = "character", default = "NULL",
+              help = "Optional covFile column used as family/pedigree cluster ID [default %default]"),
   make_option("--depth.filter", type = "double", default = 0,
               help = "Row-level depth threshold; rows with depth <= threshold are removed before ID matching [default %default]"),
   make_option("--genoFile", type = "character",
               help = "Genotype input: PLINK prefix or VCF(.vcf/.vcf.gz/.vcf.bgz)"),
   make_option("--SeqDepthInfoFile", type = "character", default = "NULL",
-              help = "Optional output file for sequencing depth info used by Step0 filtering [default %default]"),
-  make_option("--useCluster", type = "logical", default = FALSE,
-              help = "Whether Step2.1 will use PLINK FID clustering for family/pedigree data; repeated subject IDs use subject ID automatically [default %default]")
+              help = "Optional output file for sequencing depth info used by Step0 filtering [default %default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
@@ -197,6 +197,10 @@ opt$timeIDCol <- normalize_col_list(opt$timeIDCol, "timeIDCol")
 if (!is.null(opt$timeIDCol) && length(opt$timeIDCol) != 1L) {
   stop("'timeIDCol' must specify exactly one column name.")
 }
+opt$clusterCol <- normalize_col_list(opt$clusterCol, "clusterCol")
+if (!is.null(opt$clusterCol) && length(opt$clusterCol) != 1L) {
+  stop("'clusterCol' must specify exactly one column name.")
+}
 if (!is.numeric(opt$depth.filter) || length(opt$depth.filter) != 1L || is.na(opt$depth.filter) || opt$depth.filter < 0) {
   stop("--depth.filter must be a single non-negative numeric value.")
 }
@@ -210,7 +214,7 @@ if (is.null(opt$covarColList)) {
   }
 }
 
-required_cov_cols <- unique(c(opt$covarColList, opt$depthCol))
+required_cov_cols <- unique(c(opt$covarColList, opt$depthCol, opt$clusterCol))
 missing_cov_cols <- setdiff(required_cov_cols, colnames(cov_df))
 if (length(missing_cov_cols) > 0L) {
   stop("Required covariate column(s) not found in covFile: ", paste(missing_cov_cols, collapse = ", "))
@@ -227,7 +231,24 @@ if (length(required_cov_cols) > 0L) {
 filtered <- FALSE
 
 abd_non_id_cols <- setdiff(colnames(abd_df), c(colnames(abd_df)[1], opt$timeIDCol))
+if (length(abd_non_id_cols) == 0L) {
+  stop("abdFile must contain at least one numeric abundance feature column after the subject ID column.")
+}
 if (length(abd_non_id_cols) > 0L) {
+  bad_numeric_cols <- character(0)
+  for (col in abd_non_id_cols) {
+    raw_values <- abd_df[[col]]
+    numeric_values <- suppressWarnings(as.numeric(raw_values))
+    bad_values <- is.na(numeric_values) & !is.na(raw_values)
+    if (any(bad_values)) {
+      bad_numeric_cols <- c(bad_numeric_cols, col)
+    } else {
+      abd_df[[col]] <- numeric_values
+    }
+  }
+  if (length(bad_numeric_cols) > 0L) {
+    stop("Abundance feature column(s) in abdFile cannot be safely converted to numeric: ", paste(unique(bad_numeric_cols), collapse = ", "))
+  }
   keep_abd_complete <- stats::complete.cases(abd_df[, abd_non_id_cols, drop = FALSE])
   removed_n <- sum(!keep_abd_complete)
   cat("Removing ", removed_n, " abundance row(s) with missing values in abundance columns.\n", sep = "")
@@ -325,19 +346,11 @@ cat("Genotype sample count: ", length(geno_ids), ".\n", sep = "")
 
 cluster <- NULL
 cluster_source <- NULL
-if (isTRUE(opt$useCluster)) {
-  if (!identical(geno_format, "plink")) {
-    stop("--useCluster=TRUE is only supported for native PLINK input, where clustering uses .fam FID.")
-  }
-  cluster <- read_fam_cluster(opt$genoFile)
-  cluster_source <- "PLINK .fam FID"
-  if (all(!is.na(cluster) & cluster == "0")) {
-    cat("All PLINK FID values are 0. No valid cluster information detected; cluster missingness filtering skipped.\n")
-    cluster <- NULL
-    cluster_source <- NULL
-  } else {
-    cat("Cluster filter source: PLINK .fam FID.\n")
-  }
+if (!is.null(opt$clusterCol)) {
+  cluster <- as.character(cov_df[[opt$clusterCol]])
+  names(cluster) <- abd_ids
+  cluster_source <- paste0("covFile column '", opt$clusterCol, "'")
+  cat("Cluster filter source: ", cluster_source, ".\n", sep = "")
 }
 
 if (!is.null(cluster) && !abd_repeated_subjects) {

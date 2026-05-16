@@ -105,23 +105,23 @@ index_files <- function(metaIndex, i) {
 #' chromosome files are stored in chromosome order and the matching `allchr`
 #' file, if present, is ignored. If no chromosome-specific file exists, the
 #' single `allchr` file is used. Text files that do not match either naming
-#' convention are ignored unless no valid result files are found.
+#' convention are ignored.
 #'
-#' @param metaDir Directory containing meta files.
+#' @param inputPrefix Directory containing Step3 meta files or single-study Step2 files.
 #'
 #' @return A data frame with columns `pheno`, `scope`, `file`, and `files`.
 #'   `file` contains the first selected file for backward compatibility;
 #'   `files` is a list column containing all selected files for the feature.
 #' @export
-discover_meta_files <- function(metaDir) {
-  message("discover_meta_files: scanning ", metaDir)
-  files <- list.files(metaDir, pattern = "[.]txt$", full.names = TRUE)
+discover_meta_files <- function(inputPrefix) {
+  message("discover_meta_files: scanning ", inputPrefix)
+  files <- list.files(inputPrefix, pattern = "[.]txt$", full.names = TRUE)
 
   if (length(files) == 0) {
     stop(
-      "No result files found in: ", metaDir,
+      "No result files found in: ", inputPrefix,
       "\nFiles present: ",
-      paste(list.files(metaDir), collapse = ", ")
+      paste(list.files(inputPrefix), collapse = ", ")
     )
   }
 
@@ -131,7 +131,7 @@ discover_meta_files <- function(metaDir) {
   ok <- vapply(pieces, length, integer(1)) >= 5L
   if (!any(ok)) {
     stop(
-      "discover_meta_files: no Step2/Step3-style files found in ", metaDir,
+      "discover_meta_files: no Step2/Step3-style files found in ", inputPrefix,
       ". Expected names ending in _allchr_<feature>.txt or _chrN_<feature>.txt."
     )
   }
@@ -543,7 +543,12 @@ plot_manhattan <- function(df, outFile, title = NULL,
     graphics::points(red_points$pos, red_points$PLOT_P, pch = 20, cex = 1.0, col = "red")
   }
 
-  graphics::abline(h = -log10(5e-8), lty = 2, lwd = 1, col = "red")
+  if (!is.na(pCut)) {
+    if (!is.numeric(pCut) || length(pCut) != 1 || pCut <= 0 || pCut >= 1) {
+      stop("pCut must be a single number in (0, 1) or NA.")
+    }
+    graphics::abline(h = -log10(pCut), lty = 2, lwd = 1, col = "red")
+  }
 
   invisible(man)
 }
@@ -554,8 +559,10 @@ plot_manhattan <- function(df, outFile, title = NULL,
 # @param outFile Output path (png/jpg/etc).
 # @param title Optional plot title.
 # @param width,height,dpi Device parameters.
+# @param plotMinP Optional p-value threshold for y-axis compression.
 plot_qq <- function(df, outFile, title = NULL,
-                    width = NA_real_, height = NA_real_, dpi = 300) {
+                    width = NA_real_, height = NA_real_, dpi = 300,
+                    plotMinP = NA_real_) {
   if (!requireNamespace("qqman", quietly = TRUE)) {
     stop("Package 'qqman' is required.")
   }
@@ -568,6 +575,23 @@ plot_qq <- function(df, outFile, title = NULL,
 
   if (nrow(df) == 0) stop("No valid p-values to plot.")
 
+  pvals <- sort(as.numeric(df[[pcol]]))
+  expected <- -log10(stats::ppoints(length(pvals)))
+  observed <- -log10(pvals)
+
+  if (!is.na(plotMinP)) {
+    if (!is.numeric(plotMinP) || length(plotMinP) != 1 || plotMinP <= 0 || plotMinP >= 1) {
+      stop("plotMinP must be a single number in (0, 1) or NA.")
+    }
+    plot_min_p_logp <- -log10(plotMinP)
+    cap_bump <- max(0.2, plot_min_p_logp * 0.02)
+    above_plot_min <- pvals < plotMinP
+    observed_plot <- ifelse(above_plot_min, plot_min_p_logp + cap_bump, observed)
+  } else {
+    above_plot_min <- rep(FALSE, length(pvals))
+    observed_plot <- observed
+  }
+
   msg("Saving: %s", outFile)
 
   auto_width <- if (is.na(width)) 6 else width
@@ -579,7 +603,15 @@ plot_qq <- function(df, outFile, title = NULL,
   )
   on.exit(grDevices::dev.off(), add = TRUE)
 
-  qqman::qq(df[[pcol]], main = title %||% "QQ Plot")
+  graphics::plot(
+    expected, observed_plot,
+    pch = 20,
+    col = ifelse(above_plot_min, "red", "black"),
+    xlab = expression(Expected~~-log[10](italic(P))),
+    ylab = expression(Observed~~-log[10](italic(P))),
+    main = title %||% "QQ Plot"
+  )
+  graphics::abline(0, 1, col = "red", lty = 2)
 
   invisible(NULL)
 }
@@ -1026,6 +1058,7 @@ mode_big_combined <- function(metaIndex, outFile,
     df = best,
     outFile = outFile,
     title = "Best phenotype per SNP (minimum p across phenotypes)",
+    pCut = pCut,
     width = width,
     height = height,
     dpi = dpi,
@@ -1043,8 +1076,8 @@ mode_big_combined <- function(metaIndex, outFile,
 #' @param qq_width,qq_height Optional QQ plot device width and height.
 #' @param topOutFile Optional output path for top-N hits (ordered by p-value).
 #' @param top_n How many hits to keep if `topOutFile` is provided.
-#' @param plotMinP Optional Manhattan plotting threshold for p-value
-#'   compression. Points with `P < plotMinP` are drawn slightly above
+#' @param plotMinP Optional plotting threshold for p-value compression in
+#'   Manhattan and QQ plots. Points with `P < plotMinP` are drawn slightly above
 #'   `-log10(plotMinP)` in red instead of stretching the full y-axis.
 #'
 #' @export
@@ -1053,6 +1086,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
                                  width = NA_real_, height = NA_real_, dpi = 300,
                                  qqOutFile = NULL, qq_width = NA_real_, qq_height = NA_real_,
                                  topOutFile = NULL, top_n = 10,
+                                 pCut = 5e-8,
                                  plotMinP = NA_real_) {
   row <- metaIndex |> dplyr::filter(.data$pheno == .env$phenoName)
   if (nrow(row) == 0) stop("Cannot find meta file for feature: ", phenoName)
@@ -1062,7 +1096,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
     df = df,
     outFile = outFile,
     title = paste0("Manhattan: ", phenoName),
-    pCut = NA_real_,
+    pCut = pCut,
     width = width, height = height, dpi = dpi,
     plotMinP = plotMinP
   )
@@ -1074,7 +1108,8 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
       title = paste0("QQ: ", phenoName),
       width = qq_width,
       height = qq_height,
-      dpi = dpi
+      dpi = dpi,
+      plotMinP = plotMinP
     )
   }
 

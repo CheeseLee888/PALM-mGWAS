@@ -10,10 +10,10 @@ fitNULL(
   covFile = NULL,
   covarColList = NULL,
   depthCol = NULL,
+  clusterCol = NULL,
   prev.filter = 0.1,
-  FeatureInfoFile = NULL,
-  FeatureNameListFile = NULL,
-  NULLObjPrefix
+  featureInfoFile = NULL,
+  nullModelPrefix
 )
 }
 \arguments{
@@ -35,19 +35,20 @@ provided, it is excluded from the covariate-adjustment matrix.}
 If not provided, `depth = NULL` is passed to PALM so sequencing depth is
 computed from row sums of `abdFile`.}
 
+\item{clusterCol}{Optional column name in `covFile` to use as the
+family/pedigree cluster ID for Step2.1. This column is stored in the saved
+null model and excluded from `covariate.adjust`.}
+
 \item{prev.filter}{Passed to `PALM::palm.null.model()`; features with
 prevalence less than or equal to this threshold are removed. Defaults to `0.1`.}
 
-\item{FeatureInfoFile}{Optional output path for feature prevalence and
-average proportion computed from the final Step1 modeled feature set after
-prevalence filtering. Use `NULL` (default) to skip writing this file.}
+\item{featureInfoFile}{Optional output path for the feature summary table
+after prevalence filtering. This file contains feature ID, prevalence, and
+average proportion. Use `NULL` (default) to skip writing this file.}
 
-\item{FeatureNameListFile}{Optional output path for the modeled feature IDs
-retained in the fitted Step1 null model after prevalence filtering. Use
-`NULL` (default) to skip writing this file.}
+\item{nullModelPrefix}{Output prefix for the saved null model object. The
+function writes `<nullModelPrefix>.rda`.}
 
-\item{NULLObjPrefix}{Output prefix for the saved null model object. The
-function writes `<NULLObjPrefix>.rda`.}
 }
 \value{
 Invisibly returns the fitted PALM null model object.

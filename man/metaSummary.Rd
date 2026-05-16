@@ -8,7 +8,7 @@ metaSummary(
   study_dirs,
   inputPrefix,
   chrom = NULL,
-  featureColList = NULL,
+  featureList = NULL,
   out_dir = NULL,
   out_prefix = "step3_meta",
   out_suffix = ".txt",
@@ -28,7 +28,7 @@ trailing underscore is ignored.}
 `_allchr` files. Use `1`..`22` or strings like `"chr1"` to
 meta-analyze one chromosome-specific shard across all studies.}
 
-\item{featureColList}{Optional feature names (without prefix/suffix). If
+\item{featureList}{Optional feature names (without prefix/suffix). If
 `NULL`, infer all features from the selected Step2 scope.}
 
 \item{out_dir}{If not NULL, write per-feature meta files to this directory.}

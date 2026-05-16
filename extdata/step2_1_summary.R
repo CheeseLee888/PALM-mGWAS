@@ -10,11 +10,11 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
-    make_option("--NULLObjPrefix",
+    make_option("--nullModelPrefix",
         type = "character", default = "",
         help = ""
     ),
-    make_option("--SummaryPrefix",
+    make_option("--outputPrefix",
         type = "character", default = "",
         help = ""
     ),
@@ -22,7 +22,7 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
-    make_option("--featureColList",
+    make_option("--featureList",
         type = "character", default = "",
         help = ""
     ),
@@ -42,45 +42,40 @@ option_list <- list(
         type = "character", default = "best_guess",
         help = ""
     ),
-    make_option("--SnpInfoFile",
+    make_option("--snpInfoFile",
         type = "character", default = "NULL",
-        help = ""
-    ),
-    make_option("--useCluster",
-        type = "logical", default = FALSE,
         help = "")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
-if (is.null(opt$SnpInfoFile) || !nzchar(opt$SnpInfoFile) || toupper(opt$SnpInfoFile) == "NULL") {
-  opt$SnpInfoFile <- NULL
+if (is.null(opt$snpInfoFile) || !nzchar(opt$snpInfoFile) || toupper(opt$snpInfoFile) == "NULL") {
+  opt$snpInfoFile <- NULL
 }
-if (is.null(opt$featureColList) || !nzchar(opt$featureColList) || toupper(opt$featureColList) == "NULL") {
-  opt$featureColList <- NULL
+if (is.null(opt$featureList) || !nzchar(opt$featureList) || toupper(opt$featureList) == "NULL") {
+  opt$featureList <- NULL
 }
 
 message("step2.1: PALM summary started.")
-message("step2.1: summary prefix = ", opt$SummaryPrefix)
+message("step2.1: output prefix = ", opt$outputPrefix)
 message("step2.1: chromosome = ", if (is.null(opt$chrom) || !nzchar(opt$chrom)) "NULL" else opt$chrom)
 message(
-  "step2.1: featureColList = ",
-  if (is.null(opt$featureColList)) {
+  "step2.1: featureList = ",
+  if (is.null(opt$featureList)) {
     "NULL (all modeled features)"
   } else {
-    opt$featureColList
+    opt$featureList
   }
 )
 
 getSummary(
   genoFile = opt$genoFile,
-  NULLObjPrefix = opt$NULLObjPrefix,
-  SummaryPrefix = opt$SummaryPrefix,
+  nullModelPrefix = opt$nullModelPrefix,
+  outputPrefix = opt$outputPrefix,
   chrom = opt$chrom,
-  featureColList = opt$featureColList,
+  featureList = opt$featureList,
   minMAF = opt$minMAF,
   minMAC = opt$minMAC,
   maxMissing = opt$maxMissing,
   impute_method = opt$impute_method,
-  SnpInfoFile = opt$SnpInfoFile,
-  useCluster = opt$useCluster
+  snpInfoFile = opt$snpInfoFile
 )

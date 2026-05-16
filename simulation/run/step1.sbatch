@@ -6,7 +6,7 @@
 #SBATCH --output=logs/step1_%A_%a.out
 #SBATCH --error=logs/step1_%A_%a.err
 # Step1 in the fixed simulation workflow:
-# fit the null model and write feature_list.txt for one study.
+# fit the null model and write feature info for one study.
 
 set -euo pipefail
 WORK="${WORK:-${SLURM_SUBMIT_DIR:-$PWD}}"
@@ -24,15 +24,14 @@ OUTPUT_DIR="${WORK}/output/${STUDY}"
 
 ABD_ALIGNED_FILE="${INPUT_DIR}/abd_aligned.txt"
 COV_ALIGNED_FILE="${INPUT_DIR}/cov_aligned.txt"
-NULLMODEL_FILE="${OUTPUT_DIR}/step1_allpheno.rda"
-FEATURE_LIST_FILE="${OUTPUT_DIR}/feature_list.txt"
+nullModelPrefix="${OUTPUT_DIR}/step1_allpheno"
 
 echo "step1_fit_null_model: WORK=${WORK}"
 echo "step1_fit_null_model: SIF=${SIF}"
 echo "step1_fit_null_model: STUDY=${STUDY}"
 echo "step1_fit_null_model: covarColList=${COVAR_COL_LIST}"
 echo "step1_fit_null_model: depthCol=${DEPTH_COL}, prev.filter=${PREV_FILTER}"
-echo "step1_fit_null_model: FeatureInfoFile=${OUTPUT_FEATURE_FILE}"
+echo "step1_fit_null_model: featureInfoFile=${OUTPUT_FEATURE_FILE}"
 
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   step1_null.R \
@@ -41,11 +40,10 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   --covarColList="${COVAR_COL_LIST}" \
   --depthCol="${DEPTH_COL}" \
   --prev.filter="${PREV_FILTER}" \
-  --FeatureInfoFile="${OUTPUT_FEATURE_FILE}" \
-  --FeatureNameListFile="${FEATURE_LIST_FILE}" \
-  --NULLObjPrefix="${NULLMODEL_FILE}"
+  --featureInfoFile="${OUTPUT_FEATURE_FILE}" \
+  --nullModelPrefix="${nullModelPrefix}"
 
 echo "step1_fit_null_model: finished"
 echo "step1_fit_null_model: outputs"
-echo "  ${NULLMODEL_FILE}"
-echo "  ${FEATURE_LIST_FILE}"
+echo "  ${nullModelPrefix}.rda"
+echo "  ${OUTPUT_FEATURE_FILE}"
