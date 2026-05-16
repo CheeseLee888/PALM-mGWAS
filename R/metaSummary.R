@@ -1,9 +1,10 @@
 #' Meta-analyze step2 results across studies (meta columns prefixed with `meta_`)
 #'
 #' @param study_dirs Named character vector/list. Names are study IDs, values are directories.
-#' @param inputPrefix Shared Step2 base prefix. Files are expected at
-#'   `<inputPrefix>_chr<chrom>_<feature>.txt` when `chrom` is set, or
-#'   `<inputPrefix>_allchr_<feature>.txt` when `chrom` is `NULL`. An optional
+#' @param inputPrefix Shared Step2 base prefix, or a named vector/list of
+#'   study-specific Step2 prefixes. Files are expected at
+#'   `<prefix>_chr<chrom>_<feature>.txt` when `chrom` is set, or
+#'   `<prefix>_allchr_<feature>.txt` when `chrom` is `NULL`. An optional
 #'   trailing underscore is ignored.
 #' @param chrom Optional chromosome selector. Use `NULL` to meta-analyze
 #'   `_allchr` files. Use `1`..`22` or strings like `"chr1"` to
@@ -39,7 +40,7 @@ metaSummary <- function(study_dirs,
   if (is.null(names(study_dirs)) || any(names(study_dirs) == "")) {
     stop("study_dirs must be a named vector/list: names are study IDs.")
   }
-  if (missing(inputPrefix) || !nzchar(inputPrefix)) {
+  if (missing(inputPrefix) || is.null(inputPrefix) || length(inputPrefix) == 0L) {
     stop("'inputPrefix' must be provided.")
   }
   if (!is.null(chrom) && length(chrom) != 1L) {
@@ -50,6 +51,23 @@ metaSummary <- function(study_dirs,
   }
   meta.method <- trimws(meta.method)
   study.ID <- names(study_dirs)
+  if (length(inputPrefix) == 1L) {
+    input_prefixes <- stats::setNames(file.path(as.character(study_dirs), basename(as.character(inputPrefix))), study.ID)
+  } else {
+    input_prefixes <- stats::setNames(as.character(inputPrefix), names(inputPrefix))
+    if (is.null(names(input_prefixes)) || any(names(input_prefixes) == "")) {
+      stop("'inputPrefix' must be a single shared prefix or a named vector/list with study IDs as names.")
+    }
+    missing_prefix <- setdiff(study.ID, names(input_prefixes))
+    if (length(missing_prefix) > 0L) {
+      stop("'inputPrefix' is missing prefix value(s) for study ID(s): ", paste(missing_prefix, collapse = ", "))
+    }
+    input_prefixes <- input_prefixes[study.ID]
+  }
+  input_prefixes <- sub("_+$", "", input_prefixes)
+  if (any(is.na(input_prefixes) | !nzchar(input_prefixes))) {
+    stop("'inputPrefix' contains empty prefix value(s).")
+  }
 
   escape_regex <- function(x) {
     gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", x)
@@ -69,11 +87,12 @@ metaSummary <- function(study_dirs,
     paste0("chr", as.integer(x))
   }
 
-  step2_base <- sub("_+$", "", basename(inputPrefix))
-  if (grepl("_(allchr|chr([1-9]|1[0-9]|2[0-2]))$", step2_base)) {
+  step2_base <- basename(input_prefixes)
+  bad_scope_prefix <- grepl("_(allchr|chr([1-9]|1[0-9]|2[0-2]))$", step2_base)
+  if (any(bad_scope_prefix)) {
     stop(
       "'inputPrefix' must be the shared Step2 base prefix without '_allchr' or '_chrN'. ",
-      "Use inputPrefix='", sub("_(allchr|chr([1-9]|1[0-9]|2[0-2]))$", "", step2_base),
+      "Use inputPrefix='", sub("_(allchr|chr([1-9]|1[0-9]|2[0-2]))$", "", step2_base[bad_scope_prefix][[1L]]),
       "' together with --chrom=NULL or --chrom=1..22."
     )
   }
@@ -81,16 +100,22 @@ metaSummary <- function(study_dirs,
   if (is.null(requested_scope)) {
     requested_scope <- "allchr"
   }
-  file_pattern <- paste0("^", escape_regex(step2_base), "_", escape_regex(requested_scope), "_(.*)[.]txt$")
+  file_pattern_by_study <- stats::setNames(
+    paste0("^", vapply(step2_base, escape_regex, character(1)), "_", escape_regex(requested_scope), "_(.*)[.]txt$"),
+    study.ID
+  )
 
   # info: how many studies were provided
   message(sprintf(
     "metaSummary: reading %d study(ies): %s", length(study.ID),
     paste(study.ID, collapse = ", ")
   ))
-  message("metaSummary: study directories: ",
-    paste(sprintf("%s -> %s", study.ID, study_dirs), collapse = "; ")
+  message("metaSummary: input prefixes: ",
+    paste(sprintf("%s -> %s", study.ID, input_prefixes), collapse = "; ")
   )
+
+  study_dirs <- stats::setNames(dirname(input_prefixes), study.ID)
+  study_dirs[study_dirs %in% c("", ".")] <- "."
 
   # ensure study directories exist
   missing_dir <- study_dirs[!dir.exists(study_dirs)]
@@ -109,13 +134,12 @@ metaSummary <- function(study_dirs,
 
   # high-level run context (output directory printed near end)
   message("metaSummary: meta method = ", meta.method)
-  message("metaSummary: input prefix = ", inputPrefix)
   message("metaSummary: chromosome scope = ", requested_scope)
 
-  extract_feature_names <- function(files) {
+  extract_feature_names <- function(files, sid) {
     base_names <- basename(files)
     sub(
-      paste0("^", escape_regex(step2_base), "_", escape_regex(requested_scope), "_(.*)[.]txt$"),
+      file_pattern_by_study[[sid]],
       "\\1",
       base_names
     )
@@ -126,10 +150,10 @@ metaSummary <- function(study_dirs,
     d <- study_dirs[[sid]]
     ff <- list.files(
       d,
-      pattern = file_pattern,
+      pattern = file_pattern_by_study[[sid]],
       full.names = FALSE
     )
-    feats <- extract_feature_names(ff)
+    feats <- extract_feature_names(ff, sid)
 
     dup_feats <- unique(feats[duplicated(feats)])
     if (length(dup_feats) > 0) {
@@ -161,17 +185,17 @@ metaSummary <- function(study_dirs,
   feat_inter <- if (length(feature_lists) > 1) Reduce(intersect, feature_lists) else feat_union
 
   if (length(feat_union) == 0L) {
-    expected <- paste0(step2_base, "_", requested_scope, "_<feature>.txt")
+    expected <- paste0(step2_base[[1L]], "_", requested_scope, "_<feature>.txt")
     if (identical(requested_scope, "allchr")) {
       stop(
-        "No Step2 files found for meta-analysis scope 'allchr' under base prefix: ", inputPrefix,
-        ". Expected to see files like ", expected,
+        "No Step2 files found for meta-analysis scope 'allchr' under the provided input prefix(es). ",
+        "Expected to see files like ", expected,
         ". If only chromosome-split files exist, run Step3 once per chromosome with --chrom=1..22."
       )
     }
     stop(
       "No Step2 files found for meta-analysis scope '", requested_scope,
-      "' under base prefix: ", inputPrefix,
+      "' under the provided input prefix(es)",
       ". Expected to see files like ", expected, "."
     )
   }

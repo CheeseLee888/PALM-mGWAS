@@ -217,7 +217,6 @@ detect_studies <- function(df) {
 
 # Test if a row is significant at pCut
 is_sig_row <- function(row, pCut = 5e-8) {
-  if (is.na(pCut)) return(FALSE)
   if ("meta_pval" %in% names(row) && !is.na(row$meta_pval)) return(row$meta_pval <= pCut)
   FALSE
 }
@@ -472,6 +471,10 @@ plot_manhattan <- function(df, outFile, title = NULL,
   man <- man |>
     dplyr::mutate(logp = -log10(.data$P))
 
+  if (!is.numeric(pCut) || length(pCut) != 1 || is.na(pCut) || pCut <= 0 || pCut >= 1) {
+    stop("pCut must be a single number in (0, 1).")
+  }
+
   if (!is.na(plotMinP)) {
     if (!is.numeric(plotMinP) || length(plotMinP) != 1 || plotMinP <= 0 || plotMinP >= 1) {
       stop("plotMinP must be a single number in (0, 1) or NA.")
@@ -491,6 +494,9 @@ plot_manhattan <- function(df, outFile, title = NULL,
         PLOT_P = .data$logp
       )
   }
+
+  man <- man |>
+    dplyr::mutate(PASS_PCUT = .data$P <= pCut)
 
   auto_width <- if (is.na(width)) {
     max(11, length(unique(man$CHR)) * 0.45)
@@ -522,7 +528,7 @@ plot_manhattan <- function(df, outFile, title = NULL,
     genomewideline = FALSE
   )
 
-  if (any(man$ABOVE_PLOT_MIN, na.rm = TRUE)) {
+  if (any(man$ABOVE_PLOT_MIN | man$PASS_PCUT, na.rm = TRUE)) {
     red_points <- man |>
       dplyr::arrange(.data$CHR, .data$BP) |>
       dplyr::mutate(index = match(.data$CHR, unique(.data$CHR)), pos = as.numeric(.data$BP))
@@ -538,17 +544,12 @@ plot_manhattan <- function(df, outFile, title = NULL,
     }
 
     red_points <- red_points |>
-      dplyr::filter(.data$ABOVE_PLOT_MIN)
+      dplyr::filter(.data$ABOVE_PLOT_MIN | .data$PASS_PCUT)
 
     graphics::points(red_points$pos, red_points$PLOT_P, pch = 20, cex = 1.0, col = "red")
   }
 
-  if (!is.na(pCut)) {
-    if (!is.numeric(pCut) || length(pCut) != 1 || pCut <= 0 || pCut >= 1) {
-      stop("pCut must be a single number in (0, 1) or NA.")
-    }
-    graphics::abline(h = -log10(pCut), lty = 2, lwd = 1, col = "red")
-  }
+  graphics::abline(h = -log10(pCut), lty = 2, lwd = 1, col = "red")
 
   invisible(man)
 }
@@ -559,9 +560,11 @@ plot_manhattan <- function(df, outFile, title = NULL,
 # @param outFile Output path (png/jpg/etc).
 # @param title Optional plot title.
 # @param width,height,dpi Device parameters.
+# @param pCut Optional p-value cutoff for highlighting points.
 # @param plotMinP Optional p-value threshold for y-axis compression.
 plot_qq <- function(df, outFile, title = NULL,
                     width = NA_real_, height = NA_real_, dpi = 300,
+                    pCut = 5e-8,
                     plotMinP = NA_real_) {
   if (!requireNamespace("qqman", quietly = TRUE)) {
     stop("Package 'qqman' is required.")
@@ -579,6 +582,10 @@ plot_qq <- function(df, outFile, title = NULL,
   expected <- -log10(stats::ppoints(length(pvals)))
   observed <- -log10(pvals)
 
+  if (!is.numeric(pCut) || length(pCut) != 1 || is.na(pCut) || pCut <= 0 || pCut >= 1) {
+    stop("pCut must be a single number in (0, 1).")
+  }
+
   if (!is.na(plotMinP)) {
     if (!is.numeric(plotMinP) || length(plotMinP) != 1 || plotMinP <= 0 || plotMinP >= 1) {
       stop("plotMinP must be a single number in (0, 1) or NA.")
@@ -591,6 +598,7 @@ plot_qq <- function(df, outFile, title = NULL,
     above_plot_min <- rep(FALSE, length(pvals))
     observed_plot <- observed
   }
+  pass_pcut <- pvals <= pCut
 
   msg("Saving: %s", outFile)
 
@@ -606,7 +614,7 @@ plot_qq <- function(df, outFile, title = NULL,
   graphics::plot(
     expected, observed_plot,
     pch = 20,
-    col = ifelse(above_plot_min, "red", "black"),
+    col = ifelse(above_plot_min | pass_pcut, "red", "black"),
     xlab = expression(Expected~~-log[10](italic(P))),
     ylab = expression(Observed~~-log[10](italic(P))),
     main = title %||% "QQ Plot"
@@ -971,7 +979,8 @@ forest_plot_single_pheno <- function(r, pheno, snp, outFile,
 #' @param width,height,dpi Graphics device parameters passed to `ggsave`.
 #' @param pCut Optional cutoff. When using the combined mode, SNP/phenotype
 #'   pairs with best p below this value are printed to the console and written
-#'   to `<outFile>_pCut.txt`.
+#'   to `<outFile>_pCut.txt`. Points passing this cutoff are highlighted in
+#'   red, and the cutoff is drawn as a Manhattan reference line.
 #' @param plotMinP Optional Manhattan plotting threshold for p-value
 #'   compression. Points with `P < plotMinP` are drawn slightly above
 #'   `-log10(plotMinP)` in red instead of stretching the full y-axis.
@@ -1019,39 +1028,36 @@ mode_big_combined <- function(metaIndex, outFile,
     dplyr::slice_head(n = 1) |>
     dplyr::ungroup()
 
-  # optionally report pairs that beat the user threshold
-  if (!is.na(pCut)) {
-    hits_to_print <- best |>
-      dplyr::filter(!is.na(.data$meta_pval), .data$meta_pval < pCut) |>
-      dplyr::arrange(.data$meta_pval)
+  hits_to_print <- best |>
+    dplyr::filter(!is.na(.data$meta_pval), .data$meta_pval < pCut) |>
+    dplyr::arrange(.data$meta_pval)
 
-    if ("meta_est" %in% names(hits_to_print)) hits_to_print$est <- hits_to_print$meta_est
-    if ("meta_stderr" %in% names(hits_to_print)) hits_to_print$stderr <- hits_to_print$meta_stderr
-    if ("meta_pval" %in% names(hits_to_print)) hits_to_print$pval <- hits_to_print$meta_pval
-    keep_cols <- c("SNP", "est", "stderr", "pval", "feature")
-    keep_cols <- intersect(keep_cols, names(hits_to_print))
-    hits_to_print <- hits_to_print |> dplyr::select(dplyr::all_of(keep_cols))
+  if ("meta_est" %in% names(hits_to_print)) hits_to_print$est <- hits_to_print$meta_est
+  if ("meta_stderr" %in% names(hits_to_print)) hits_to_print$stderr <- hits_to_print$meta_stderr
+  if ("meta_pval" %in% names(hits_to_print)) hits_to_print$pval <- hits_to_print$meta_pval
+  keep_cols <- c("SNP", "est", "stderr", "pval", "feature")
+  keep_cols <- intersect(keep_cols, names(hits_to_print))
+  hits_to_print <- hits_to_print |> dplyr::select(dplyr::all_of(keep_cols))
 
-    if (nrow(hits_to_print) > 0) {
-      msg("SNP/feature pairs with p < %g (best per SNP):", pCut)
-      apply(hits_to_print, 1, function(r) {
-        p_out <- if ("meta_pval" %in% names(r)) as.numeric(r[["meta_pval"]]) else as.numeric(r[["pval"]])
-        msg("  %s\t%s\t%.3e", r[["SNP"]], r[["feature"]], p_out)
-        NULL
-      })
+  if (nrow(hits_to_print) > 0) {
+    msg("SNP/feature pairs with p < %g (best per SNP):", pCut)
+    apply(hits_to_print, 1, function(r) {
+      p_out <- if ("meta_pval" %in% names(r)) as.numeric(r[["meta_pval"]]) else as.numeric(r[["pval"]])
+      msg("  %s\t%s\t%.3e", r[["SNP"]], r[["feature"]], p_out)
+      NULL
+    })
 
-      # save alongside plot, force .txt (strip any existing extension)
-      base_no_ext <- tools::file_path_sans_ext(outFile)
-      list_out <- paste0(base_no_ext, "_pCut.txt")
-      msg("Saving list: %s", list_out)
-      if (requireNamespace("data.table", quietly = TRUE)) {
-        data.table::fwrite(hits_to_print, list_out, sep = "\t")
-      } else {
-        utils::write.table(hits_to_print, list_out, sep = "\t", quote = FALSE, row.names = FALSE)
-      }
+    # save alongside plot, force .txt (strip any existing extension)
+    base_no_ext <- tools::file_path_sans_ext(outFile)
+    list_out <- paste0(base_no_ext, "_pCut.txt")
+    msg("Saving list: %s", list_out)
+    if (requireNamespace("data.table", quietly = TRUE)) {
+      data.table::fwrite(hits_to_print, list_out, sep = "\t")
     } else {
-      msg("No SNP/feature pairs found with p < %g (best per SNP).", pCut)
+      utils::write.table(hits_to_print, list_out, sep = "\t", quote = FALSE, row.names = FALSE)
     }
+  } else {
+    msg("No SNP/feature pairs found with p < %g (best per SNP).", pCut)
   }
 
   plot_manhattan(
@@ -1076,9 +1082,11 @@ mode_big_combined <- function(metaIndex, outFile,
 #' @param qq_width,qq_height Optional QQ plot device width and height.
 #' @param topOutFile Optional output path for top-N hits (ordered by p-value).
 #' @param top_n How many hits to keep if `topOutFile` is provided.
+#' @param pCut Optional p-value cutoff used for the Manhattan reference line
+#'   and for highlighting points in Manhattan and QQ plots.
 #' @param plotMinP Optional plotting threshold for p-value compression in
 #'   Manhattan and QQ plots. Points with `P < plotMinP` are drawn slightly above
-#'   `-log10(plotMinP)` in red instead of stretching the full y-axis.
+#'   `-log10(plotMinP)` and highlighted in red instead of stretching the full y-axis.
 #'
 #' @export
 mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
@@ -1109,6 +1117,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
       width = qq_width,
       height = qq_height,
       dpi = dpi,
+      pCut = pCut,
       plotMinP = plotMinP
     )
   }
@@ -1128,8 +1137,7 @@ mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,
 #' Forest plots for a SNP across all phenotypes, one file per phenotype
 #'
 #' @inheritParams mode_big_combined
-#' @param pCut P-value cutoff used to filter phenotypes for this SNP. Use `NA`
-#'   to disable filtering and keep all phenotypes containing the SNP.
+#' @param pCut P-value cutoff used to filter phenotypes for this SNP.
 #' @param snp SNP ID to plot.
 #' @param ciMult Multiplier for confidence interval width.
 #' @param studyLabels Optional labels replacing study IDs in the legend.
@@ -1158,21 +1166,14 @@ mode_snp_forest_across_phenos <- function(metaIndex, snp, outFile,
     r <- df[df$SNP == snp, , drop = FALSE]
     if (nrow(r) == 0) next
 
-    # optionally filter by significance across phenos
-    if (!is.na(pCut)) {
-      if (!is_sig_row(r[1, , drop = FALSE], pCut = pCut)) next
-    }
+    if (!is_sig_row(r[1, , drop = FALSE], pCut = pCut)) next
 
     r$pheno <- ph
     rows[[length(rows) + 1]] <- r
   }
 
   if (length(rows) == 0) {
-    if (!is.na(pCut)) {
-      stop("No features found (with this SNP) passing significance cutoff. Try pCut=NA or loosen pCut.")
-    } else {
-      stop("No features contain this SNP in result files: ", snp)
-    }
+    stop("No features found (with this SNP) passing significance cutoff. Loosen pCut if needed.")
   }
 
   df_all <- dplyr::bind_rows(rows)

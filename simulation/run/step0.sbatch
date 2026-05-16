@@ -14,7 +14,7 @@ SIF="${SIF:-${WORK}/PALMGWAS.sif}"
 cd "${WORK}"
 
 STUDY="${STUDY:-study1}"
-COVAR_COL_LIST="${COVAR_COL_LIST:-AGE,SEX,PC01,PC02,PC03,PC04,PC05}"
+COV_LIST="${COV_LIST:-AGE,SEX,PC01,PC02,PC03,PC04,PC05}"
 DEPTH_COL="${DEPTH_COL:-NULL}"
 TIME_ID_COL="${TIME_ID_COL:-NULL}"
 DEPTH_FILTER="${DEPTH_FILTER:-0}"
@@ -33,10 +33,10 @@ echo "step0_align_inputs: WORK=${WORK}"
 echo "step0_align_inputs: SIF=${SIF}"
 echo "step0_align_inputs: STUDY=${STUDY}"
 echo "step0_align_inputs: running Step0 alignment"
-echo "step0_align_inputs: covarColList=${COVAR_COL_LIST}"
+echo "step0_align_inputs: covList=${COV_LIST}"
 echo "step0_align_inputs: depthCol=${DEPTH_COL}, depth.filter=${DEPTH_FILTER}"
 echo "step0_align_inputs: timeIDCol=${TIME_ID_COL}"
-echo "step0_align_inputs: SeqDepthInfoFile=${SEQDEPTH_INFO_FILE}"
+echo "step0_align_inputs: seqdepthInfoFile=${SEQDEPTH_INFO_FILE}"
 
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   step0_checkInput.R \
@@ -44,12 +44,12 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   --covFile="${COV_FILE}" \
   --abdAlignedFile="${ABD_ALIGNED_FILE}" \
   --covAlignedFile="${COV_ALIGNED_FILE}" \
-  --covarColList="${COVAR_COL_LIST}" \
+  --covList="${COV_LIST}" \
   --depthCol="${DEPTH_COL}" \
   --timeIDCol="${TIME_ID_COL}" \
   --depth.filter="${DEPTH_FILTER}" \
   --genoFile="${GENO_PREFIX}" \
-  --SeqDepthInfoFile="${SEQDEPTH_INFO_FILE}"
+  --seqdepthInfoFile="${SEQDEPTH_INFO_FILE}"
 
 echo "step0_align_inputs: finished"
 echo "step0_align_inputs: aligned outputs"

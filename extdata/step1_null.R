@@ -14,7 +14,7 @@ option_list <- list(
         type = "character", default = "",
         help = ""
     ),
-    make_option("--covarColList",
+    make_option("--covList",
         type = "character", default = "",
         help = ""
     ),
@@ -45,8 +45,8 @@ opt <- parse_args(OptionParser(option_list = option_list))
 if (is.null(opt$covFile) || !nzchar(opt$covFile) || toupper(opt$covFile) == "NULL") {
   opt$covFile <- NULL
 }
-if (is.null(opt$covarColList) || !nzchar(opt$covarColList) || toupper(opt$covarColList) == "NULL") {
-  opt$covarColList <- NULL
+if (is.null(opt$covList) || !nzchar(opt$covList) || toupper(opt$covList) == "NULL") {
+  opt$covList <- NULL
 }
 if (is.null(opt$depthCol) || !nzchar(opt$depthCol) || toupper(opt$depthCol) == "NULL") {
   opt$depthCol <- NULL
@@ -61,7 +61,7 @@ if (is.null(opt$featureInfoFile) || !nzchar(opt$featureInfoFile) || toupper(opt$
 fitNULL(
   abdFile = opt$abdFile,
   covFile = opt$covFile,
-  covarColList = opt$covarColList,
+  covList = opt$covList,
   depthCol = opt$depthCol,
   clusterCol = opt$clusterCol,
   prev.filter = opt$prev.filter,

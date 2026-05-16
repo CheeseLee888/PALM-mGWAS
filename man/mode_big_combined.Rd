@@ -29,11 +29,12 @@ result files (as produced by step3).}
 
 \item{pCut}{Optional cutoff. When using the combined mode, SNP/phenotype
 pairs with best p below this value are printed to the console and written
-to `<outFile>_pCut.txt`.}
+to `<outFile>_pCut.txt`. Points passing this cutoff are highlighted in
+red, and the cutoff is drawn as a Manhattan reference line.}
 
 \item{plotMinP}{Optional Manhattan plotting threshold for p-value
 compression. Points with `P < plotMinP` are drawn slightly above
-`-log10(plotMinP)` in red instead of stretching the full y-axis.}
+`-log10(plotMinP)` and highlighted in red instead of stretching the full y-axis.}
 }
 \value{
 Invisibly returns the data frame passed to `qqman::manhattan()`.

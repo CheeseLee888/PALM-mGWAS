@@ -28,8 +28,7 @@ result files (as produced by step3).}
 
 \item{outFile}{Path to the output JPEG.}
 
-\item{pCut}{P-value cutoff used to filter phenotypes for this SNP. Use `NA`
-to disable filtering and keep all phenotypes containing the SNP.}
+\item{pCut}{P-value cutoff used to filter phenotypes for this SNP.}
 
 \item{ciMult}{Multiplier for confidence interval width.}
 

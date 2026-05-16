@@ -34,9 +34,7 @@
 #'   `maxMissing`. Supported values are `"best_guess"` (most frequent observed
 #'   genotype, with mean dosage tie-break), `"mean"` (mean observed dosage), and
 #'   `"minor"` (homozygous minor-allele genotype inferred from observed allele
-#'   frequency). Use `"false"` to skip imputation; remaining missing genotype
-#'   values are left as missing after the `maxMissing` SNP-level filter.
-#'   Defaults to `"best_guess"`.
+#'   frequency). Defaults to `"best_guess"`.
 #' @param snpInfoFile Optional output path for SNP sample count and allele
 #'   frequency computed from the Step2 genotype matrix after NULL-model sample
 #'   alignment, optional chromosome subsetting, missingness filtering,
@@ -99,8 +97,8 @@ getSummary <- function(genoFile,
   if (is.na(impute_method) || !nzchar(impute_method) || identical(toupper(impute_method), "NULL")) {
     impute_method <- "best_guess"
   }
-  if (!impute_method %in% c("best_guess", "mean", "minor", "false")) {
-    stop("'impute_method' must be one of 'best_guess', 'mean', 'minor', or 'false'.")
+  if (!impute_method %in% c("best_guess", "mean", "minor")) {
+    stop("'impute_method' must be one of 'best_guess', 'mean', or 'minor'.")
   }
   output_dir <- dirname(outputPrefix)
   if (!output_dir %in% c("", ".")) {
@@ -252,7 +250,7 @@ getSummary <- function(genoFile,
   message("Missing genotype imputation method: ", impute_method)
   message(
     "Genotype QC order: load genotype -> align NULL-model samples -> chromosome filter -> ",
-    "compute MissingRate -> maxMissing filter -> impute unless impute_method=false -> ",
+    "compute MissingRate -> maxMissing filter -> impute remaining missing genotypes -> ",
     "minMAF/minMAC filter -> write snpInfoFile -> PALM summary."
   )
   if (is.null(correct)) {
@@ -304,11 +302,11 @@ getSummary <- function(genoFile,
         length(unique(cluster[!is.na(cluster) & nzchar(trimws(cluster))])) <= 1L
       if (invalid_fid) {
         if (repeated_null_subjects) {
-          message("PLINK FID values are not informative. Longitudinal clustering will use subject ID.")
+          warning("PLINK FID values are not informative. Longitudinal clustering will use subject ID.", call. = FALSE)
           cluster <- NULL
           cluster_source <- NULL
         } else {
-          message("PLINK FID values are all 0, missing, or identical. No family/pedigree clustering will be used.")
+          warning("PLINK FID values are all 0, missing, or identical. No family/pedigree clustering will be used.", call. = FALSE)
           cluster <- NULL
           cluster_source <- NULL
         }
@@ -426,13 +424,7 @@ getSummary <- function(genoFile,
   missing_rate_for_info <- missing_rate
 
   na_count <- sum(is.na(geno))
-  if (na_count > 0L && identical(impute_method, "false")) {
-    message(
-      "Missing genotype imputation disabled by impute_method=false; retaining ",
-      na_count,
-      " missing genotype value(s)."
-    )
-  } else if (na_count > 0L) {
+  if (na_count > 0L) {
     message("Imputing ", na_count, " missing genotype value(s) using method: ", impute_method)
     for (j in seq_len(ncol(geno))) {
       miss <- is.na(geno[, j])

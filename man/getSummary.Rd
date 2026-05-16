@@ -59,9 +59,7 @@ to `0.15`. Use `1` to disable missingness filtering.}
 `maxMissing`. Supported values are `"best_guess"` (most frequent observed
 genotype, with mean dosage tie-break), `"mean"` (mean observed dosage), and
 `"minor"` (homozygous minor-allele genotype inferred from observed allele
-frequency). Use `"false"` to skip imputation; remaining missing genotype
-values are left as missing after the `maxMissing` SNP-level filter.
-Defaults to `"best_guess"`.}
+frequency). Defaults to `"best_guess"`.}
 
 \item{snpInfoFile}{Optional output path for SNP sample count and allele
 frequency computed from the Step2 genotype matrix after NULL-model sample

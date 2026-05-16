@@ -17,6 +17,7 @@ mode_pheno_manhattan(
   qq_height = NA_real_,
   topOutFile = NULL,
   top_n = 10,
+  pCut = 5e-08,
   plotMinP = NA_real_
 )
 }
@@ -39,6 +40,9 @@ result files (as produced by step3).}
 \item{topOutFile}{Optional output path for top-N hits (ordered by p-value).}
 
 \item{top_n}{How many hits to keep if `topOutFile` is provided.}
+
+\item{pCut}{Optional p-value cutoff used for the Manhattan reference line
+and for highlighting points in Manhattan and QQ plots.}
 
 \item{plotMinP}{Optional Manhattan plotting threshold for p-value
 compression. Points with `P < plotMinP` are drawn slightly above

@@ -41,13 +41,13 @@ option_list <- list(
   make_option(c("--snp"), type = "character", default = NA,
               help = "SNP ID, e.g. chr1:123:A:G (must match SNP column exactly)"),
   make_option(c("--pCut"), type = "character", default = "5e-8",
-              help = "When neither --feature nor --snp is given, print SNP/feature pairs whose best p across features is below this cutoff; when only --snp is given, filter features by this cutoff before writing one forest plot per feature. Use NA to disable filtering/printing [default %default]"),
+              help = "P-value cutoff for Manhattan reference lines, Manhattan/QQ point highlighting, combined hit output, and SNP-only forest filtering [default %default]"),
   make_option(c("--width"), type = "character", default = NA_character_,
               help = "Plot width inches; NA lets the script auto-size"),
   make_option(c("--height"), type = "character", default = NA_character_,
               help = "Plot height inches; NA lets the script auto-size"),
   make_option(c("--plotMinP"), type = "character", default = "NA",
-              help = "Optional Manhattan and QQ plotting threshold for p-value compression; points with P < plotMinP are compressed near the threshold and colored red instead of stretching the full y-axis. Use NA to disable compression")
+              help = "Optional Manhattan and QQ plotting threshold for p-value compression; points with P < plotMinP are compressed near the threshold and colored red. Use NA to disable compression")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -75,13 +75,16 @@ parse_dim <- function(x) {
 }
 
 parse_pcut <- function(x) {
-  if (is.null(x) || length(x) == 0) return(NA_real_)
-  if (is.na(x)) return(NA_real_)
+  if (is.null(x) || length(x) == 0 || is.na(x)) {
+    stop("--pCut must be a number in (0, 1).")
+  }
   up <- toupper(trimws(as.character(x)))
-  if (up %in% c("", "NA", "NULL")) return(NA_real_)
+  if (up %in% c("", "NA", "NULL")) {
+    stop("--pCut must be a number in (0, 1).")
+  }
   val <- suppressWarnings(as.numeric(x))
-  if (is.na(val)) {
-    stop("--pCut must be numeric or NA.")
+  if (is.na(val) || val <= 0 || val >= 1) {
+    stop("--pCut must be a number in (0, 1).")
   }
   val
 }
@@ -118,7 +121,8 @@ metaIndex <- discover_meta_files(inputPrefix)
 feature <- if (!is.na(opt$feature)) opt$feature else NULL
 snp   <- if (!is.na(opt$snp)) opt$snp else NULL
 
-if (arg_supplied("pCut") && !is.null(feature) && !is.null(snp)) {
+user_supplied_pcut <- arg_supplied("pCut")
+if (user_supplied_pcut && !is.null(feature) && !is.null(snp)) {
   stop("--pCut is ignored when both --feature and --snp are specified.")
 }
 
@@ -127,7 +131,7 @@ if (arg_supplied("pCut") && !is.null(feature) && !is.null(snp)) {
 msg("InputPrefix: %s", inputPrefix)
 msg("OutputPrefix: %s", outputPrefix)
 msg("Found %d feature(s) across %d result file(s).", nrow(metaIndex), sum(lengths(metaIndex$files)))
-msg("Resolved pCut: %s", if (is.na(p_cut)) "NA" else format(p_cut, scientific = TRUE))
+msg("Resolved pCut: %s", format(p_cut, scientific = TRUE))
 msg("Resolved plotMinP: %s", if (is.na(plot_min_p)) "NA" else format(plot_min_p, scientific = TRUE))
 msg("Resolved width x height: %s x %s", if (is.na(width_in)) "auto" else as.character(width_in), if (is.na(height_in)) "auto" else as.character(height_in))
 
@@ -138,7 +142,7 @@ if (is.null(feature) && is.null(snp)) {
   dir.create(dirname(outFile), recursive = TRUE, showWarnings = FALSE)
   msg("Output file/base: %s", outFile)
   msg("Reporting mode: combined Manhattan across phenotypes.")
-  msg("Mode A behavior: pCut %s", if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)))
+  msg("Mode A behavior: pCut reference/highlighting enabled at %s", format(p_cut, scientific = TRUE))
   mode_big_combined(
     metaIndex = metaIndex,
     outFile = outFile,
@@ -157,7 +161,7 @@ if (is.null(feature) && is.null(snp)) {
   msg("Output file/base: %s", outFile)
   msg("QQ output file: %s", qq_out)
   msg("Reporting mode: Manhattan and qq for feature %s.", feature)
-  msg("Mode B behavior: pCut reference line %s", if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)))
+  msg("Mode B behavior: pCut reference/highlighting enabled at %s", format(p_cut, scientific = TRUE))
   # keep auxiliary outputs aligned with main outFile
   base_no_ext <- sub("\\.[^.]+$", "", outFile)
   top_out <- paste0(base_no_ext, "_top10.txt")
@@ -181,7 +185,7 @@ if (is.null(feature) && is.null(snp)) {
   msg("Output file/base: %s", outFile)
   msg("Reporting mode: per-phenotype forest plots for SNP %s.", snp)
   msg("Mode C behavior: pCut %s; one file is generated for each retained phenotype.",
-      if (is.na(p_cut)) "disabled" else paste0("enabled at ", format(p_cut, scientific = TRUE)))
+      paste0("enabled at ", format(p_cut, scientific = TRUE)))
   if (!is.na(plot_min_p)) {
     msg("Mode C behavior: plotMinP is ignored in this mode.")
   }
@@ -202,7 +206,9 @@ if (is.null(feature) && is.null(snp)) {
   dir.create(dirname(outFile), recursive = TRUE, showWarnings = FALSE)
   msg("Output file/base: %s", outFile)
   msg("Reporting mode: forest for feature %s and SNP %s.", feature, snp)
-  msg("Mode D behavior: pCut is ignored in this mode.")
+  if (user_supplied_pcut) {
+    msg("Mode D behavior: pCut is ignored in this mode.")
+  }
   if (!is.na(plot_min_p)) {
     msg("Mode D behavior: plotMinP is ignored in this mode.")
   }

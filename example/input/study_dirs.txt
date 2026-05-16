@@ -1,3 +1,0 @@
-America  example/output/study1
-Asia     example/output/study2
-Europe   example/output/study3

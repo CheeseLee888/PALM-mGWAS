@@ -10,9 +10,8 @@ set -euo pipefail
 WORK="${WORK:-${SLURM_SUBMIT_DIR:-$PWD}}"
 SIF="${SIF:-${WORK}/PALMGWAS.sif}"
 META_DIR="${META_DIR:-${WORK}/output/meta}"
-STUDY_FILE="${STUDY_FILE:-${META_DIR}/study_dirs.tsv}"
+INPUT_PREFIX_FILE="${INPUT_PREFIX_FILE:-${META_DIR}/input_prefixes.tsv}"
 OUTPUT_PREFIX="${OUTPUT_PREFIX:-${META_DIR}/step3_meta}"
-STEP3_INPUT_PREFIX="step2"
 STEP3_CHROM="${STEP3_CHROM:-NULL}"
 
 cd "${WORK}"
@@ -27,18 +26,16 @@ if [[ "${STEP3_CHROM}" != "NULL" && ! "${STEP3_CHROM}" =~ ^([1-9]|1[0-9]|2[0-2])
 fi
 
 echo "run_step3_meta: WORK = ${WORK}"
-echo "run_step3_meta: study dir file = ${STUDY_FILE}"
+echo "run_step3_meta: input prefix file = ${INPUT_PREFIX_FILE}"
 echo "run_step3_meta: meta dir = ${META_DIR}"
 echo "run_step3_meta: output prefix = ${OUTPUT_PREFIX}"
-echo "run_step3_meta: input prefix = ${STEP3_INPUT_PREFIX}"
 echo "run_step3_meta: chrom = ${STEP3_CHROM}"
 echo "run_step3_meta: featureList = NULL (all features)"
 
 CMD=(
   apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}"
   step3_meta.R
-  --studyDirFile="${STUDY_FILE}"
-  --inputPrefix="${STEP3_INPUT_PREFIX}"
+  --inputPrefixFile="${INPUT_PREFIX_FILE}"
   --chrom="${STEP3_CHROM}"
   --outputPrefix="${OUTPUT_PREFIX}"
   --featureList=NULL

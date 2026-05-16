@@ -5,6 +5,18 @@ suppressPackageStartupMessages({
   library(optparse)
 })
 
+args_all <- commandArgs(trailingOnly = FALSE)
+file_arg <- grep("^--file=", args_all, value = TRUE)
+if (length(file_arg)) {
+  script_path <- normalizePath(sub("^--file=", "", file_arg[[1L]]), mustWork = FALSE)
+  local_r_dir <- file.path(dirname(script_path), "..", "R")
+  for (local_impl in file.path(local_r_dir, c("utils.R", "genoInput.R", "generateInfo.R", "getSummary.R"))) {
+    if (file.exists(local_impl)) {
+      source(local_impl)
+    }
+  }
+}
+
 option_list <- list(
     make_option("--genoFile",
         type = "character", default = "",

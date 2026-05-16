@@ -9,7 +9,7 @@
 #'   By default, all non-ID columns in `abdFile` are used.
 #' @param covFile Optional path to covariate table with matching subject IDs.
 #'   Use `NULL` (default) to fit without covariates.
-#' @param covarColList Optional covariate column names to keep from `covFile`.
+#' @param covList Optional covariate column names to keep from `covFile`.
 #'   Accepts either a character vector or a single comma-separated string.
 #'   By default, all non-ID columns in `covFile` are used. If `depthCol` is
 #'   provided, it is excluded from the covariate-adjustment matrix.
@@ -32,7 +32,7 @@
 fitNULL <- function(abdFile,
                     phenoColList = NULL,
                     covFile = NULL,
-                    covarColList = NULL,
+                    covList = NULL,
                     depthCol = NULL,
                     clusterCol = NULL,
                     prev.filter = 0.1,
@@ -48,8 +48,8 @@ fitNULL <- function(abdFile,
   if (!file.exists(abdFile)) {
     stop("'abdFile' does not exist: ", abdFile)
   }
-  if (is.null(covFile) && !is.null(covarColList)) {
-    stop("'covarColList' requires a non-NULL 'covFile'.")
+  if (is.null(covFile) && !is.null(covList)) {
+    stop("'covList' requires a non-NULL 'covFile'.")
   }
   if (is.null(covFile) && !is.null(depthCol)) {
     stop("'depthCol' requires a non-NULL 'covFile'.")
@@ -210,20 +210,20 @@ fitNULL <- function(abdFile,
       prev.filter = prev.filter
     )
   } else {
-    covarColList <- normalize_col_list(covarColList, "covarColList")
-    if (!is.null(covarColList)) {
-      message("Requested covariate columns from covarColList: ", format_name_list(covarColList))
-      missing_cols <- setdiff(covarColList, colnames(cov))
+    covList <- normalize_col_list(covList, "covList")
+    if (!is.null(covList)) {
+      message("Requested covariate columns from covList: ", format_name_list(covList))
+      missing_cols <- setdiff(covList, colnames(cov))
       if (length(missing_cols) > 0) {
         stop(
           "Requested covariate column(s) not found in 'covFile': ",
           paste(missing_cols, collapse = ", ")
         )
       }
-      cov <- cov[, covarColList, drop = FALSE]
-      message("Covariate columns after covarColList selection: ", format_name_list(colnames(cov)))
+      cov <- cov[, covList, drop = FALSE]
+      message("Covariate columns after covList selection: ", format_name_list(colnames(cov)))
     } else {
-      message("covarColList is NULL: starting from all covariate columns in covFile.")
+      message("covList is NULL: starting from all covariate columns in covFile.")
     }
     if (!is.null(depthCol) && depthCol %in% colnames(cov)) {
       cov <- cov[, setdiff(colnames(cov), depthCol), drop = FALSE]

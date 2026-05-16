@@ -16,10 +16,8 @@ if (length(file_arg)) {
 }
 
 option_list <- list(
-  make_option("--studyDirFile", type="character", default="",
-              help="txt: each line 'studyID<TAB>dir'"),
-  make_option("--inputPrefix", type="character", default="",
-              help="Shared Step2 base prefix [default %default]"),
+  make_option("--inputPrefixFile", type="character", default="",
+              help="txt: each line 'studyID<TAB>step2Prefix'"),
   make_option("--chrom", type="character", default="NULL",
               help="Step2 scope: NULL for allchr, or 1..22 [default %default]"),
   make_option("--featureList", type="character", default="NULL",
@@ -32,17 +30,16 @@ option_list <- list(
 
 opt <- parse_args(OptionParser(option_list = option_list))
 
-if (!nzchar(opt$studyDirFile) || !file.exists(opt$studyDirFile))
-  stop("Missing/invalid --studyDirFile")
-if (!nzchar(opt$inputPrefix))
-  stop("Missing --inputPrefix")
 if (!nzchar(opt$outputPrefix))
   stop("Missing --outputPrefix")
 
-# read studyDirFile (studyID \t dir)
-sd <- read.table(opt$studyDirFile, header = FALSE, sep = "", stringsAsFactors = FALSE)
-if (ncol(sd) < 2) stop("studyDirFile must have >=2 columns: studyID and dir")
-study_dirs <- setNames(as.character(sd[[2]]), as.character(sd[[1]]))
+if (!nzchar(opt$inputPrefixFile) || !file.exists(opt$inputPrefixFile)) {
+  stop("Missing/invalid --inputPrefixFile")
+}
+sd <- read.table(opt$inputPrefixFile, header = FALSE, sep = "", stringsAsFactors = FALSE)
+if (ncol(sd) < 2) stop("inputPrefixFile must have >=2 columns: studyID and Step2 prefix")
+input_prefixes <- setNames(as.character(sd[[2]]), as.character(sd[[1]]))
+study_dirs <- setNames(dirname(input_prefixes), names(input_prefixes))
 
 meta_out_dir <- dirname(opt$outputPrefix)
 meta_out_prefix <- sub("_+$", "", basename(opt$outputPrefix))
@@ -67,7 +64,7 @@ if (!nzchar(chrom_flag) || toupper(chrom_flag) == "NULL") {
 
 metaSummary(
   study_dirs = study_dirs,
-  inputPrefix = opt$inputPrefix,
+  inputPrefix = input_prefixes,
   chrom = opt$chrom,
   featureList = feature_subset,
   out_dir    = meta_out_dir,

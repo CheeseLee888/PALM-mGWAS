@@ -19,9 +19,10 @@ metaSummary(
 \arguments{
 \item{study_dirs}{Named character vector/list. Names are study IDs, values are directories.}
 
-\item{inputPrefix}{Shared Step2 base prefix. Files are expected at
-`<inputPrefix>_chr<chrom>_<feature>.txt` when `chrom` is set, or
-`<inputPrefix>_allchr_<feature>.txt` when `chrom` is `NULL`. An optional
+\item{inputPrefix}{Shared Step2 base prefix, or a named vector/list of
+study-specific Step2 prefixes. Files are expected at
+`<prefix>_chr<chrom>_<feature>.txt` when `chrom` is set, or
+`<prefix>_allchr_<feature>.txt` when `chrom` is `NULL`. An optional
 trailing underscore is ignored.}
 
 \item{chrom}{Optional chromosome selector. Use `NULL` to meta-analyze
