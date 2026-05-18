@@ -136,7 +136,7 @@
 
   <h3 id="install-docker">Option A: Docker image</h3>
   <pre><code class="language-bash"># pull the published image
-docker pull --platform=linux/amd64 cheeselee/palmgwas:latest
+docker pull --platform=linux/amd64 cheeselee/palmgwas:1.0
 
 # enter the repository example directory
 cd /path/to/PALMGWAS
@@ -144,8 +144,9 @@ cd /path/to/PALMGWAS
 # run a packaged script inside the container
 docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
+  cheeselee/palmgwas:1.0 \
   step1_null.R --help</code></pre>
+  <p>For publications and reproducible analyses, use a versioned Docker tag such as <code>cheeselee/palmgwas:1.0</code>. The <code>cheeselee/palmgwas:latest</code> tag can be used as a convenience option when you intentionally want the newest published image.</p>
   <p>This published Docker image already contains PALMGWAS and its R package dependencies, so Docker users do not need to repeat the local source installation steps from Option B or Option C. Mount your local project directory to <code>/work</code> and pass paths under <code>/work</code>, such as <code>/work/example/input/study1/abd.txt</code>. The Docker image supplies the scripts and runtime; the data files are read from and written to your mounted local directory.</p>
 
   <h3 id="install-pixi">Option B: pixi source installation</h3>
@@ -157,7 +158,7 @@ curl -fsSL https://pixi.sh/install.sh | bash
 export PATH="$HOME/.pixi/bin:$PATH"
 
 # clone the repository and enter the source tree
-git clone git@github.com:CheeseLee888/PALMGWAS.git
+git clone https://github.com/CheeseLee888/PALMGWAS.git
 cd PALMGWAS
 
 # create the base pixi environment
@@ -177,7 +178,7 @@ pixi run R CMD INSTALL .</code></pre>
   <h3 id="install-r">Option C: local R source installation without pixi</h3>
   <p>Use this method only if you want to manage R and compiled libraries yourself. Compared with pixi, this mode requires manual package installation and manual control of BLAS/LAPACK compatibility. Install all dependencies into the same R library that will be used when running <code>Rscript</code>.</p>
   <pre><code class="language-bash"># clone the repository and enter the source tree
-git clone git@github.com:CheeseLee888/PALMGWAS.git
+git clone https://github.com/CheeseLee888/PALMGWAS.git
 cd PALMGWAS
 
 # install CRAN dependencies into your active R library
@@ -202,16 +203,16 @@ Rscript -e 'library(PALM); library(PALMGWAS); library(snpStats); cat("PALMGWAS l
   <pre><code class="language-bash"># Option D1: build the Docker image locally from this repository
 DOCKER_DEFAULT_PLATFORM=linux/amd64 \
 docker buildx build --platform linux/amd64 \
-  -t palmgwas:latest --load \
+  -t palmgwas:1.0 --load \
   -f docker/Dockerfile .
 
 # Option D2: or use the published Docker image
-docker pull --platform=linux/amd64 cheeselee/palmgwas:latest
+docker pull --platform=linux/amd64 cheeselee/palmgwas:1.0
 
 # save one of the Docker images as an archive
-docker save cheeselee/palmgwas:latest -o PALMGWAS.tar
+docker save cheeselee/palmgwas:1.0 -o PALMGWAS.tar
 # or, if you built the local image above:
-docker save palmgwas:latest -o PALMGWAS.tar
+docker save palmgwas:1.0 -o PALMGWAS.tar
 
 # convert the Docker archive to an Apptainer/SIF image
 docker run --rm -it --privileged \
@@ -223,7 +224,7 @@ docker run --rm -it --privileged \
   <p>Copy <code>PALMGWAS.sif</code> to the cluster project directory and run workflow scripts with <code>apptainer exec</code>. The simulation workflow under <code>simulation/</code> uses this SIF image when submitting the provided <code>.sbatch</code> scripts. Those templates expect the default image path <code>${WORK}/PALMGWAS.sif</code>, or you can override it by setting <code>SIF=/path/to/PALMGWAS.sif</code>.</p>
 
   <h2 id="workflow">Workflow</h2>
-  <p>Run the packaged command-line interface (CLI) directly after completing the installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALMGWAS</code> package root. Figure 1 summarizes the Step0-Step3 association workflow; Step4 adds downstream reporting.</p>
+  <p>Run the packaged command-line scripts directly after completing the installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALMGWAS</code> package root. Figure 1 summarizes the Step0-Step3 association workflow; Step4 adds downstream reporting.</p>
   <figure class="workflow-figure">
     <img src="assets/fig1.png" alt="PALMGWAS workflow overview">
     <figcaption>Figure 1. Overview of the Step0-Step3 association workflow.</figcaption>
@@ -268,7 +269,7 @@ docker run --rm -it --privileged \
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
     <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Step0-aligned abundance table used to fit the null model. The first column must be subject ID, and the remaining columns are numeric abundance features</td></tr>
     <tr><td><strong><code>--nullModelPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for the fitted PALM null model, not a complete filename. Step1 writes <code>${nullModelPrefix}.rda</code>; if <code>.rda</code> is supplied accidentally, it is normalized back to the prefix</td></tr>
-    <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional aligned covariate file; the CLI also accepts empty string or <code>NULL</code> to omit covariates</td></tr>
+    <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional aligned covariate file; the command-line scripts also accept empty string or <code>NULL</code> to omit covariates</td></tr>
     <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code>; names must match the header exactly. If omitted or set to <code>NULL</code> while <code>covFile</code> is provided, Step1 uses all covariate columns in <code>covFile</code> except <code>depthCol</code> and <code>clusterCol</code>. If <code>covFile=NULL</code>, Step1 fits the null model without covariates</td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as sequencing depth; if omitted, sequencing depth is computed from row sums of <code>abdFile</code>. This column is not used as an adjustment covariate</td></tr>
     <tr><td><code>--clusterCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as the Step2.1 cluster ID. This column is saved in the null model; see Step0 for the meaning of <code>--clusterCol</code></td></tr>
@@ -409,7 +410,7 @@ ID_004	-0.848477219368992	1	0.0108307	-0.00694051	-0.000638697	-0.0077418	0.0011
 America  example/output/study1/step2
 Asia     example/output/study2/step2
 Europe   example/output/study3/step2</code></pre>
-  <p>This file lists the studies included in the example meta-analysis and each study's Step2 output prefix. Each line maps one study label to one prefix; the label is used in Step3 output column names and does not need to match the folder name. Whitespace separation is accepted by the current CLI.</p>
+  <p>This file lists the studies included in the example meta-analysis and each study's Step2 output prefix. Each line maps one study label to one prefix; the label is used in Step3 output column names and does not need to match the folder name. Whitespace separation is accepted by the current command-line scripts.</p>
   <pre><code class="language-tsv"># file: example/input/input_prefixes_docker.txt
 America  /work/example/output/study1/step2
 Asia     /work/example/output/study2/step2
@@ -439,7 +440,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --seqdepthInfoFile=NULL</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
+  cheeselee/palmgwas:1.0 \
   step0_checkInput.R \
     --abdFile=/work/example/input/study1/abd.txt \
     --covFile=/work/example/input/study1/cov.txt \
@@ -479,7 +480,7 @@ ID_004	318</code></pre>
     --nullModelPrefix=example/output/study1/step1_allpheno</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
+  cheeselee/palmgwas:1.0 \
   step1_null.R \
     --abdFile=/work/example/input/study1/abd_aligned.txt \
     --covFile=/work/example/input/study1/cov_aligned.txt \
@@ -515,7 +516,7 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --snpInfoFile=NULL</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
+  cheeselee/palmgwas:1.0 \
   step2_1_summary.R \
     --genoFile=/work/example/input/study1/geno \
     --nullModelPrefix=/work/example/output/study1/step1_allpheno \
@@ -538,7 +539,7 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --correct=median</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
+  cheeselee/palmgwas:1.0 \
   step2_2_correction.R \
     --inputPrefix=/work/example/output/study1/step2 \
     --chrom=NULL \
@@ -575,7 +576,7 @@ chr1:14985097:C:T	1	14985097	100	0.111742358350986	0.113523070073392	0.324961099
     --outputPrefix=example/output/meta/meta</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
+  cheeselee/palmgwas:1.0 \
   step3_meta.R \
     --inputPrefixFile=/work/example/input/input_prefixes_docker.txt \
     --chrom=NULL \
@@ -602,7 +603,7 @@ chr1:14678191:A:C	1	14678191	-0.184697893992603	0.0333318764894014	3.00441911000
     --pCut=5e-8</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
+  cheeselee/palmgwas:1.0 \
   step4_reporting.R \
     --inputPrefix=/work/example/output/meta \
     --outputPrefix=/work/example/output/plot/step4 \
@@ -625,7 +626,7 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
     --feature=g_Bifidobacterium</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
+  cheeselee/palmgwas:1.0 \
   step4_reporting.R \
     --inputPrefix=/work/example/output/meta \
     --outputPrefix=/work/example/output/plot/step4 \
@@ -652,7 +653,7 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
     --pCut=5e-8</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
+  cheeselee/palmgwas:1.0 \
   step4_reporting.R \
     --inputPrefix=/work/example/output/meta \
     --outputPrefix=/work/example/output/plot/step4 \
@@ -673,7 +674,7 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
     --snp=chr1:14678191:A:C</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
-  cheeselee/palmgwas:latest \
+  cheeselee/palmgwas:1.0 \
   step4_reporting.R \
     --inputPrefix=/work/example/output/meta \
     --outputPrefix=/work/example/output/plot/step4 \
