@@ -15,7 +15,7 @@ option_list <- list(
               help = "Output path for aligned abundance table"),
   make_option("--covAlignedFile", type = "character",
               help = "Output path for aligned covariate table"),
-  make_option("--covList", type = "character", default = "NULL",
+  make_option("--covarColList", type = "character", default = "NULL",
               help = "Optional comma-separated covariate columns used in Step1; if NULL, all non-ID covariate columns are used. Samples missing these columns are removed [default %default]"),
   make_option("--depthCol", type = "character", default = "NULL",
               help = "Optional covariate column name used as sequencing depth [default %default]"),
@@ -188,7 +188,7 @@ cat(
 if (is.null(opt$seqdepthInfoFile) || !nzchar(opt$seqdepthInfoFile) || toupper(opt$seqdepthInfoFile) == "NULL") {
   opt$seqdepthInfoFile <- NULL
 }
-opt$covList <- normalize_col_list(opt$covList, "covList")
+opt$covarColList <- normalize_col_list(opt$covarColList, "covarColList")
 opt$depthCol <- normalize_col_list(opt$depthCol, "depthCol")
 if (!is.null(opt$depthCol) && length(opt$depthCol) != 1L) {
   stop("'depthCol' must specify exactly one column name.")
@@ -205,16 +205,16 @@ if (!is.numeric(opt$depth.filter) || length(opt$depth.filter) != 1L || is.na(opt
   stop("--depth.filter must be a single non-negative numeric value.")
 }
 
-if (is.null(opt$covList)) {
-  opt$covList <- default_covariate_cols(cov_df, opt$timeIDCol)
-  if (length(opt$covList) > 0L) {
-    cat("covList not provided: defaulting to all covariate columns in covFile.\n")
+if (is.null(opt$covarColList)) {
+  opt$covarColList <- default_covariate_cols(cov_df, opt$timeIDCol)
+  if (length(opt$covarColList) > 0L) {
+    cat("covarColList not provided: defaulting to all covariate columns in covFile.\n")
   } else {
-    cat("covList not provided: covFile has no non-ID covariate columns.\n")
+    cat("covarColList not provided: covFile has no non-ID covariate columns.\n")
   }
 }
 
-required_cov_cols <- unique(c(opt$covList, opt$depthCol, opt$clusterCol))
+required_cov_cols <- unique(c(opt$covarColList, opt$depthCol, opt$clusterCol))
 missing_cov_cols <- setdiff(required_cov_cols, colnames(cov_df))
 if (length(missing_cov_cols) > 0L) {
   stop("Required covariate column(s) not found in covFile: ", paste(missing_cov_cols, collapse = ", "))

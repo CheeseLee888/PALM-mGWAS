@@ -33,7 +33,7 @@ echo "step0_align_inputs: WORK=${WORK}"
 echo "step0_align_inputs: SIF=${SIF}"
 echo "step0_align_inputs: STUDY=${STUDY}"
 echo "step0_align_inputs: running Step0 alignment"
-echo "step0_align_inputs: covList=${COV_LIST}"
+echo "step0_align_inputs: covarColList=${COV_LIST}"
 echo "step0_align_inputs: depthCol=${DEPTH_COL}, depth.filter=${DEPTH_FILTER}"
 echo "step0_align_inputs: timeIDCol=${TIME_ID_COL}"
 echo "step0_align_inputs: seqdepthInfoFile=${SEQDEPTH_INFO_FILE}"
@@ -44,7 +44,7 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   --covFile="${COV_FILE}" \
   --abdAlignedFile="${ABD_ALIGNED_FILE}" \
   --covAlignedFile="${COV_ALIGNED_FILE}" \
-  --covList="${COV_LIST}" \
+  --covarColList="${COV_LIST}" \
   --depthCol="${DEPTH_COL}" \
   --timeIDCol="${TIME_ID_COL}" \
   --depth.filter="${DEPTH_FILTER}" \

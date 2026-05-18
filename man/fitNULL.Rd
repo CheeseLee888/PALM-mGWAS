@@ -8,7 +8,7 @@ fitNULL(
   abdFile,
   phenoColList = NULL,
   covFile = NULL,
-  covList = NULL,
+  covarColList = NULL,
   depthCol = NULL,
   clusterCol = NULL,
   prev.filter = 0.1,
@@ -26,7 +26,7 @@ By default, all non-ID columns in `abdFile` are used.}
 \item{covFile}{Optional path to covariate table with matching subject IDs.
 Use `NULL` (default) to fit without covariates.}
 
-\item{covList}{Optional covariate column names to keep from `covFile`.
+\item{covarColList}{Optional covariate column names to keep from `covFile`.
 Accepts either a character vector or a single comma-separated string.
 By default, all non-ID columns in `covFile` are used. If `depthCol` is
 provided, it is excluded from the covariate-adjustment matrix.}

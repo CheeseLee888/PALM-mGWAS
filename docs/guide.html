@@ -241,7 +241,7 @@ docker run --rm -it --privileged \
     <tr><td><strong><code>--abdAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned abundance table; original input is not overwritten</td></tr>
     <tr><td><strong><code>--covAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned covariate table; original input is not overwritten</td></tr>
     <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the subject-order reference. Accepted values are a PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code>. For VCF, Step0 reads subject IDs from the sample columns in the <code>#CHROM</code> header line, checks that every retained subject is present, ignores extra VCF-only subjects, and reorders aligned rows by that VCF subject-column order</td></tr>
-    <tr><td><code>--covList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated covariate columns required by Step1. Step0 uses these columns only for missingness-based sample filtering before ID matching. It does not remove other columns from <code>covAlignedFile</code>. If omitted or set to <code>NULL</code>, all non-ID columns in <code>covFile</code> are checked for missingness</td></tr>
+    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated covariate columns required by Step1. Step0 uses these columns only for missingness-based sample filtering before ID matching. It does not remove other columns from <code>covAlignedFile</code>. If omitted or set to <code>NULL</code>, all non-ID columns in <code>covFile</code> are checked for missingness</td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td></tr>
     <tr><td><code>--timeIDCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Visit/time column required only when <code>abdFile</code> has repeated subject IDs. Step0 uses it to match abundance and covariate rows, then removes it from the aligned output files</td></tr>
     <tr><td><code>--clusterCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional family/pedigree cluster column in <code>covFile</code>. Use the same value in Step0 and Step1 when family or pedigree clustering should be used. Leave <code>NULL</code> when there is no family/pedigree cluster column</td></tr>
@@ -252,8 +252,8 @@ docker run --rm -it --privileged \
   <ul>
     <li>For one row per subject, set <code>--timeIDCol=NULL</code>.</li>
     <li>For longitudinal abundance data with repeated subject IDs, set <code>--timeIDCol</code> to the visit/time column, such as <code>--timeIDCol=VISIT</code>.</li>
-    <li>Use <code>--covList=NULL</code> if all covariate columns should be checked for missingness before modeling.</li>
-    <li>Use <code>--covList=AGE,SEX,PC01</code> if only selected covariates should be required to be non-missing.</li>
+    <li>Use <code>--covarColList=NULL</code> if all covariate columns should be checked for missingness before modeling.</li>
+    <li>Use <code>--covarColList=AGE,SEX,PC01</code> if only selected covariates should be required to be non-missing.</li>
     <li>Use <code>--depthCol=SeqDepth</code> if sequencing depth is already included in the covariate file; otherwise use <code>--depthCol=NULL</code> to compute depth from row sums of the abundance table.</li>
     <li>Use <code>--depth.filter=0</code> to keep all rows after missingness filtering; use a larger value, such as <code>--depth.filter=1000</code>, to remove low-depth rows.</li>
     <li>For family or pedigree clustering, add a cluster column to <code>covFile</code> and set the same <code>--clusterCol</code> in Step0 and Step1.</li>
@@ -271,7 +271,7 @@ docker run --rm -it --privileged \
     <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Step0-aligned abundance table used to fit the null model. The first column must be subject ID, and the remaining columns are numeric abundance features</td></tr>
     <tr><td><strong><code>--nullModelPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for the fitted PALM null model, not a complete filename. Step1 writes <code>${nullModelPrefix}.rda</code>; if <code>.rda</code> is supplied accidentally, it is normalized back to the prefix</td></tr>
     <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional aligned covariate file; the CLI also accepts empty string or <code>NULL</code> to omit covariates</td></tr>
-    <tr><td><code>--covList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code>; names must match the header exactly. If omitted or set to <code>NULL</code> while <code>covFile</code> is provided, Step1 uses all covariate columns in <code>covFile</code> except <code>depthCol</code> and <code>clusterCol</code>. If <code>covFile=NULL</code>, Step1 fits the null model without covariates</td></tr>
+    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code>; names must match the header exactly. If omitted or set to <code>NULL</code> while <code>covFile</code> is provided, Step1 uses all covariate columns in <code>covFile</code> except <code>depthCol</code> and <code>clusterCol</code>. If <code>covFile=NULL</code>, Step1 fits the null model without covariates</td></tr>
     <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as sequencing depth; if omitted, sequencing depth is computed from row sums of <code>abdFile</code>. This column is not used as an adjustment covariate</td></tr>
     <tr><td><code>--clusterCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as the Step2.1 cluster ID. This column is saved in the null model; see Step0 for the meaning of <code>--clusterCol</code></td></tr>
     <tr><td><code>--prev.filter</code></td><td><code>double</code></td><td><code>0.1</code></td><td>Feature prevalence threshold used when fitting the null model</td></tr>
@@ -281,8 +281,8 @@ docker run --rm -it --privileged \
   <ul>
     <li>Run Step1 on the aligned files produced by Step0, not on the original raw abundance and covariate files.</li>
     <li>Use count abundance data as input; do not use relative abundance or proportion data.</li>
-    <li>Use <code>--covList=NULL</code> to adjust for all variables in <code>covFile</code> except the first column, which is subject ID, and any columns specified by <code>--depthCol</code> or <code>--clusterCol</code>.</li>
-    <li>Use <code>--covList=AGE,SEX,PC01</code> to adjust for only selected covariates.</li>
+    <li>Use <code>--covarColList=NULL</code> to adjust for all variables in <code>covFile</code> except the first column, which is subject ID, and any columns specified by <code>--depthCol</code> or <code>--clusterCol</code>.</li>
+    <li>Use <code>--covarColList=AGE,SEX,PC01</code> to adjust for only selected covariates.</li>
     <li>Use <code>--depthCol=SeqDepth</code> if the sequencing depth column is available in <code>covFile</code>; otherwise use <code>--depthCol=NULL</code>.</li>
     <li>Use <code>--clusterCol=FID</code> to save covariate-based family/pedigree cluster IDs for Step2.1; use <code>--clusterCol=NULL</code> if no covariate-based cluster column is available.</li>
     <li>Use <code>--prev.filter=0.1</code> to remove features present in fewer than 10% of samples; use <code>--prev.filter=0</code> to keep all features.</li>
@@ -445,7 +445,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --covFile=example/input/study1/cov.txt \
     --abdAlignedFile=example/input/study1/abd_aligned.txt \
     --covAlignedFile=example/input/study1/cov_aligned.txt \
-    --covList=NULL \
+    --covarColList=NULL \
     --depthCol=NULL \
     --timeIDCol=NULL \
     --clusterCol=NULL \
@@ -460,7 +460,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --covFile=/work/example/input/study1/cov.txt \
     --abdAlignedFile=/work/example/input/study1/abd_aligned.txt \
     --covAlignedFile=/work/example/input/study1/cov_aligned.txt \
-    --covList=NULL \
+    --covarColList=NULL \
     --depthCol=NULL \
     --timeIDCol=NULL \
     --clusterCol=NULL \
@@ -486,7 +486,7 @@ ID_004	318</code></pre>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step1_null.R \
     --abdFile=example/input/study1/abd_aligned.txt \
     --covFile=example/input/study1/cov_aligned.txt \
-    --covList=NULL \
+    --covarColList=NULL \
     --depthCol=NULL \
     --clusterCol=NULL \
     --prev.filter=0.1 \
@@ -498,7 +498,7 @@ ID_004	318</code></pre>
   step1_null.R \
     --abdFile=/work/example/input/study1/abd_aligned.txt \
     --covFile=/work/example/input/study1/cov_aligned.txt \
-    --covList=NULL \
+    --covarColList=NULL \
     --depthCol=NULL \
     --clusterCol=NULL \
     --prev.filter=0.1 \

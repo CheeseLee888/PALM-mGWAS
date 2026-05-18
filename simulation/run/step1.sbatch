@@ -29,7 +29,7 @@ nullModelPrefix="${OUTPUT_DIR}/step1_allpheno"
 echo "step1_fit_null_model: WORK=${WORK}"
 echo "step1_fit_null_model: SIF=${SIF}"
 echo "step1_fit_null_model: STUDY=${STUDY}"
-echo "step1_fit_null_model: covList=${COV_LIST}"
+echo "step1_fit_null_model: covarColList=${COV_LIST}"
 echo "step1_fit_null_model: depthCol=${DEPTH_COL}, prev.filter=${PREV_FILTER}"
 echo "step1_fit_null_model: featureInfoFile=${OUTPUT_FEATURE_FILE}"
 
@@ -37,7 +37,7 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   step1_null.R \
   --abdFile="${ABD_ALIGNED_FILE}" \
   --covFile="${COV_ALIGNED_FILE}" \
-  --covList="${COV_LIST}" \
+  --covarColList="${COV_LIST}" \
   --depthCol="${DEPTH_COL}" \
   --prev.filter="${PREV_FILTER}" \
   --featureInfoFile="${OUTPUT_FEATURE_FILE}" \
