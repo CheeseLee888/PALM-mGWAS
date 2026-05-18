@@ -47,7 +47,7 @@ option_list <- list(
   make_option(c("--height"), type = "character", default = NA_character_,
               help = "Plot height inches; NA lets the script auto-size"),
   make_option(c("--plotMinP"), type = "character", default = "NA",
-              help = "Optional Manhattan and QQ plotting threshold for p-value compression; points with P < plotMinP are compressed near the threshold and colored red. Use NA to disable compression")
+              help = "Optional Manhattan and QQ plotting threshold for p-value compression; must be no larger than --pCut. Use NA to disable compression")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -105,6 +105,9 @@ width_in  <- parse_dim(opt$width)
 height_in <- parse_dim(opt$height)
 p_cut <- parse_pcut(opt$pCut)
 plot_min_p <- parse_probability(opt$plotMinP, "--plotMinP")
+if (!is.na(plot_min_p) && plot_min_p > p_cut) {
+  stop("--plotMinP should not be larger than --pCut; otherwise, the Manhattan plot cannot show the --pCut reference line.")
+}
 
 inputPrefix <- opt$inputPrefix
 outputPrefix <- opt$outputPrefix

@@ -34,7 +34,8 @@ red, and the cutoff is drawn as a Manhattan reference line.}
 
 \item{plotMinP}{Optional Manhattan plotting threshold for p-value
 compression. Points with `P < plotMinP` are drawn slightly above
-`-log10(plotMinP)` and highlighted in red instead of stretching the full y-axis.}
+`-log10(plotMinP)` instead of stretching the full y-axis. Must be no
+larger than `pCut`.}
 }
 \value{
 Invisibly returns the data frame passed to `qqman::manhattan()`.

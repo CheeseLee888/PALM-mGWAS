@@ -479,6 +479,9 @@ plot_manhattan <- function(df, outFile, title = NULL,
     if (!is.numeric(plotMinP) || length(plotMinP) != 1 || plotMinP <= 0 || plotMinP >= 1) {
       stop("plotMinP must be a single number in (0, 1) or NA.")
     }
+    if (plotMinP > pCut) {
+      stop("plotMinP should not be larger than pCut; otherwise, the Manhattan plot cannot show the pCut reference line.")
+    }
     plot_min_p_logp <- -log10(plotMinP)
     cap_bump <- max(0.2, plot_min_p_logp * 0.02)
     man <- man |>
@@ -528,7 +531,7 @@ plot_manhattan <- function(df, outFile, title = NULL,
     genomewideline = FALSE
   )
 
-  if (any(man$ABOVE_PLOT_MIN | man$PASS_PCUT, na.rm = TRUE)) {
+  if (any(man$PASS_PCUT, na.rm = TRUE)) {
     red_points <- man |>
       dplyr::arrange(.data$CHR, .data$BP) |>
       dplyr::mutate(index = match(.data$CHR, unique(.data$CHR)), pos = as.numeric(.data$BP))
@@ -544,7 +547,7 @@ plot_manhattan <- function(df, outFile, title = NULL,
     }
 
     red_points <- red_points |>
-      dplyr::filter(.data$ABOVE_PLOT_MIN | .data$PASS_PCUT)
+      dplyr::filter(.data$PASS_PCUT)
 
     graphics::points(red_points$pos, red_points$PLOT_P, pch = 20, cex = 1.0, col = "red")
   }
@@ -590,6 +593,9 @@ plot_qq <- function(df, outFile, title = NULL,
     if (!is.numeric(plotMinP) || length(plotMinP) != 1 || plotMinP <= 0 || plotMinP >= 1) {
       stop("plotMinP must be a single number in (0, 1) or NA.")
     }
+    if (plotMinP > pCut) {
+      stop("plotMinP should not be larger than pCut; otherwise, the Manhattan plot cannot show the pCut reference line.")
+    }
     plot_min_p_logp <- -log10(plotMinP)
     cap_bump <- max(0.2, plot_min_p_logp * 0.02)
     above_plot_min <- pvals < plotMinP
@@ -614,7 +620,7 @@ plot_qq <- function(df, outFile, title = NULL,
   graphics::plot(
     expected, observed_plot,
     pch = 20,
-    col = ifelse(above_plot_min | pass_pcut, "red", "black"),
+    col = ifelse(pass_pcut, "red", "black"),
     xlab = expression(Expected~~-log[10](italic(P))),
     ylab = expression(Observed~~-log[10](italic(P))),
     main = title %||% "QQ Plot"
@@ -983,7 +989,8 @@ forest_plot_single_pheno <- function(r, pheno, snp, outFile,
 #'   red, and the cutoff is drawn as a Manhattan reference line.
 #' @param plotMinP Optional Manhattan plotting threshold for p-value
 #'   compression. Points with `P < plotMinP` are drawn slightly above
-#'   `-log10(plotMinP)` in red instead of stretching the full y-axis.
+#'   `-log10(plotMinP)` instead of stretching the full y-axis. Must be no
+#'   larger than `pCut`.
 #'
 #' @return Invisibly returns the data frame passed to `qqman::manhattan()`.
 #' @export
@@ -1086,7 +1093,8 @@ mode_big_combined <- function(metaIndex, outFile,
 #'   and for highlighting points in Manhattan and QQ plots.
 #' @param plotMinP Optional plotting threshold for p-value compression in
 #'   Manhattan and QQ plots. Points with `P < plotMinP` are drawn slightly above
-#'   `-log10(plotMinP)` and highlighted in red instead of stretching the full y-axis.
+#'   `-log10(plotMinP)` instead of stretching the full y-axis. Must be no
+#'   larger than `pCut`.
 #'
 #' @export
 mode_pheno_manhattan <- function(metaIndex, phenoName, outFile,

@@ -46,7 +46,8 @@ and for highlighting points in Manhattan and QQ plots.}
 
 \item{plotMinP}{Optional Manhattan plotting threshold for p-value
 compression. Points with `P < plotMinP` are drawn slightly above
-`-log10(plotMinP)` in red instead of stretching the full y-axis.}
+`-log10(plotMinP)` instead of stretching the full y-axis. Must be no
+larger than `pCut`.}
 }
 \description{
 Manhattan plot for a single phenotype

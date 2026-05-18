@@ -230,10 +230,9 @@ docker run --rm -it --privileged \
   </figure>
 
   <h2 id="step0">Step0 (<code>step0_checkInput.R</code>): Align Sample IDs with Genotype Data and Perform Sample QC</h2>
-  <h3>1. One-sentence purpose</h3>
   <p>Step0 checks the abundance, covariate, and genotype inputs; removes rows with missing required values or low sequencing depth; handles longitudinal repeated-measure structure when present; and matches the sample IDs in the abundance and covariate files to the subject IDs in the genotype file before writing aligned files for downstream modeling.</p>
   <p>In the parameter tables below, parameter names shown in bold are required.</p>
-  <h3>2. Argument table</h3>
+  <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
     <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose first column is subject ID. All non-ID abundance feature columns must contain numeric data; rows with missing values in any abundance feature column are removed</td></tr>
@@ -248,7 +247,7 @@ docker run --rm -it --privileged \
     <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Row-level depth threshold applied after missingness filtering and before genotype subject matching; rows with depth <code>&lt;=</code> this value are removed</td></tr>
     <tr><td><code>--seqdepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>DepthInfo</code>, written for the final Step0 filtered/aligned row set in genotype subject order. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
   </table>
-  <h3>3. Common usage patterns</h3>
+  <h3>Common usage patterns</h3>
   <ul>
     <li>For one row per subject, set <code>--timeIDCol=NULL</code>.</li>
     <li>For longitudinal abundance data with repeated subject IDs, set <code>--timeIDCol</code> to the visit/time column, such as <code>--timeIDCol=VISIT</code>.</li>
@@ -263,9 +262,8 @@ docker run --rm -it --privileged \
   <p>Use <code>--clusterCol</code> only for family or pedigree clustering across subjects. If <code>--clusterCol</code> is not provided, PLINK input can use valid <code>.fam</code> FID values. If neither source is available, longitudinal repeated observations are clustered by subject ID; non-longitudinal samples are treated as independent.</p>
   <p>For longitudinal covariates, provide either one row per subject-time pair using the same <code>--timeIDCol</code>, or one row per subject for covariates that are constant across visits.</p>
   <h2 id="step1">Step1 (<code>step1_null.R</code>): Fit the Null Model</h2>
-  <h3>1. One-sentence purpose</h3>
   <p>Step1 fits the PALM null model using the Step0-aligned abundance and covariate files and saves the fitted null object for SNP-feature association testing in the next steps.</p>
-  <h3>2. Argument table</h3>
+  <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
     <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Step0-aligned abundance table used to fit the null model. The first column must be subject ID, and the remaining columns are numeric abundance features</td></tr>
@@ -277,7 +275,7 @@ docker run --rm -it --privileged \
     <tr><td><code>--prev.filter</code></td><td><code>double</code></td><td><code>0.1</code></td><td>Feature prevalence threshold used when fitting the null model</td></tr>
     <tr><td><code>--featureInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for the feature summary table after prevalence filtering. This file contains feature ID, prevalence, and average proportion</td></tr>
   </table>
-  <h3>3. Common usage patterns</h3>
+  <h3>Common usage patterns</h3>
   <ul>
     <li>Run Step1 on the aligned files produced by Step0, not on the original raw abundance and covariate files.</li>
     <li>Use count abundance data as input; do not use relative abundance or proportion data.</li>
@@ -287,12 +285,11 @@ docker run --rm -it --privileged \
     <li>Use <code>--clusterCol=FID</code> to save covariate-based family/pedigree cluster IDs for Step2.1; use <code>--clusterCol=NULL</code> if no covariate-based cluster column is available.</li>
     <li>Use <code>--prev.filter=0.1</code> to remove features present in fewer than 10% of samples; use <code>--prev.filter=0</code> to keep all features.</li>
     <li>Use <code>--featureInfoFile</code> when you want to record which features were retained after prevalence filtering. This file contains feature ID, prevalence, and average proportion.</li>
-    <li><code>--nullModelPrefix=example/output/study1/step1_allpheno</code> writes <code>example/output/study1/step1_allpheno.rda</code>.</li>
+    <li>Use <code>--nullModelPrefix</code> to specify the output prefix for the fitted null model. For example, <code>--nullModelPrefix=example/output/study1/step1_allpheno</code> writes the null model object to <code>example/output/study1/step1_allpheno.rda</code>.</li>
   </ul>
   <h2 id="step2-1">Step2.1 (<code>step2_1_summary.R</code>): Run Per-Study SNP-Feature Association Tests</h2>
-  <h3>1. One-sentence purpose</h3>
   <p>Step2.1 reads the fitted null model and genotype input, performs PALM tests for selected SNPs and microbial features, and writes one association result file per feature.</p>
-  <h3>2. Argument table</h3>
+  <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
     <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input for association testing: PLINK prefix or VCF. VCF input is read directly; Step2.1 auto-detects <code>DS</code> or <code>GT</code> from the FORMAT field and prefers <code>DS</code> when present</td></tr>
@@ -306,7 +303,7 @@ docker run --rm -it --privileged \
     <tr><td><code>--impute_method</code></td><td><code>character</code></td><td><code>"best_guess"</code></td><td>Missing genotype imputation for SNPs that pass <code>--maxMissing</code>. Supported values are <code>best_guess</code>, <code>mean</code>, and <code>minor</code>. Step2.1 imputes remaining missing genotype values before association testing</td></tr>
     <tr><td><code>--snpInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for the final SNP set used by Step2.1, including SNP-level missingness and allele summaries</td></tr>
   </table>
-  <h3>3. Common usage patterns</h3>
+  <h3>Common usage patterns</h3>
   <ul>
     <li>Use <code>--chrom=1</code>, <code>--chrom=2</code>, etc. to run one chromosome at a time for easier parallelization.</li>
     <li>Use <code>--chrom=NULL</code> to test all chromosomes in one run.</li>
@@ -317,20 +314,18 @@ docker run --rm -it --privileged \
     <li>Use <code>--impute_method=best_guess</code>, <code>--impute_method=mean</code>, or <code>--impute_method=minor</code> for missing genotype imputation after the <code>--maxMissing</code> SNP-level filter.</li>
     <li>For large analyses, parallelize by chromosome and/or feature at the scheduler level rather than expecting one Step2.1 job to use internal multithreading.</li>
     <li>For longitudinal data, Step2.1 repeats each subject's genotype values across that subject's microbiome visits and clusters repeated observations from the same subject unless a family/pedigree cluster is provided.</li>
-    <li>Step2.1 does not take <code>--clusterCol</code> directly. If family or pedigree clustering is needed, pass the same <code>--clusterCol</code> in Step0 and Step1.</li>
   </ul>
   <h2 id="step2-2">Step2.2 (<code>step2_2_correction.R</code>): Apply Compositional Correction</h2>
-  <h3>1. One-sentence purpose</h3>
   <p>Step2.2 applies compositional correction across feature-specific Step2.1 result files for each SNP.</p>
-  <h3>2. Argument table</h3>
+  <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
     <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for correction; use the base before <code>_allchr</code> or <code>_chrN</code>. Do not pass <code>step2_allchr</code> or <code>step2_chr1</code></td></tr>
     <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Correction scope. Use <code>NULL</code> to target <code>step2_allchr_*.txt</code> files, or <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
     <tr><td><code>--overwriteOutput</code></td><td><code>character</code></td><td><code>"TRUE"</code></td><td>If <code>TRUE</code>, overwrite the selected Step2 scope in place. If <code>FALSE</code>, keep the originals and write corrected copies as <code>&lt;inputPrefix&gt;_corrected_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td></tr>
-    <tr><td><code>--correct</code></td><td><code>character</code></td><td><code>"median"</code></td><td>Correction method. Use <code>median</code> for median-based correction or <code>tune</code> for tune correction. <code>tune</code> reads sample size from the Step2.1 <code>N</code> column and is very slow compared with <code>median</code></td></tr>
+    <tr><td><code>--correct</code></td><td><code>character</code></td><td><code>"median"</code></td><td>Correction method. Use <code>median</code> for median-based correction or <code>tune</code> for tune correction. The <code>tune</code> method is slow compared with <code>median</code> method</td></tr>
   </table>
-  <h3>3. Common usage patterns</h3>
+  <h3>Common usage patterns</h3>
   <ul>
     <li>Run Step2.2 only after all intended feature result files are available from Step2.1. Running correction on only a subset of features changes the correction target and may produce different corrected statistics.</li>
     <li>For all-chromosome Step2.1 files named like <code>step2_allchr_&lt;feature&gt;.txt</code>, use <code>--inputPrefix=.../step2</code> and <code>--chrom=NULL</code>.</li>
@@ -341,9 +336,8 @@ docker run --rm -it --privileged \
   </ul>
   <h2 id="step3">Step3 (<code>step3_meta.R</code>): Meta-Analyze Study-Specific Results</h2>
   <div class="warning"><strong>Warning:</strong> Before running Step3, make sure all studies use the same genome build and the same allele coding. The effect estimates must refer to the same effect allele across studies. PALMGWAS does not automatically resolve allele flips or genome-build mismatches.</div>
-  <h3>1. One-sentence purpose</h3>
   <p>Step3 combines study-specific Step2 result files across multiple studies.</p>
-  <h3>2. Argument table</h3>
+  <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
     <tr><td><strong><code>--inputPrefixFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Study input-prefix file with two columns per line: study label and Step2 output prefix. The study label is used as the prefix for study-specific output columns, such as <code>America_est</code> and <code>America_stderr</code>. If Step2.2 was run with <code>--overwriteOutput=FALSE</code>, use the corrected prefix such as <code>step2_corrected</code></td></tr>
@@ -352,7 +346,7 @@ docker run --rm -it --privileged \
     <tr><td><code>--featureList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Meta-analysis feature scope. Optional comma-separated feature IDs to meta-analyze; <code>NULL</code> keeps all features found in the Step2 files</td></tr>
     <tr><td><code>--meta.method</code></td><td><code>character</code></td><td><code>"EE"</code></td><td>Meta-analysis method passed to <code>metafor::rma.uni()</code>. The default <code>EE</code> uses the equal-effects model</td></tr>
   </table>
-  <h3>3. Common usage patterns</h3>
+  <h3>Common usage patterns</h3>
   <ul>
     <li>Use an <code>inputPrefixFile</code> with two columns: study ID and the corresponding Step2 output prefix.</li>
     <li>Step3 matches files by appending the selected scope and feature name to each prefix: <code>&lt;prefix&gt;_allchr_&lt;feature&gt;.txt</code> when <code>--chrom=NULL</code>, or <code>&lt;prefix&gt;_chrN_&lt;feature&gt;.txt</code> when <code>--chrom=N</code>.</li>
@@ -362,12 +356,11 @@ docker run --rm -it --privileged \
     <li>Use <code>--featureList=NULL</code> to meta-analyze all available features.</li>
     <li>Use <code>--featureList=g_Bifidobacterium</code> to meta-analyze only selected features.</li>
     <li>Use <code>--meta.method=EE</code> for the default equal-effects meta-analysis, or pass another method supported by <code>metafor::rma.uni()</code> when a different meta-analysis model is intended.</li>
-    <li>If Step2.2 correction was run with <code>--overwriteOutput=TRUE</code>, Step3 can keep using the original Step2 prefix because the original files were overwritten.</li>
+    <li>If Step2.2 was run with <code>--overwriteOutput=TRUE</code>, use the original Step2.1 <code>outputPrefix</code> in Step3 because the original Step2.1 files have been overwritten by corrected results produced by Step2.2. If Step2.2 was run with <code>--overwriteOutput=FALSE</code>, use the corrected prefix <code>&lt;Step2 prefix&gt;_corrected</code>; otherwise, Step3 will use the uncorrected Step2.1 summary statistics.</li>
   </ul>
   <h2 id="reporting">Step4 (<code>step4_reporting.R</code>): Result Reporting</h2>
-  <h3>1. One-sentence purpose</h3>
   <p>Step4 reads single-study or meta-analysis result files and generates summary figures, including Manhattan, QQ, and forest plots, together with tables of associations passing a user-specified p-value threshold.</p>
-  <h3>2. Argument table</h3>
+  <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
     <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base input path used to discover Step3 meta-analysis files or single-study Step2 result files</td></tr>
@@ -375,28 +368,20 @@ docker run --rm -it --privileged \
     <tr><td><code>--feature</code></td><td><code>character</code></td><td><code>NA</code></td><td>Feature name</td></tr>
     <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier</td></tr>
     <tr><td><code>--pCut</code></td><td><code>character</code></td><td><code>"5e-8"</code></td><td>P-value threshold used for Manhattan reference lines, Manhattan/QQ point highlighting, and association-result filtering. Points with p-values passing <code>pCut</code> are shown in red. Must be a number in <code>(0, 1)</code></td></tr>
-    <tr><td><code>--plotMinP</code></td><td><code>character</code> (parsed as numeric or <code>NA</code>)</td><td><code>NA</code></td><td>P-value threshold used to compress extremely small p-values in Manhattan and QQ plots. Compressed points are shown in red; use <code>NA</code> to disable compression</td></tr>
+    <tr><td><code>--plotMinP</code></td><td><code>character</code></td><td><code>NA</code></td><td>P-value threshold used to compress extremely small p-values in Manhattan and QQ plots. It must be no larger than <code>--pCut</code>; use <code>NA</code> to disable compression</td></tr>
     <tr><td><code>--width</code></td><td><code>character</code></td><td><code>NA</code></td><td>Plot width in inches, parsed as numeric or <code>NA</code>; for example, use <code>--width=10</code> to set a fixed width or <code>--width=NA</code> to let the script auto-size</td></tr>
     <tr><td><code>--height</code></td><td><code>character</code></td><td><code>NA</code></td><td>Plot height in inches, parsed as numeric or <code>NA</code>; for example, use <code>--height=6</code> to set a fixed height or <code>--height=NA</code> to let the script auto-size</td></tr>
   </table>
-  <h3>3. Common usage patterns</h3>
+  <h3>Common usage patterns</h3>
   <ul>
     <li>If neither <code>--feature</code> nor <code>--snp</code> is specified, Step4 generates a combined Manhattan plot using, for each SNP, the smallest p-value across all features. A reference line at the threshold specified by <code>--pCut</code> is shown on the plot, and points passing <code>--pCut</code> are shown in red. Step4 also writes a text file listing SNP-feature associations with p-values passing <code>--pCut</code>.</li>
     <li>If <code>--feature</code> is specified but <code>--snp</code> is not specified, Step4 generates a feature-specific Manhattan plot and QQ plot for that feature. The Manhattan plot includes a reference line at the threshold specified by <code>--pCut</code>; points passing <code>--pCut</code> are shown in red in both the Manhattan and QQ plots.</li>
     <li>If <code>--snp</code> is specified but <code>--feature</code> is not specified, Step4 generates forest plots for features whose association with that SNP passes the p-value cutoff specified by <code>--pCut</code>.</li>
     <li>If both <code>--feature</code> and <code>--snp</code> are specified, Step4 generates one forest plot for the specified SNP-feature pair.</li>
-    <li>Use <code>--plotMinP</code> to compress extremely small p-values in Manhattan and QQ plots and avoid stretching the y-axis.</li>
-    <li><code>--pCut</code> is used as a reference line, point-highlighting threshold, or filtering threshold depending on the plotting mode. Red points in Manhattan or QQ plots indicate values passing <code>--pCut</code> or values compressed by <code>--plotMinP</code>.</li>
+    <li>Use <code>--plotMinP</code> to compress extremely small p-values in Manhattan and QQ plots and avoid stretching the y-axis. <code>--plotMinP</code> must not be larger than <code>--pCut</code>; otherwise, Step4 stops because the Manhattan plot cannot show the <code>--pCut</code> reference line.</li>
+    <li><code>--pCut</code> is used as a reference line, point-highlighting threshold, or filtering threshold depending on the plotting mode. Red points in Manhattan or QQ plots indicate values passing <code>--pCut</code>.</li>
     <li>Treat <code>5e-8</code> as an example <code>--pCut</code> threshold. For microbiome GWAS, users should choose a multiple-testing correction appropriate for SNP-feature testing.</li>
     <li><strong>Single-study Step4:</strong> you can run Step4 directly after Step2 by pointing <code>inputPrefix</code> to one study's Step2 output folder; in that case the plots summarize a single study rather than a meta-analysis.</li>
-    <li><code>--inputPrefix=example/output/meta</code></li>
-    <li><code>--outputPrefix=example/output/plot/step4</code> writes files such as <code>step4_manhattan_combined.png</code>, <code>step4_manhattan_g_Bifidobacterium.png</code>, and <code>step4_forest_chr1_14678191_A_C_g_Bifidobacterium.png</code></li>
-    <li><code>--feature=g_Peptoniphilus_unclassified</code>; omit it for case 1 or case 3</li>
-    <li><code>--snp=chr1:14678191:A:C</code>; omit it for case 1 or case 2</li>
-    <li><code>--pCut=5e-8</code>; <code>--pCut=1e-8</code>; <code>--pCut=1e-6</code></li>
-    <li><code>--plotMinP=1e-10</code>; <code>--plotMinP=1e-12</code>; <code>--plotMinP=NA</code></li>
-    <li><code>--width=10</code>; <code>--width=NA</code></li>
-    <li><code>--height=6</code>; <code>--height=NA</code></li>
   </ul>
   <h2 id="exampledata">Example Data in This Repo</h2>
   <p>The repository already contains a small three-study example under <code>example/input/</code> and matching outputs under <code>example/output/</code>. These files are useful for understanding the expected formats before running your own data.</p>
