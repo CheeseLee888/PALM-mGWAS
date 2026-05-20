@@ -11,19 +11,19 @@ option_list <- list(
         help = ""
     ),
     make_option("--covFile",
-        type = "character", default = "",
+        type = "character", default = NULL,
         help = ""
     ),
     make_option("--covarColList",
-        type = "character", default = "",
+        type = "character", default = NULL,
         help = ""
     ),
     make_option("--depthCol",
-        type = "character", default = "",
+        type = "character", default = NULL,
         help = ""
     ),
     make_option("--clusterCol",
-        type = "character", default = "",
+        type = "character", default = NULL,
         help = ""
     ),
     make_option("--prev.filter",
@@ -35,13 +35,13 @@ option_list <- list(
         help = ""
     ),
     make_option("--featureInfoFile",
-        type = "character", default = "NULL",
+        type = "character", default = NULL,
         help = ""
     )
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
-# normalize covFile from optparse (character) to R NULL
+# normalize omitted, empty-string, and literal NULL command-line values to R NULL
 if (is.null(opt$covFile) || !nzchar(opt$covFile) || toupper(opt$covFile) == "NULL") {
   opt$covFile <- NULL
 }

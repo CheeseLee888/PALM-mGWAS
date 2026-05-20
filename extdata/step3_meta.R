@@ -18,11 +18,11 @@ if (length(file_arg)) {
 option_list <- list(
   make_option("--inputPrefixFile", type="character", default="",
               help="txt: each line 'studyID<TAB>step2Prefix'"),
-  make_option("--chrom", type="character", default="NULL",
+  make_option("--chrom", type="character", default=NULL,
               help="Step2 scope: NULL for allchr, or 1..22 [default %default]"),
-  make_option("--featureList", type="character", default="NULL",
+  make_option("--featureList", type="character", default=NULL,
               help="Optional comma-separated feature name(s) to meta-analyze [default %default]"),
-  make_option("--meta.method", type="character", default="EE",
+  make_option("--metaMethod", type="character", default="EE",
               help="Meta-analysis method passed to metafor::rma.uni() [default %default]"),
   make_option("--outputPrefix", type="character", default="",
               help="Full output prefix for meta files, e.g. example/output/meta/step3_meta")
@@ -48,7 +48,7 @@ if (!meta_out_dir %in% c("", ".")) {
 }
 
 feature_subset <- NULL
-feature_flag <- trimws(opt$featureList)
+feature_flag <- if (is.null(opt$featureList)) "" else trimws(opt$featureList)
 if (nzchar(feature_flag) && toupper(feature_flag) != "NULL") {
   feature_subset <- strsplit(feature_flag, ",", fixed = TRUE)[[1]]
   feature_subset <- trimws(feature_subset)
@@ -57,7 +57,7 @@ if (nzchar(feature_flag) && toupper(feature_flag) != "NULL") {
     feature_subset <- NULL
   }
 }
-chrom_flag <- trimws(opt$chrom)
+chrom_flag <- if (is.null(opt$chrom)) "" else trimws(opt$chrom)
 if (!nzchar(chrom_flag) || toupper(chrom_flag) == "NULL") {
   opt$chrom <- NULL
 }
@@ -70,5 +70,5 @@ metaSummary(
   out_dir    = meta_out_dir,
   out_prefix = meta_out_prefix,
   keep_het   = TRUE,
-  meta.method = opt$meta.method
+  meta.method = opt$metaMethod
 )

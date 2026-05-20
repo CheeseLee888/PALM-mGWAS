@@ -31,11 +31,11 @@ option_list <- list(
         help = ""
     ),
     make_option("--chrom",
-        type = "character", default = "",
+        type = "character", default = NULL,
         help = ""
     ),
     make_option("--featureList",
-        type = "character", default = "",
+        type = "character", default = NULL,
         help = ""
     ),
     make_option("--minMAF",
@@ -50,12 +50,12 @@ option_list <- list(
         type = "double", default = 0.15,
         help = ""
     ),
-    make_option("--impute_method",
+    make_option("--imputeMethod",
         type = "character", default = "best_guess",
         help = ""
     ),
     make_option("--snpInfoFile",
-        type = "character", default = "NULL",
+        type = "character", default = NULL,
         help = "")
 )
 
@@ -88,6 +88,6 @@ getSummary(
   minMAF = opt$minMAF,
   minMAC = opt$minMAC,
   maxMissing = opt$maxMissing,
-  impute_method = opt$impute_method,
+  impute_method = opt$imputeMethod,
   snpInfoFile = opt$snpInfoFile
 )

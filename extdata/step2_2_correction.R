@@ -21,7 +21,7 @@ option_list <- list(
     help = ""
   ),
   make_option("--chrom",
-    type = "character", default = "NULL",
+    type = "character", default = NULL,
     help = ""
   ),
   make_option("--overwriteOutput",
@@ -35,7 +35,7 @@ option_list <- list(
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
-chrom_flag <- trimws(opt$chrom)
+chrom_flag <- if (is.null(opt$chrom)) "" else trimws(opt$chrom)
 if (!nzchar(chrom_flag) || toupper(chrom_flag) == "NULL") {
   opt$chrom <- NULL
 }

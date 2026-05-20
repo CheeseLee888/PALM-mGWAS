@@ -18,7 +18,7 @@ COV_LIST="${COV_LIST:-AGE,SEX,PC01,PC02,PC03,PC04,PC05}"
 DEPTH_COL="${DEPTH_COL:-NULL}"
 TIME_ID_COL="${TIME_ID_COL:-NULL}"
 DEPTH_FILTER="${DEPTH_FILTER:-0}"
-SEQDEPTH_INFO_FILE="${SEQDEPTH_INFO_FILE:-NULL}"
+DEPTH_INFO_FILE="${DEPTH_INFO_FILE:-NULL}"
 
 INPUT_DIR="${WORK}/input/${STUDY}"
 OUTPUT_DIR="${WORK}/output/${STUDY}"
@@ -36,7 +36,7 @@ echo "step0_align_inputs: running Step0 alignment"
 echo "step0_align_inputs: covarColList=${COV_LIST}"
 echo "step0_align_inputs: depthCol=${DEPTH_COL}, depth.filter=${DEPTH_FILTER}"
 echo "step0_align_inputs: timeIDCol=${TIME_ID_COL}"
-echo "step0_align_inputs: seqdepthInfoFile=${SEQDEPTH_INFO_FILE}"
+echo "step0_align_inputs: depthInfoFile=${DEPTH_INFO_FILE}"
 
 apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   step0_checkInput.R \
@@ -49,7 +49,7 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   --timeIDCol="${TIME_ID_COL}" \
   --depth.filter="${DEPTH_FILTER}" \
   --genoFile="${GENO_PREFIX}" \
-  --seqdepthInfoFile="${SEQDEPTH_INFO_FILE}"
+  --depthInfoFile="${DEPTH_INFO_FILE}"
 
 echo "step0_align_inputs: finished"
 echo "step0_align_inputs: aligned outputs"

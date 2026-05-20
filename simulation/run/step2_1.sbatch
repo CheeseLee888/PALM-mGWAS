@@ -63,5 +63,5 @@ apptainer exec --cleanenv --bind "${WORK}:${WORK}" "${SIF}" \
   --minMAF="${MIN_MAF}" \
   --minMAC="${MIN_MAC}" \
   --maxMissing="${MAX_MISSING}" \
-  --impute_method="${IMPUTE_METHOD}" \
+  --imputeMethod="${IMPUTE_METHOD}" \
   --snpInfoFile=NULL

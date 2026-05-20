@@ -84,11 +84,11 @@
   <p>Set up the runtime environment before installing or running any PALMGWAS command. The package depends on compiled R libraries, so the most reliable workflow is to keep <code>R</code> and all R package dependencies inside one isolated environment instead of mixing system-level and project-level installs.</p>
   <div class="env-grid">
     <div class="card">
-      <strong>Recommended setup for local runs</strong><br>
+      <strong>Recommended setup for source runs: pixi</strong><br>
       Use the repository's <code>pixi</code> environment when running PALMGWAS from source. Pixi sets up the correct R version and required packages in one isolated environment, which helps avoid conflicts with other R installations on your computer.
     </div>
     <div class="card">
-      <strong>Alternative: Docker</strong><br>
+      <strong>Recommended container setup: Docker</strong><br>
       Use Docker if you want a ready-to-use version of PALMGWAS. The Docker image already includes PALMGWAS and its R package dependencies, so you do not need to install them manually.
     </div>
     <div class="card">
@@ -232,21 +232,21 @@ docker run --rm -it --privileged \
 
   <h2 id="step0">Step0 (<code>step0_checkInput.R</code>): Align Sample IDs with Genotype Data and Perform Sample QC</h2>
   <p>Step0 checks the abundance, covariate, and genotype inputs; removes rows with missing required values or low sequencing depth; handles longitudinal repeated-measure structure when present; and matches the sample IDs in the abundance and covariate files to the subject IDs in the genotype file before writing aligned files for downstream modeling.</p>
-  <p>In the parameter tables below, parameter names shown in bold are required.</p>
+  <p>In the parameter tables below, parameter names shown in bold are required. The Default column shows user-facing defaults: <strong>required</strong> for required arguments, <code>NULL</code> for omitted optional arguments, <code>NA</code> for automatic or not-selected behavior, and <code>TRUE</code>/<code>FALSE</code> for logical flags.</p>
   <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Abundance table whose first column is subject ID. All non-ID abundance feature columns must contain numeric data; rows with missing values in any abundance feature column are removed</td></tr>
-    <tr><td><strong><code>--covFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Covariate table whose first column is subject ID. It may have one row per subject or, for repeated-measured covariates, one row per subject-time pair</td></tr>
-    <tr><td><strong><code>--abdAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned abundance table; original input is not overwritten</td></tr>
-    <tr><td><strong><code>--covAlignedFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output path for the filtered/aligned covariate table; original input is not overwritten</td></tr>
-    <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input used as the subject-order reference. Accepted values are a PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code>. For VCF, Step0 reads subject IDs from the sample columns in the <code>#CHROM</code> header line, checks that every retained subject is present, ignores extra VCF-only subjects, and reorders aligned rows by that VCF subject-column order</td></tr>
-    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated covariate columns required by Step1. Step0 uses these columns only for missingness-based sample filtering before ID matching. It does not remove other columns from <code>covAlignedFile</code>. If omitted or set to <code>NULL</code>, all non-ID columns in <code>covFile</code> are checked for missingness</td></tr>
-    <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td></tr>
-    <tr><td><code>--timeIDCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Visit/time column required only when <code>abdFile</code> has repeated subject IDs. Step0 uses it to match abundance and covariate rows, then removes it from the aligned output files</td></tr>
-    <tr><td><code>--clusterCol</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional family/pedigree cluster column in <code>covFile</code>. Use the same value in Step0 and Step1 when family or pedigree clustering should be used. Leave <code>NULL</code> when there is no family/pedigree cluster column</td></tr>
+    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Abundance table whose first column is subject ID. All non-ID abundance feature columns must contain numeric data; rows with missing values in any abundance feature column are removed</td></tr>
+    <tr><td><strong><code>--covFile</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Covariate table whose first column is subject ID. It may have one row per subject or, for repeated-measured covariates, one row per subject-time pair</td></tr>
+    <tr><td><strong><code>--abdAlignedFile</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Output path for the filtered/aligned abundance table; original input is not overwritten</td></tr>
+    <tr><td><strong><code>--covAlignedFile</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Output path for the filtered/aligned covariate table; original input is not overwritten</td></tr>
+    <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Genotype input used as the subject-order reference. Accepted values are a PLINK prefix without extension, or a file ending in <code>.vcf</code>, <code>.vcf.gz</code>, or <code>.vcf.bgz</code>. For VCF, Step0 reads subject IDs from the sample columns in the <code>#CHROM</code> header line, checks that every retained subject is present, ignores extra VCF-only subjects, and reorders aligned rows by that VCF subject-column order</td></tr>
+    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Optional comma-separated covariate columns required by Step1. Step0 uses these columns only for missingness-based sample filtering before ID matching. It does not remove other columns from <code>covAlignedFile</code>. If omitted or set to <code>NULL</code>, all non-ID columns in <code>covFile</code> are checked for missingness</td></tr>
+    <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Optional covariate column used as sequencing depth during Step0 sample filtering; if omitted, depth is computed from row sums of <code>abdFile</code></td></tr>
+    <tr><td><code>--timeIDCol</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Visit/time column required only when <code>abdFile</code> has repeated subject IDs. Step0 uses it to match abundance and covariate rows, then removes it from the aligned output files</td></tr>
+    <tr><td><code>--clusterCol</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Optional family/pedigree cluster column in <code>covFile</code>. Use the same value in Step0 and Step1 when family or pedigree clustering should be used. Leave <code>NULL</code> when there is no family/pedigree cluster column</td></tr>
     <tr><td><code>--depth.filter</code></td><td><code>double</code></td><td><code>0</code></td><td>Row-level depth threshold applied after missingness filtering and before genotype subject matching; rows with depth <code>&lt;=</code> this value are removed</td></tr>
-    <tr><td><code>--seqdepthInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for <code>DepthInfo</code>, written for the final Step0 filtered/aligned row set in genotype subject order. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
+    <tr><td><code>--depthInfoFile</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Optional output file for <code>DepthInfo</code>, written for the final Step0 filtered/aligned row set in genotype subject order. If <code>depthCol</code> is supplied, values come from that covariate column; otherwise they come from row sums of <code>abdFile</code></td></tr>
   </table>
   <h3>Common usage patterns</h3>
   <ul>
@@ -267,14 +267,14 @@ docker run --rm -it --privileged \
   <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Step0-aligned abundance table used to fit the null model. The first column must be subject ID, and the remaining columns are numeric abundance features</td></tr>
-    <tr><td><strong><code>--nullModelPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Output prefix for the fitted PALM null model, not a complete filename. Step1 writes <code>${nullModelPrefix}.rda</code>; if <code>.rda</code> is supplied accidentally, it is normalized back to the prefix</td></tr>
-    <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional aligned covariate file; the command-line scripts also accept empty string or <code>NULL</code> to omit covariates</td></tr>
-    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional comma-separated covariate column names to keep from <code>covFile</code>; names must match the header exactly. If omitted or set to <code>NULL</code> while <code>covFile</code> is provided, Step1 uses all covariate columns in <code>covFile</code> except <code>depthCol</code> and <code>clusterCol</code>. If <code>covFile=NULL</code>, Step1 fits the null model without covariates</td></tr>
-    <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as sequencing depth; if omitted, sequencing depth is computed from row sums of <code>abdFile</code>. This column is not used as an adjustment covariate</td></tr>
-    <tr><td><code>--clusterCol</code></td><td><code>character</code></td><td><code>""</code> (normalized to <code>NULL</code>)</td><td>Optional column name in <code>covFile</code> used as the Step2.1 cluster ID. This column is saved in the null model; see Step0 for the meaning of <code>--clusterCol</code></td></tr>
+    <tr><td><strong><code>--abdFile</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Step0-aligned abundance table used to fit the null model. The first column must be subject ID, and the remaining columns are numeric abundance features</td></tr>
+    <tr><td><strong><code>--nullModelPrefix</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Output prefix for the fitted PALM null model, not a complete filename. Step1 writes <code>${nullModelPrefix}.rda</code>; if <code>.rda</code> is supplied accidentally, it is normalized back to the prefix</td></tr>
+    <tr><td><code>--covFile</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Optional aligned covariate file. Empty string or <code>NULL</code> is treated as <code>NULL</code> to omit covariates</td></tr>
+    <tr><td><code>--covarColList</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Optional comma-separated covariate column names to keep from <code>covFile</code>; names must match the header exactly. If omitted or set to <code>NULL</code> while <code>covFile</code> is provided, Step1 uses all covariate columns in <code>covFile</code> except <code>depthCol</code> and <code>clusterCol</code>. If <code>covFile=NULL</code>, Step1 fits the null model without covariates</td></tr>
+    <tr><td><code>--depthCol</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Optional column name in <code>covFile</code> used as sequencing depth; if omitted, sequencing depth is computed from row sums of <code>abdFile</code>. This column is not used as an adjustment covariate</td></tr>
+    <tr><td><code>--clusterCol</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Optional column name in <code>covFile</code> used as the Step2.1 cluster ID. This column is saved in the null model; see Step0 for the meaning of <code>--clusterCol</code></td></tr>
     <tr><td><code>--prev.filter</code></td><td><code>double</code></td><td><code>0.1</code></td><td>Feature prevalence threshold used when fitting the null model</td></tr>
-    <tr><td><code>--featureInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for the feature summary table after prevalence filtering. This file contains feature ID, prevalence, and average proportion</td></tr>
+    <tr><td><code>--featureInfoFile</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Optional output file for the feature summary table after prevalence filtering. This file contains feature ID, prevalence, and average proportion</td></tr>
   </table>
   <h3>Common usage patterns</h3>
   <ul>
@@ -293,16 +293,16 @@ docker run --rm -it --privileged \
   <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Genotype input for association testing: PLINK prefix or VCF. VCF input is read directly; Step2.1 auto-detects <code>DS</code> or <code>GT</code> from the FORMAT field and prefers <code>DS</code> when present</td></tr>
-    <tr><td><strong><code>--nullModelPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Null model prefix generated by Step1; Step2.1 reads <code>${nullModelPrefix}.rda</code></td></tr>
-    <tr><td><strong><code>--outputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base Step2 output prefix, not a complete output filename. Step2.1 removes any trailing <code>_</code>, appends <code>_chr&lt;chrom&gt;</code> or <code>_allchr</code>, then appends <code>_&lt;feature&gt;.txt</code></td></tr>
-    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>""</code></td><td>Optional chromosome subset; use <code>--chrom=1</code> to restrict to one chromosome, or leave empty/use <code>NULL</code> to keep all chromosomes</td></tr>
-    <tr><td><code>--featureList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional comma-separated feature IDs to test from the Step1 null model; <code>NULL</code> keeps all modeled features</td></tr>
+    <tr><td><strong><code>--genoFile</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Genotype input for association testing: PLINK prefix or VCF. VCF input is read directly; Step2.1 auto-detects <code>DS</code> or <code>GT</code> from the FORMAT field and prefers <code>DS</code> when present</td></tr>
+    <tr><td><strong><code>--nullModelPrefix</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Null model prefix generated by Step1; Step2.1 reads <code>${nullModelPrefix}.rda</code></td></tr>
+    <tr><td><strong><code>--outputPrefix</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Base Step2 output prefix, not a complete output filename. Step2.1 removes any trailing <code>_</code>, appends <code>_chr&lt;chrom&gt;</code> or <code>_allchr</code>, then appends <code>_&lt;feature&gt;.txt</code></td></tr>
+    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Optional chromosome subset; use <code>--chrom=1</code> to restrict to one chromosome, or leave empty/use <code>NULL</code> to keep all chromosomes</td></tr>
+    <tr><td><code>--featureList</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Optional comma-separated feature IDs to test from the Step1 null model; <code>NULL</code> keeps all modeled features</td></tr>
     <tr><td><code>--minMAF</code></td><td><code>double</code></td><td><code>0.05</code></td><td>Optional minimum minor allele frequency threshold for SNP filtering; <code>0</code> disables this filter</td></tr>
     <tr><td><code>--minMAC</code></td><td><code>integer</code></td><td><code>5</code></td><td>Optional minimum minor allele count threshold for SNP filtering; <code>0</code> disables this filter</td></tr>
     <tr><td><code>--maxMissing</code></td><td><code>double</code></td><td><code>0.15</code></td><td>Maximum per-SNP missing genotype rate. Step2.1 removes SNPs above this rate before imputation; <code>1</code> disables this filter</td></tr>
-    <tr><td><code>--impute_method</code></td><td><code>character</code></td><td><code>"best_guess"</code></td><td>Missing genotype imputation for SNPs that pass <code>--maxMissing</code>. Supported values are <code>best_guess</code>, <code>mean</code>, and <code>minor</code>. Step2.1 imputes remaining missing genotype values before association testing</td></tr>
-    <tr><td><code>--snpInfoFile</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Optional output file for the final SNP set used by Step2.1, including SNP-level missingness and allele summaries</td></tr>
+    <tr><td><code>--imputeMethod</code></td><td><code>character</code></td><td><code>best_guess</code></td><td>Missing genotype imputation for SNPs that pass <code>--maxMissing</code>. Supported values are <code>best_guess</code>, <code>mean</code>, and <code>minor</code>. Step2.1 imputes remaining missing genotype values before association testing</td></tr>
+    <tr><td><code>--snpInfoFile</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Optional output file for the final SNP set used by Step2.1, including SNP-level missingness and allele summaries</td></tr>
   </table>
   <h3>Common usage patterns</h3>
   <ul>
@@ -312,7 +312,7 @@ docker run --rm -it --privileged \
     <li>Use <code>--featureList=g_Bifidobacterium,g_Lactobacillus</code> to test only selected features.</li>
     <li>Use <code>--minMAF=0.05</code> and <code>--minMAC=5</code> for standard SNP filtering; use <code>0</code> for either argument to disable that filter.</li>
     <li>Use <code>--maxMissing=0.15</code> to remove SNPs with more than 15% missing genotype values before imputation.</li>
-    <li>Use <code>--impute_method=best_guess</code>, <code>--impute_method=mean</code>, or <code>--impute_method=minor</code> for missing genotype imputation after the <code>--maxMissing</code> SNP-level filter.</li>
+    <li>Use <code>--imputeMethod=best_guess</code>, <code>--imputeMethod=mean</code>, or <code>--imputeMethod=minor</code> for missing genotype imputation after the <code>--maxMissing</code> SNP-level filter.</li>
     <li>For large analyses, parallelize by chromosome and/or feature at the scheduler level rather than expecting one Step2.1 job to use internal multithreading.</li>
     <li>For longitudinal data, Step2.1 repeats each subject's genotype values across that subject's microbiome visits and clusters repeated observations from the same subject unless a family/pedigree cluster is provided.</li>
   </ul>
@@ -321,10 +321,10 @@ docker run --rm -it --privileged \
   <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Shared Step2 base prefix used to discover all feature files for correction; use the base before <code>_allchr</code> or <code>_chrN</code>. Do not pass <code>step2_allchr</code> or <code>step2_chr1</code></td></tr>
-    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Correction scope. Use <code>NULL</code> to target <code>step2_allchr_*.txt</code> files, or <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
-    <tr><td><code>--overwriteOutput</code></td><td><code>character</code></td><td><code>"TRUE"</code></td><td>If <code>TRUE</code>, overwrite the selected Step2 scope in place. If <code>FALSE</code>, keep the originals and write corrected copies as <code>&lt;inputPrefix&gt;_corrected_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td></tr>
-    <tr><td><code>--correct</code></td><td><code>character</code></td><td><code>"median"</code></td><td>Correction method. Use <code>median</code> for median-based correction or <code>tune</code> for tune correction. The <code>tune</code> method is slow compared with <code>median</code> method</td></tr>
+    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Shared Step2 base prefix used to discover all feature files for correction; use the base before <code>_allchr</code> or <code>_chrN</code>. Do not pass <code>step2_allchr</code> or <code>step2_chr1</code></td></tr>
+    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Correction scope. Use <code>NULL</code> to target <code>step2_allchr_*.txt</code> files, or <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
+    <tr><td><code>--overwriteOutput</code></td><td><code>logical</code></td><td><code>TRUE</code></td><td>If <code>TRUE</code>, overwrite the selected Step2 scope in place. If <code>FALSE</code>, keep the originals and write corrected copies as <code>&lt;inputPrefix&gt;_corrected_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code></td></tr>
+    <tr><td><code>--correct</code></td><td><code>character</code></td><td><code>median</code></td><td>Correction method. Use <code>median</code> for median-based correction or <code>tune</code> for tune correction. The <code>tune</code> method is slow compared with <code>median</code> method</td></tr>
   </table>
   <h3>Common usage patterns</h3>
   <ul>
@@ -341,11 +341,11 @@ docker run --rm -it --privileged \
   <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--inputPrefixFile</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Study input-prefix file with two columns per line: study label and Step2 output prefix. The study label is used as the prefix for study-specific output columns, such as <code>America_est</code> and <code>America_stderr</code>. If Step2.2 was run with <code>--overwriteOutput=FALSE</code>, use the corrected prefix such as <code>step2_corrected</code></td></tr>
-    <tr><td><strong><code>--outputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base output prefix for meta-analysis tables. Step3 writes files as <code>&lt;outputPrefix&gt;_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code>. Each file contains SNP position columns, combined meta-analysis effect, standard error, p-value, optional heterogeneity p-value, and study-specific effect and standard-error columns</td></tr>
-    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Meta-analysis chromosome scope. Use <code>NULL</code> to meta-analyze <code>step2_allchr_*.txt</code> files, or run Step3 once per chromosome with <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
-    <tr><td><code>--featureList</code></td><td><code>character</code></td><td><code>"NULL"</code></td><td>Meta-analysis feature scope. Optional comma-separated feature IDs to meta-analyze; <code>NULL</code> keeps all features found in the Step2 files</td></tr>
-    <tr><td><code>--meta.method</code></td><td><code>character</code></td><td><code>"EE"</code></td><td>Meta-analysis method passed to <code>metafor::rma.uni()</code>. The default <code>EE</code> uses the equal-effects model</td></tr>
+    <tr><td><strong><code>--inputPrefixFile</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Study input-prefix file with two columns per line: study label and Step2 output prefix. The study label is used as the prefix for study-specific output columns, such as <code>America_est</code> and <code>America_stderr</code>. If Step2.2 was run with <code>--overwriteOutput=FALSE</code>, use the corrected prefix such as <code>step2_corrected</code></td></tr>
+    <tr><td><strong><code>--outputPrefix</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Base output prefix for meta-analysis tables. Step3 writes files as <code>&lt;outputPrefix&gt;_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code>. Each file contains SNP position columns, combined meta-analysis effect, standard error, p-value, optional heterogeneity p-value, and study-specific effect and standard-error columns</td></tr>
+    <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Meta-analysis chromosome scope. Use <code>NULL</code> to meta-analyze <code>step2_allchr_*.txt</code> files, or run Step3 once per chromosome with <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
+    <tr><td><code>--featureList</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Meta-analysis feature scope. Optional comma-separated feature IDs to meta-analyze; <code>NULL</code> keeps all features found in the Step2 files</td></tr>
+    <tr><td><code>--metaMethod</code></td><td><code>character</code></td><td><code>EE</code></td><td>Meta-analysis method passed to <code>metafor::rma.uni()</code>. The default <code>EE</code> fits a fixed-effect model.</td></tr>
   </table>
   <h3>Common usage patterns</h3>
   <ul>
@@ -356,7 +356,7 @@ docker run --rm -it --privileged \
     <li>Use <code>--chrom=1</code>, ..., <code>--chrom=22</code> to meta-analyze chromosome-specific files.</li>
     <li>Use <code>--featureList=NULL</code> to meta-analyze all available features.</li>
     <li>Use <code>--featureList=g_Bifidobacterium</code> to meta-analyze only selected features.</li>
-    <li>Use <code>--meta.method=EE</code> for the default equal-effects meta-analysis, or pass another method supported by <code>metafor::rma.uni()</code> when a different meta-analysis model is intended.</li>
+    <li>Use <code>--metaMethod=EE</code> for the default fixed-effect meta-analysis, or pass another method supported by <code>metafor::rma.uni()</code> when a different meta-analysis model is intended.</li>
     <li>If Step2.2 was run with <code>--overwriteOutput=TRUE</code>, use the original Step2.1 <code>outputPrefix</code> in Step3 because the original Step2.1 files have been overwritten by corrected results produced by Step2.2. If Step2.2 was run with <code>--overwriteOutput=FALSE</code>, use the corrected prefix <code>&lt;Step2 prefix&gt;_corrected</code>; otherwise, Step3 will use the uncorrected Step2.1 summary statistics.</li>
   </ul>
   <h2 id="reporting">Step4 (<code>step4_reporting.R</code>): Result Reporting</h2>
@@ -364,11 +364,11 @@ docker run --rm -it --privileged \
   <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base input path used to discover Step3 meta-analysis files or single-study Step2 result files</td></tr>
-    <tr><td><strong><code>--outputPrefix</code></strong></td><td><code>character</code></td><td><code>""</code></td><td>Base output prefix for Step4 figures and tables. Output files are named like <code>&lt;outputPrefix&gt;_&lt;plotType&gt;_&lt;feature-or-snp-if-specified&gt;.png</code></td></tr>
+    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Base input path used to discover Step3 meta-analysis files or single-study Step2 result files</td></tr>
+    <tr><td><strong><code>--outputPrefix</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Base output prefix for Step4 figures and tables. Output files are named like <code>&lt;outputPrefix&gt;_&lt;plotType&gt;_&lt;feature-or-snp-if-specified&gt;.png</code></td></tr>
     <tr><td><code>--feature</code></td><td><code>character</code></td><td><code>NA</code></td><td>Feature name</td></tr>
     <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier</td></tr>
-    <tr><td><code>--pCut</code></td><td><code>character</code></td><td><code>"5e-8"</code></td><td>P-value threshold used for Manhattan reference lines, Manhattan/QQ point highlighting, and association-result filtering. Points with p-values passing <code>pCut</code> are shown in red. Must be a number in <code>(0, 1)</code></td></tr>
+    <tr><td><code>--pCut</code></td><td><code>character</code></td><td><code>5e-8</code></td><td>P-value threshold used for Manhattan reference lines, Manhattan/QQ point highlighting, and association-result filtering. Points with p-values passing <code>pCut</code> are shown in red. Must be a number in <code>(0, 1)</code></td></tr>
     <tr><td><code>--plotMinP</code></td><td><code>character</code></td><td><code>NA</code></td><td>P-value threshold used to compress extremely small p-values in Manhattan and QQ plots. It must be no larger than <code>--pCut</code>; use <code>NA</code> to disable compression</td></tr>
     <tr><td><code>--width</code></td><td><code>character</code></td><td><code>NA</code></td><td>Plot width in inches, parsed as numeric or <code>NA</code>; for example, use <code>--width=10</code> to set a fixed width or <code>--width=NA</code> to let the script auto-size</td></tr>
     <tr><td><code>--height</code></td><td><code>character</code></td><td><code>NA</code></td><td>Plot height in inches, parsed as numeric or <code>NA</code>; for example, use <code>--height=6</code> to set a fixed height or <code>--height=NA</code> to let the script auto-size</td></tr>
@@ -437,7 +437,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --clusterCol=NULL \
     --depth.filter=0 \
     --genoFile=example/input/study1/geno \
-    --seqdepthInfoFile=NULL</code></pre>
+    --depthInfoFile=NULL</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:1.0 \
@@ -452,7 +452,7 @@ pixi run --manifest-path=pixi.toml Rscript extdata/step0_checkInput.R \
     --clusterCol=NULL \
     --depth.filter=0 \
     --genoFile=/work/example/input/study1/geno \
-    --seqdepthInfoFile=NULL</code></pre>
+    --depthInfoFile=NULL</code></pre>
   <p><strong>Output:</strong> Step0 writes aligned files such as <code>example/input/study1/abd_aligned.txt</code> and <code>example/input/study1/cov_aligned.txt</code>. The original input files are not overwritten.</p>
 
   <h3>Example Output: Step0 sequencing depth summary</h3>
@@ -462,7 +462,7 @@ ID_001	473
 ID_002	294
 ID_003	716
 ID_004	318</code></pre>
-  <p>This optional table is written by Step0 when <code>--seqdepthInfoFile</code> is set. It contains the final filtered/aligned rows in genotype subject order. With <code>--depthCol=NULL</code>, <code>SeqDepth</code> values are computed from row sums of <code>abdFile</code>.</p>
+  <p>This optional table is written by Step0 when <code>--depthInfoFile</code> is set. It contains the final filtered/aligned rows in genotype subject order. With <code>--depthCol=NULL</code>, <code>SeqDepth</code> values are computed from row sums of <code>abdFile</code>.</p>
 
   <h3>Longitudinal data</h3>
   <p>If abundance rows contain repeated subject IDs, set <code>--timeIDCol</code> in Step0. Covariates may have either one row per subject-time pair or one row per subject. Step0 writes aligned files with one row per retained observation, and Step2.1 handles the genotype repetition across visits automatically.</p>
@@ -512,7 +512,7 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --minMAF=0.05 \
     --minMAC=5 \
     --maxMissing=0.15 \
-    --impute_method=best_guess \
+    --imputeMethod=best_guess \
     --snpInfoFile=NULL</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
@@ -525,7 +525,7 @@ g_Anaerostipes	0.65	0.10380372336141</code></pre>
     --minMAF=0.05 \
     --minMAC=5 \
     --maxMissing=0.15 \
-    --impute_method=best_guess \
+    --imputeMethod=best_guess \
     --snpInfoFile=NULL</code></pre>
   <p><strong>Output:</strong> one file per feature, such as <code>example/output/study1/step2_allchr_g_Bifidobacterium.txt</code>, <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>, and so on.</p>
   <p><strong>Current example files:</strong> in this repository the Step2.1 outputs use real feature names, for example <code>example/output/study1/step2_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
@@ -572,7 +572,7 @@ chr1:14985097:C:T	1	14985097	100	0.111742358350986	0.113523070073392	0.324961099
     --inputPrefixFile=example/input/input_prefixes.txt \
     --chrom=NULL \
     --featureList=NULL \
-    --meta.method=EE \
+    --metaMethod=EE \
     --outputPrefix=example/output/meta/meta</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
@@ -581,7 +581,7 @@ chr1:14985097:C:T	1	14985097	100	0.111742358350986	0.113523070073392	0.324961099
     --inputPrefixFile=/work/example/input/input_prefixes_docker.txt \
     --chrom=NULL \
     --featureList=NULL \
-    --meta.method=EE \
+    --metaMethod=EE \
     --outputPrefix=/work/example/output/meta/meta</code></pre>
   <p><strong>Output:</strong> one meta file per feature, such as <code>example/output/meta/meta_allchr_g_Bifidobacterium.txt</code> or <code>example/output/meta/meta_allchr_g_Peptoniphilus_unclassified.txt</code>.</p>
 

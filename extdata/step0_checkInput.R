@@ -15,19 +15,19 @@ option_list <- list(
               help = "Output path for aligned abundance table"),
   make_option("--covAlignedFile", type = "character",
               help = "Output path for aligned covariate table"),
-  make_option("--covarColList", type = "character", default = "NULL",
+  make_option("--covarColList", type = "character", default = NULL,
               help = "Optional comma-separated covariate columns used in Step1; if NULL, all non-ID covariate columns are used. Samples missing these columns are removed [default %default]"),
-  make_option("--depthCol", type = "character", default = "NULL",
+  make_option("--depthCol", type = "character", default = NULL,
               help = "Optional covariate column name used as sequencing depth [default %default]"),
-  make_option("--timeIDCol", type = "character", default = "NULL",
+  make_option("--timeIDCol", type = "character", default = NULL,
               help = "Optional time ID column required when abdFile contains repeated subject IDs [default %default]"),
-  make_option("--clusterCol", type = "character", default = "NULL",
+  make_option("--clusterCol", type = "character", default = NULL,
               help = "Optional covFile column used as family/pedigree cluster ID [default %default]"),
   make_option("--depth.filter", type = "double", default = 0,
               help = "Row-level depth threshold; rows with depth <= threshold are removed before ID matching [default %default]"),
   make_option("--genoFile", type = "character",
               help = "Genotype input: PLINK prefix or VCF(.vcf/.vcf.gz/.vcf.bgz)"),
-  make_option("--seqdepthInfoFile", type = "character", default = "NULL",
+  make_option("--depthInfoFile", type = "character", default = NULL,
               help = "Optional output file for sequencing depth info used by Step0 filtering [default %default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -185,8 +185,8 @@ cat(
   " row(s), cov=", nrow(cov_df), " row(s).\n",
   sep = ""
 )
-if (is.null(opt$seqdepthInfoFile) || !nzchar(opt$seqdepthInfoFile) || toupper(opt$seqdepthInfoFile) == "NULL") {
-  opt$seqdepthInfoFile <- NULL
+if (is.null(opt$depthInfoFile) || !nzchar(opt$depthInfoFile) || toupper(opt$depthInfoFile) == "NULL") {
+  opt$depthInfoFile <- NULL
 }
 opt$covarColList <- normalize_col_list(opt$covarColList, "covarColList")
 opt$depthCol <- normalize_col_list(opt$depthCol, "depthCol")
@@ -409,22 +409,22 @@ cov_ids2 <- as.character(cov_df[[1]])
 if (!identical(abd_ids2, cov_ids2)) stop("After reorder, abdFile/covFile subject ID order still mismatched.")
 if (!identical(unique(abd_ids2), ref_ids)) stop("After reorder, abdFile subject order still mismatched to genotype.")
 
-if (!is.null(opt$seqdepthInfoFile)) {
+if (!is.null(opt$depthInfoFile)) {
   cat("Generating DepthInfo from the final Step0 filtered/aligned sample set...\n")
   final_depth <- depth[row_ord]
   if (anyNA(final_depth)) {
     stop("Internal error: final retained row(s) missing depth values.")
   }
   seqdepth_df <- PALMGWAS:::seqdepth_info_from_values(abd_ids2, final_depth)
-  dir.create(dirname(opt$seqdepthInfoFile), recursive = TRUE, showWarnings = FALSE)
-  fwrite(seqdepth_df, file = opt$seqdepthInfoFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
+  dir.create(dirname(opt$depthInfoFile), recursive = TRUE, showWarnings = FALSE)
+  fwrite(seqdepth_df, file = opt$depthInfoFile, sep = "\t", quote = FALSE, na = "NA", col.names = TRUE)
   cat(
     "DepthInfo finished: ", nrow(seqdepth_df),
-    " final sample(s) written to ", opt$seqdepthInfoFile, ".\n",
+    " final sample(s) written to ", opt$depthInfoFile, ".\n",
     sep = ""
   )
 } else {
-  cat("DepthInfo skipped: --seqdepthInfoFile is NULL.\n")
+  cat("DepthInfo skipped: --depthInfoFile is NULL.\n")
 }
 
 dir.create(dirname(opt$abdAlignedFile), recursive = TRUE, showWarnings = FALSE)
