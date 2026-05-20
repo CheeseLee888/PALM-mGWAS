@@ -3,8 +3,10 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
 #SBATCH --time=02:00:00
-#SBATCH --output=logs/step2_2_%A_%a.out
-#SBATCH --error=logs/step2_2_%A_%a.err
+#SBATCH --output=logs/step2_2_%j.out
+#SBATCH --error=logs/step2_2_%j.err
+# Step2.2 in the fixed simulation workflow:
+# one job per study, correcting all-chromosome Step2.1 files.
 
 set -euo pipefail
 WORK="${WORK:-${SLURM_SUBMIT_DIR:-$PWD}}"
@@ -14,19 +16,13 @@ cd "${WORK}"
 
 OUTPUT_DIR="${WORK}/output/${STUDY}"
 INPUT_PREFIX="${OUTPUT_DIR}/step2"
-OVERWRITE_OUTPUT="TRUE"
+OVERWRITE_OUTPUT="${OVERWRITE_OUTPUT:-TRUE}"
 STEP2_CORRECT_MODE="${STEP2_CORRECT_MODE:-median}"
-TOTAL_TASKS=22
-TASK_ID="${SLURM_ARRAY_TASK_ID:?SLURM_ARRAY_TASK_ID is required}"
-if (( TASK_ID < 1 || TASK_ID > TOTAL_TASKS )); then
-  echo "run_step2_2: task ${TASK_ID} out of range for ${TOTAL_TASKS} chromosomes" >&2
-  exit 1
-fi
-CHROM="${TASK_ID}"
+CHROM="NULL"
 
 echo "run_step2_2: WORK = ${WORK}"
 echo "run_step2_2: study = ${STUDY}"
-echo "run_step2_2: task=${TASK_ID}/${TOTAL_TASKS}"
+echo "run_step2_2: mode = all chromosomes"
 echo "run_step2_2: chrom = ${CHROM}"
 echo "run_step2_2: overwriteOutput = ${OVERWRITE_OUTPUT}"
 echo "run_step2_2: correct = ${STEP2_CORRECT_MODE}"

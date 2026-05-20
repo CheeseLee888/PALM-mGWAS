@@ -61,6 +61,7 @@ sacct -j <jobid> --format=JobID,JobName%20,State,ExitCode,Elapsed
 Use `squeue` to see whether there are still jobs running or pending. Use `sacct -j <jobid>` to inspect whether a job finished as `COMPLETED` or ended as `FAILED` or `CANCELLED`. Make sure the previous step completed correctly before moving on to the next one.
 
 Submit `Step0 -> Step1` for each study. Wait for `step0` to finish before submitting `step1`.
+Wait for `step1` to finish before submitting `step2_1`; `step1` writes `output/<study>/info_feature.txt`, which is used to size the Step2.1 arrays.
 
 ```bash
 STUDY=study1 sbatch run/step0.sbatch
@@ -80,37 +81,38 @@ STUDY=study1 sbatch --array=1-$(( $(wc -l < output/study1/info_feature.txt) - 1 
 STUDY=study2 sbatch --array=1-$(( $(wc -l < output/study2/info_feature.txt) - 1 )) run/step2_1.sbatch
 STUDY=study3 sbatch --array=1-$(( $(wc -l < output/study3/info_feature.txt) - 1 )) run/step2_1.sbatch
 
-STUDY=study1 sbatch --array=1-22 run/step2_2.sbatch
-STUDY=study2 sbatch --array=1-22 run/step2_2.sbatch
-STUDY=study3 sbatch --array=1-22 run/step2_2.sbatch
+STUDY=study1 sbatch run/step2_2.sbatch
+STUDY=study2 sbatch run/step2_2.sbatch
+STUDY=study3 sbatch run/step2_2.sbatch
 ```
 
 This means:
 
 - `run/step2_1.sbatch` runs as a one-feature-per-task array and writes all-chromosome Step2.1 files
-- `run/step2_2.sbatch` runs as a one-chromosome-per-task array
+- `run/step2_2.sbatch` runs once per study and corrects all-chromosome Step2.1 files
 
 
-After all three study-level Step2 stages have completed, write `study_dirs.tsv`, then submit `step3`. The provided Step3 script runs one chromosome per array task and meta-analyzes all features in that chromosome. Wait for `step3` to finish before submitting `step4`.
+After all three study-level Step2 stages have completed, write `input_prefixes.tsv`, then submit `step3`. The provided Step3 script runs one feature per array task and meta-analyzes all chromosomes for that feature. Wait for `step3` to finish before submitting `step4`.
 
 ```bash
 mkdir -p output/meta
 
-cat > output/meta/study_dirs.tsv <<EOF
-study1	${PWD}/output/study1
-study2	${PWD}/output/study2
-study3	${PWD}/output/study3
+cat > output/meta/input_prefixes.tsv <<EOF
+study1	${PWD}/output/study1/step2
+study2	${PWD}/output/study2/step2
+study3	${PWD}/output/study3/step2
 EOF
 
-sbatch --array=1-22 run/step3.sbatch
+sbatch --array=1-$(( $(wc -l < output/study1/info_feature.txt) - 1 )) run/step3.sbatch
 
 sbatch run/step4.sbatch
 ```
 
 This means:
 
-- `run/step3.sbatch` runs as a one-chromosome-per-task array
-- each Step3 task uses `--featureList=NULL`, so it meta-analyzes all discovered features for that chromosome
+- `run/step3.sbatch` runs as a one-feature-per-task array
+- each Step3 task uses `--chrom=NULL`, so it meta-analyzes all discovered chromosomes for that feature
+- if you run Step2.2 with `OVERWRITE_OUTPUT=FALSE`, use `step2_corrected` instead of `step2` in `input_prefixes.tsv`
 
 ## Outputs
 
