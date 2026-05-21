@@ -347,7 +347,7 @@ docker run --rm -it --privileged \
     <tr><td><strong><code>--outputPrefix</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Base output prefix for meta-analysis tables. Step3 writes files as <code>&lt;outputPrefix&gt;_&lt;allchr|chrN&gt;_&lt;feature&gt;.txt</code>. Each file contains SNP position columns, combined meta-analysis effect, standard error, p-value, optional heterogeneity p-value, and study-specific effect and standard-error columns</td></tr>
     <tr><td><code>--chrom</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Meta-analysis chromosome scope. Use <code>NULL</code> to meta-analyze <code>step2_allchr_*.txt</code> files, or run Step3 once per chromosome with <code>1..22</code> for chromosome-specific files such as <code>step2_chr1_*.txt</code></td></tr>
     <tr><td><code>--featureList</code></td><td><code>character</code></td><td><code>NULL</code></td><td>Meta-analysis feature scope. Optional comma-separated feature IDs to meta-analyze; <code>NULL</code> keeps all features found in the Step2 files</td></tr>
-    <tr><td><code>--metaMethod</code></td><td><code>character</code></td><td><code>EE</code></td><td>Meta-analysis method passed to <code>metafor::rma.uni()</code>. The default <code>EE</code> fits a fixed-effect model.</td></tr>
+    <tr><td><code>--metaMethod</code></td><td><code>character</code></td><td><code>EE</code></td><td>Meta-analysis method. The default <code>EE</code> uses a fast vectorized equal-effects inverse-variance calculation and is recommended for routine large-scale mbGWAS meta-analysis. Other values are passed to <code>metafor::rma.uni()</code> and may be substantially slower.</td></tr>
   </table>
   <h3>Common usage patterns</h3>
   <ul>
@@ -358,7 +358,7 @@ docker run --rm -it --privileged \
     <li>Use <code>--chrom=1</code>, ..., <code>--chrom=22</code> to meta-analyze chromosome-specific files.</li>
     <li>Use <code>--featureList=NULL</code> to meta-analyze all available features.</li>
     <li>Use <code>--featureList=g_Bifidobacterium</code> to meta-analyze only selected features.</li>
-    <li>Use <code>--metaMethod=EE</code> for the default fixed-effect meta-analysis, or pass another method supported by <code>metafor::rma.uni()</code> when a different meta-analysis model is intended.</li>
+    <li>Use <code>--metaMethod=EE</code> for the default fast fixed-effects meta-analysis. This option uses vectorized inverse-variance implementation. Non-EE methods are handled through <code>metafor::rma.uni()</code> and can be much slower for large genome-wide result files.</li>
     <li>If Step2.2 was run with <code>--overwriteOutput=TRUE</code>, use the original Step2.1 <code>outputPrefix</code> in Step3 because the original Step2.1 files have been overwritten by corrected results produced by Step2.2. If Step2.2 was run with <code>--overwriteOutput=FALSE</code>, use the corrected prefix <code>&lt;Step2 prefix&gt;_corrected</code>; otherwise, Step3 will use the uncorrected Step2.1 summary statistics.</li>
   </ul>
   <h2 id="reporting">Step4 (<code>step4_reporting.R</code>): Result Reporting</h2>

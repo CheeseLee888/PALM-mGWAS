@@ -33,10 +33,6 @@ metaSummary <- function(study_dirs,
   if (!requireNamespace("dplyr", quietly = TRUE)) {
     stop("Package 'dplyr' is required but not installed.")
   }
-  if (!requireNamespace("metafor", quietly = TRUE)) {
-    stop("Package 'metafor' is required but not installed.")
-  }
-
   if (is.null(names(study_dirs)) || any(names(study_dirs) == "")) {
     stop("study_dirs must be a named vector/list: names are study IDs.")
   }
@@ -50,6 +46,10 @@ metaSummary <- function(study_dirs,
     stop("'meta.method' must be a single non-empty method name for metafor::rma.uni().")
   }
   meta.method <- trimws(meta.method)
+  fast_fixed_effect <- identical(toupper(meta.method), "EE")
+  if (!fast_fixed_effect && !requireNamespace("metafor", quietly = TRUE)) {
+    stop("Package 'metafor' is required for meta.method='", meta.method, "' but is not installed.")
+  }
   study.ID <- names(study_dirs)
   if (length(inputPrefix) == 1L) {
     input_prefixes <- stats::setNames(file.path(as.character(study_dirs), basename(as.character(inputPrefix))), study.ID)
@@ -358,45 +358,84 @@ metaSummary <- function(study_dirs,
     # }
 
     if (length(used_studies) > 1) {
-      meta_fits <- data.frame(
-        est = rep(NA_real_, length(snp.ID)),
-        stderr = rep(NA_real_, length(snp.ID)),
-        pval = rep(NA_real_, length(snp.ID)),
-        pval.het = rep(NA_real_, length(snp.ID)),
-        stringsAsFactors = FALSE
-      )
-      for (i in seq_along(snp.ID)) {
-        keep <- !is.na(AA.est[i, ]) & !is.na(AA.var[i, ]) & AA.var[i, ] > 0
-        if (!any(keep)) {
-          next
-        }
-        if (sum(keep) == 1L) {
-          beta.coef <- AA.est[i, keep][[1L]]
-          std.coef <- sqrt(AA.var[i, keep][[1L]])
-          meta_fits$est[i] <- beta.coef
-          meta_fits$stderr[i] <- std.coef
-          meta_fits$pval[i] <- 1 - stats::pchisq((beta.coef / std.coef)^2, df = 1)
-          next
-        }
-        fit <- tryCatch(
-          metafor::rma.uni(
-            yi = as.numeric(AA.est[i, keep]),
-            vi = as.numeric(AA.var[i, keep]),
-            method = meta.method
-          ),
-          error = function(e) {
-            stop(
-              "metafor::rma.uni() failed for feature '", feat,
-              "', SNP '", snp.ID[[i]], "' with meta.method='", meta.method,
-              "': ", conditionMessage(e),
-              call. = FALSE
-            )
-          }
+      if (fast_fixed_effect) {
+        valid <- !is.na(AA.est) & !is.na(AA.var) & AA.var > 0
+        weights <- matrix(0, nrow = nrow(AA.var), ncol = ncol(AA.var), dimnames = dimnames(AA.var))
+        weights[valid] <- 1 / AA.var[valid]
+
+        est_values <- AA.est
+        est_values[!valid] <- 0
+
+        sum_w <- rowSums(weights)
+        meta_est <- rep(NA_real_, length(snp.ID))
+        meta_stderr <- rep(NA_real_, length(snp.ID))
+        meta_pval <- rep(NA_real_, length(snp.ID))
+        meta_pval_het <- rep(NA_real_, length(snp.ID))
+
+        has_weight <- sum_w > 0
+        meta_est[has_weight] <- rowSums(weights * est_values)[has_weight] / sum_w[has_weight]
+        meta_stderr[has_weight] <- sqrt(1 / sum_w[has_weight])
+        meta_pval[has_weight] <- stats::pchisq(
+          (meta_est[has_weight] / meta_stderr[has_weight])^2,
+          df = 1,
+          lower.tail = FALSE
         )
-        meta_fits$est[i] <- as.numeric(fit$b)
-        meta_fits$stderr[i] <- fit$se
-        meta_fits$pval[i] <- fit$pval
-        meta_fits$pval.het[i] <- fit$QEp
+
+        n_per_snp <- rowSums(valid)
+        centered <- sweep(AA.est, 1, meta_est, "-")
+        centered[!valid] <- 0
+        q_stat <- rowSums(weights * centered^2)
+        has_het <- n_per_snp > 1
+        meta_pval_het[has_het] <- stats::pchisq(q_stat[has_het], df = n_per_snp[has_het] - 1, lower.tail = FALSE)
+
+        meta_fits <- data.frame(
+          est = meta_est,
+          stderr = meta_stderr,
+          pval = meta_pval,
+          pval.het = meta_pval_het,
+          stringsAsFactors = FALSE
+        )
+      } else {
+        meta_fits <- data.frame(
+          est = rep(NA_real_, length(snp.ID)),
+          stderr = rep(NA_real_, length(snp.ID)),
+          pval = rep(NA_real_, length(snp.ID)),
+          pval.het = rep(NA_real_, length(snp.ID)),
+          stringsAsFactors = FALSE
+        )
+        for (i in seq_along(snp.ID)) {
+          keep <- !is.na(AA.est[i, ]) & !is.na(AA.var[i, ]) & AA.var[i, ] > 0
+          if (!any(keep)) {
+            next
+          }
+          if (sum(keep) == 1L) {
+            beta.coef <- AA.est[i, keep][[1L]]
+            std.coef <- sqrt(AA.var[i, keep][[1L]])
+            meta_fits$est[i] <- beta.coef
+            meta_fits$stderr[i] <- std.coef
+            meta_fits$pval[i] <- stats::pchisq((beta.coef / std.coef)^2, df = 1, lower.tail = FALSE)
+            next
+          }
+          fit <- tryCatch(
+            metafor::rma.uni(
+              yi = as.numeric(AA.est[i, keep]),
+              vi = as.numeric(AA.var[i, keep]),
+              method = meta.method
+            ),
+            error = function(e) {
+              stop(
+                "metafor::rma.uni() failed for feature '", feat,
+                "', SNP '", snp.ID[[i]], "' with meta.method='", meta.method,
+                "': ", conditionMessage(e),
+                call. = FALSE
+              )
+            }
+          )
+          meta_fits$est[i] <- as.numeric(fit$b)
+          meta_fits$stderr[i] <- fit$se
+          meta_fits$pval[i] <- fit$pval
+          meta_fits$pval.het[i] <- fit$QEp
+        }
       }
 
       out <- dplyr::tibble(
