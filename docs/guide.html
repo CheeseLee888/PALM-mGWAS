@@ -182,7 +182,7 @@ git clone https://github.com/CheeseLee888/PALMGWAS.git
 cd PALMGWAS
 
 # install CRAN dependencies into your active R library
-Rscript -e 'install.packages(c("Matrix", "data.table", "dplyr", "ggplot2", "metafor", "qqman", "stringr", "tibble", "optparse", "abess"), repos="https://cloud.r-project.org")'
+Rscript -e 'install.packages(c("Matrix", "data.table", "dplyr", "ggplot2", "matrixStats", "metafor", "qqman", "stringr", "tibble", "optparse", "abess"), repos="https://cloud.r-project.org")'
 
 # install Bioconductor dependency snpStats
 Rscript -e 'if (!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager", repos="https://cloud.r-project.org"); BiocManager::install("snpStats", update=FALSE, ask=FALSE)'

@@ -185,7 +185,11 @@ correctSummary <- function(inputPrefix,
   }
 
   if (identical(correct, "median")) {
-    delta <- apply(est_mat, 2, function(x) stats::median(-x, na.rm = TRUE))
+    if (!requireNamespace("matrixStats", quietly = TRUE)) {
+      stop("Package 'matrixStats' is required for Step2.2 median correction but is not installed.")
+    }
+    delta <- matrixStats::colMedians(-est_mat, na.rm = TRUE)
+    names(delta) <- snp_ids
   } else {
     missing_n <- names(feature_data)[!vapply(feature_data, function(dat) "N" %in% colnames(dat), logical(1))]
     if (length(missing_n) > 0L) {
@@ -230,26 +234,10 @@ correctSummary <- function(inputPrefix,
     }
   }
 
-  adjust_part <- vapply(snp_ids, function(snp) {
-    se <- stderr_mat[, snp]
-    non_na <- !is.na(se)
-    if (!any(non_na)) {
-      return(NA_real_)
-    }
-    sum(non_na) / (2 * sum(1 / sqrt(2 * pi) / se[non_na]))^2
-  }, numeric(1))
-  names(adjust_part) <- snp_ids
-
   out_paths <- character(length(feature_ids))
   names(out_paths) <- feature_ids
-  for (feat in feature_ids) {
-    dat <- feature_data[[feat]]
-    idx <- match(dat$SNP, snp_ids)
-    ok <- !is.na(dat$est) & !is.na(dat$stderr) & !is.na(delta[idx]) & !is.na(adjust_part[idx])
-    dat$est[ok] <- dat$est[ok] + delta[idx][ok]
-    dat$stderr[ok] <- sqrt(dat$stderr[ok]^2 + adjust_part[idx][ok])
-    dat$pval <- 1 - stats::pchisq((dat$est / dat$stderr)^2, df = 1)
 
+  write_corrected_one <- function(dat, feat) {
     out_file <- build_output_path(files[[feat]], feat)
     out_dir <- dirname(out_file)
     if (!out_dir %in% c("", ".")) {
@@ -263,7 +251,56 @@ correctSummary <- function(inputPrefix,
       row.names = FALSE,
       col.names = TRUE
     )
-    out_paths[[feat]] <- out_file
+    out_file
+  }
+
+  if (identical(correct, "median")) {
+    non_na_se <- !is.na(stderr_mat)
+    inv_se <- 1 / sqrt(2 * pi) / stderr_mat
+    inv_se[!non_na_se] <- 0
+    n_non_na <- colSums(non_na_se)
+    adjust_denom <- 2 * colSums(inv_se)
+    adjust_part <- n_non_na / adjust_denom^2
+    adjust_part[n_non_na == 0L] <- NA_real_
+    names(adjust_part) <- snp_ids
+
+    corrected_est_mat <- sweep(est_mat, 2, delta, "+")
+    corrected_stderr_mat <- sqrt(sweep(stderr_mat^2, 2, adjust_part, "+"))
+    invalid_corrected <- is.na(est_mat) | is.na(stderr_mat) | is.na(delta[col(est_mat)]) | is.na(adjust_part[col(est_mat)])
+    corrected_est_mat[invalid_corrected] <- est_mat[invalid_corrected]
+    corrected_stderr_mat[invalid_corrected] <- stderr_mat[invalid_corrected]
+    corrected_pval_mat <- 1 - stats::pchisq((corrected_est_mat / corrected_stderr_mat)^2, df = 1)
+
+    for (feat in feature_ids) {
+      dat <- feature_data[[feat]]
+      idx <- match(dat$SNP, snp_ids)
+      dat$est <- corrected_est_mat[feat, idx]
+      dat$stderr <- corrected_stderr_mat[feat, idx]
+      dat$pval <- corrected_pval_mat[feat, idx]
+
+      out_paths[[feat]] <- write_corrected_one(dat, feat)
+    }
+  } else {
+    adjust_part <- vapply(snp_ids, function(snp) {
+      se <- stderr_mat[, snp]
+      non_na <- !is.na(se)
+      if (!any(non_na)) {
+        return(NA_real_)
+      }
+      sum(non_na) / (2 * sum(1 / sqrt(2 * pi) / se[non_na]))^2
+    }, numeric(1))
+    names(adjust_part) <- snp_ids
+
+    for (feat in feature_ids) {
+      dat <- feature_data[[feat]]
+      idx <- match(dat$SNP, snp_ids)
+      ok <- !is.na(dat$est) & !is.na(dat$stderr) & !is.na(delta[idx]) & !is.na(adjust_part[idx])
+      dat$est[ok] <- dat$est[ok] + delta[idx][ok]
+      dat$stderr[ok] <- sqrt(dat$stderr[ok]^2 + adjust_part[idx][ok])
+      dat$pval <- 1 - stats::pchisq((dat$est / dat$stderr)^2, df = 1)
+
+      out_paths[[feat]] <- write_corrected_one(dat, feat)
+    }
   }
 
   message(
