@@ -27,7 +27,7 @@
     .gallery figcaption {font-size: 13px; color: #555; margin-top: 8px;}
     .workflow-figure {margin: 18px auto; border: 1px solid #d0d7de; border-radius: 8px; background: #fbfdff; padding: 12px; max-width: 720px;}
     .workflow-figure img {width: 80%; max-width: 520px; height: auto; display: block; margin: 0 auto; border-radius: 6px;}
-    .workflow-figure figcaption {font-size: 13px; color: #555; margin-top: 8px; text-align: center;}
+    .workflow-figure figcaption {font-size: 13px; color: #555; margin-top: 8px; text-align: left; line-height: 1.45;}
     .card {border: 1px solid #d0d7de; border-radius: 8px; padding: 12px; background: #fbfdff;}
     .warning {border: 1px solid #d8a800; border-left: 5px solid #d8a800; border-radius: 6px; background: #fff8d6; padding: 12px 14px; margin: 12px 0;}
     .warning strong {color: #6b4e00;}
@@ -226,8 +226,8 @@ docker run --rm -it --privileged \
   <h2 id="workflow">Workflow</h2>
   <p>Run the packaged command-line scripts directly after completing the installation steps above; you do not need to call exported R functions manually. Before using the relative paths shown below, first <code>cd</code> into the <code>PALMGWAS</code> package root. Figure 1 summarizes the Step0-Step3 association workflow; Step4 adds downstream reporting.</p>
   <figure class="workflow-figure">
-    <img src="assets/fig1.png" alt="PALMGWAS workflow overview">
-    <figcaption>Figure 1. Overview of the Step0-Step3 association workflow.</figcaption>
+    <img src="assets/fig1.jpg" alt="PALMGWAS workflow overview">
+    <figcaption>Figure 1. Overview of the PALMGWAS workflow. The left panel summarizes the Step0&ndash;Step3 analysis workflow. PALMGWAS takes SNP genotype data in PLINK or VCF format, microbiome feature abundance data, and covariates as input. Step0 matches sample IDs to the genotype data, performs sample-level quality control, and writes aligned abundance and covariate files. Step1 fits the null quasi-Poisson model. Step2.1 constructs relative-abundance-level summary statistics, and Step2.2 applies compositional-effect correction to obtain absolute-abundance-level summary statistics. Step3 performs cross-study meta-analysis to produce SNP&ndash;microbial feature association results. The right panel illustrates Step4 reporting outputs, including Manhattan plots, QQ plots, forest plots, and tables of top associations.</figcaption>
   </figure>
 
   <h2 id="step0">Step0 (<code>step0_checkInput.R</code>): Align Sample IDs with Genotype Data and Perform Sample QC</h2>
@@ -351,8 +351,7 @@ docker run --rm -it --privileged \
   </table>
   <h3>Common usage patterns</h3>
   <ul>
-    <li>Use an <code>inputPrefixFile</code> with two columns: study ID and the corresponding Step2 output prefix.</li>
-    <li>Step3 matches files by appending the selected scope and feature name to each prefix: <code>&lt;prefix&gt;_allchr_&lt;feature&gt;.txt</code> when <code>--chrom=NULL</code>, or <code>&lt;prefix&gt;_chrN_&lt;feature&gt;.txt</code> when <code>--chrom=N</code>.</li>
+    <li>Use an <code>inputPrefixFile</code> with two columns: study ID and the corresponding Step2 output prefix. Step3 matches files by appending the selected scope and feature name to each prefix: <code>&lt;prefix&gt;_allchr_&lt;feature&gt;.txt</code> when <code>--chrom=NULL</code>, or <code>&lt;prefix&gt;_chrN_&lt;feature&gt;.txt</code> when <code>--chrom=N</code>.</li>
     <li>If Step2.2 correction was run with <code>--overwriteOutput=FALSE</code>, set the second column of <code>inputPrefixFile</code> to the corrected prefix, for example <code>example/output/study1/step2_corrected</code>, so Step3 matches <code>step2_corrected_allchr_*.txt</code> or <code>step2_corrected_chrN_*.txt</code>.</li>
     <li>Use <code>--chrom=NULL</code> to meta-analyze all-chromosome files such as <code>step2_allchr_&lt;feature&gt;.txt</code>.</li>
     <li>Use <code>--chrom=1</code>, ..., <code>--chrom=22</code> to meta-analyze chromosome-specific files.</li>
@@ -366,7 +365,7 @@ docker run --rm -it --privileged \
   <h3>Argument table</h3>
   <table>
     <tr><th>Name</th><th>Type</th><th>Default</th><th>Meaning</th></tr>
-    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Base input path used to discover Step3 meta-analysis files or single-study Step2 result files</td></tr>
+    <tr><td><strong><code>--inputPrefix</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Shared Step3 or Step2 input prefix used to discover all-chromosome feature files</td></tr>
     <tr><td><strong><code>--outputPrefix</code></strong></td><td><code>character</code></td><td><strong>required</strong></td><td>Base output prefix for Step4 figures and tables. Output files are named like <code>&lt;outputPrefix&gt;_&lt;plotType&gt;_&lt;feature-or-snp-if-specified&gt;.png</code></td></tr>
     <tr><td><code>--feature</code></td><td><code>character</code></td><td><code>NA</code></td><td>Feature name</td></tr>
     <tr><td><code>--snp</code></td><td><code>character</code></td><td><code>NA</code></td><td>SNP identifier</td></tr>
@@ -377,6 +376,7 @@ docker run --rm -it --privileged \
   </table>
   <h3>Common usage patterns</h3>
   <ul>
+    <li>Step4 matches all-chromosome input files by appending the scope and feature name to <code>--inputPrefix</code>: <code>&lt;inputPrefix&gt;_allchr_&lt;feature&gt;.txt</code>. For files named like <code>meta_allchr_&lt;feature&gt;.txt</code>, use <code>--inputPrefix=.../meta</code>; for files named like <code>step3_meta_allchr_&lt;feature&gt;.txt</code>, use <code>--inputPrefix=.../step3_meta</code>.</li>
     <li>If neither <code>--feature</code> nor <code>--snp</code> is specified, Step4 generates a combined Manhattan plot using, for each SNP, the smallest p-value across all features. A reference line at the threshold specified by <code>--pCut</code> is shown on the plot, and points passing <code>--pCut</code> are shown in red. Step4 also writes a text file listing SNP-feature associations with p-values passing <code>--pCut</code>.</li>
     <li>If <code>--feature</code> is specified but <code>--snp</code> is not specified, Step4 generates a feature-specific Manhattan plot and QQ plot for that feature. The Manhattan plot includes a reference line at the threshold specified by <code>--pCut</code>; points passing <code>--pCut</code> are shown in red in both the Manhattan and QQ plots.</li>
     <li>If <code>--snp</code> is specified but <code>--feature</code> is not specified, Step4 generates forest plots for features whose association with that SNP passes the p-value cutoff specified by <code>--pCut</code>.</li>
@@ -384,7 +384,7 @@ docker run --rm -it --privileged \
     <li>Use <code>--plotMinP</code> to compress extremely small p-values in Manhattan and QQ plots and avoid stretching the y-axis. <code>--plotMinP</code> must not be larger than <code>--pCut</code>; otherwise, Step4 stops because the Manhattan plot cannot show the <code>--pCut</code> reference line.</li>
     <li><code>--pCut</code> is used as a reference line, point-highlighting threshold, or filtering threshold depending on the plotting mode. Red points in Manhattan or QQ plots indicate values passing <code>--pCut</code>.</li>
     <li>Treat <code>5e-8</code> as an example <code>--pCut</code> threshold. For microbiome GWAS, users should choose a multiple-testing correction appropriate for SNP-feature testing.</li>
-    <li><strong>Single-study Step4:</strong> you can run Step4 directly after Step2 by pointing <code>inputPrefix</code> to one study's Step2 output folder; in that case the plots summarize a single study rather than a meta-analysis.</li>
+    <li><strong>Single-study Step4:</strong> you can run Step4 directly after Step2 by pointing <code>inputPrefix</code> to one study's Step2 output prefix, for example <code>example/output/study1/step2</code>; in that case the plots summarize a single study rather than a meta-analysis.</li>
   </ul>
   <h2 id="exampledata">Example Data in This Repo</h2>
   <p>The repository already contains a small three-study example under <code>example/input/</code> and matching outputs under <code>example/output/</code>. These files are useful for understanding the expected formats before running your own data.</p>
@@ -596,18 +596,18 @@ chr1:14678191:A:C	1	14678191	-0.184697893992603	0.0333318764894014	3.00441911000
   <p>The meta file keeps the combined estimate in <code>meta_*</code> columns and also carries study-specific estimates, which is why the downstream forest plots can show both overall and per-study effects.</p>
 
   <h3 id="example-step4">Step4: meta tables to figures</h3>
-  <p><strong>Input:</strong> meta result files in <code>example/output/meta</code>. The example below shows all four Step4 plotting modes separately.</p>
+  <p><strong>Input:</strong> meta result files named like <code>example/output/meta/meta_allchr_&lt;feature&gt;.txt</code>. Because Step4 expects the shared prefix before <code>_allchr</code>, use <code>--inputPrefix=example/output/meta/meta</code>. The example below shows all four Step4 plotting modes separately.</p>
 
   <h3>Step4 case 1: no <code>--feature</code>, no <code>--snp</code></h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
-    --inputPrefix=example/output/meta \
+    --inputPrefix=example/output/meta/meta \
     --outputPrefix=example/output/plot/step4 \
     --pCut=5e-8</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:1.0 \
   step4_reporting.R \
-    --inputPrefix=/work/example/output/meta \
+    --inputPrefix=/work/example/output/meta/meta \
     --outputPrefix=/work/example/output/plot/step4 \
     --pCut=5e-8</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/step4_manhattan_combined.png</code> and the filtered hit list <code>example/output/plot/step4_manhattan_combined_pCut.txt</code>.</p>
@@ -623,14 +623,14 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
 
   <h3>Step4 case 2: <code>--feature</code> only</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
-    --inputPrefix=example/output/meta \
+    --inputPrefix=example/output/meta/meta \
     --outputPrefix=example/output/plot/step4 \
     --feature=g_Bifidobacterium</code></pre>
   <pre><code class="language-bash">docker run --rm --platform=linux/amd64 \
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:1.0 \
   step4_reporting.R \
-    --inputPrefix=/work/example/output/meta \
+    --inputPrefix=/work/example/output/meta/meta \
     --outputPrefix=/work/example/output/plot/step4 \
     --feature=g_Bifidobacterium</code></pre>
   <p><strong>Output:</strong> <code>example/output/plot/step4_manhattan_g_Bifidobacterium.png</code> and the auxiliary QQ plot <code>example/output/plot/step4_qq_g_Bifidobacterium.png</code>.</p>
@@ -649,7 +649,7 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
 
   <h3>Step4 case 3: <code>--snp</code> only</h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
-    --inputPrefix=example/output/meta \
+    --inputPrefix=example/output/meta/meta \
     --outputPrefix=example/output/plot/step4 \
     --snp=chr1:14678191:A:C \
     --pCut=5e-8</code></pre>
@@ -657,7 +657,7 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:1.0 \
   step4_reporting.R \
-    --inputPrefix=/work/example/output/meta \
+    --inputPrefix=/work/example/output/meta/meta \
     --outputPrefix=/work/example/output/plot/step4 \
     --snp=chr1:14678191:A:C \
     --pCut=5e-8</code></pre>
@@ -670,7 +670,7 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
   </div>
   <h3>Step4 case 4: both <code>--feature</code> and <code>--snp</code></h3>
   <pre><code class="language-bash">pixi run --manifest-path=pixi.toml Rscript extdata/step4_reporting.R \
-    --inputPrefix=example/output/meta \
+    --inputPrefix=example/output/meta/meta \
     --outputPrefix=example/output/plot/step4 \
     --feature=g_Bifidobacterium \
     --snp=chr1:14678191:A:C</code></pre>
@@ -678,7 +678,7 @@ chr1:14678191:A:C	-0.184697893992603	0.0333318764894014	3.00441911000652e-08	g_B
   -v "$PWD":/work -w /work \
   cheeselee/palmgwas:1.0 \
   step4_reporting.R \
-    --inputPrefix=/work/example/output/meta \
+    --inputPrefix=/work/example/output/meta/meta \
     --outputPrefix=/work/example/output/plot/step4 \
     --feature=g_Bifidobacterium \
     --snp=chr1:14678191:A:C</code></pre>
