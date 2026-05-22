@@ -95,10 +95,10 @@ index_files <- function(metaIndex, i) {
 
 #' Discover meta-analysis result files
 #'
-#' Utility to list Step3 meta-analysis files or single-study Step2 files and
-#' extract phenotype names from filenames. Files must be named as
-#' `<prefix>_allchr_<feature>.txt` or `<prefix>_chrN_<feature>.txt`, where
-#' `N` is 1..22.
+#' Utility to list Step3 meta-analysis files or single-study Step2 files that
+#' share a base prefix and extract phenotype names from filenames. Files must be
+#' named as `<inputPrefix>_allchr_<feature>.txt` or
+#' `<inputPrefix>_chrN_<feature>.txt`, where `N` is 1..22.
 #'
 #' For each feature, chromosome-specific files are preferred over `allchr`
 #' files. If one or more `_chrN_` files exist for a feature, all matched
@@ -107,7 +107,8 @@ index_files <- function(metaIndex, i) {
 #' single `allchr` file is used. Text files that do not match either naming
 #' convention are ignored.
 #'
-#' @param inputPrefix Directory containing Step3 meta files or single-study Step2 files.
+#' @param inputPrefix Shared Step3 or Step2 base prefix before `_allchr` or
+#'   `_chrN`, for example `example/output/meta/meta`.
 #'
 #' @return A data frame with columns `pheno`, `scope`, `file`, and `files`.
 #'   `file` contains the first selected file for backward compatibility;
@@ -115,24 +116,49 @@ index_files <- function(metaIndex, i) {
 #' @export
 discover_meta_files <- function(inputPrefix) {
   message("discover_meta_files: scanning ", inputPrefix)
-  files <- list.files(inputPrefix, pattern = "[.]txt$", full.names = TRUE)
+  if (missing(inputPrefix) || !nzchar(inputPrefix)) {
+    stop("'inputPrefix' must be provided.")
+  }
+  if (dir.exists(inputPrefix)) {
+    stop(
+      "'inputPrefix' must include the file-name prefix before '_allchr' or '_chrN', not only a directory. ",
+      "For example, use '/path/to/meta/step3_meta' to match '/path/to/meta/step3_meta_allchr_<feature>.txt'."
+    )
+  }
+
+  input_dir <- dirname(inputPrefix)
+  input_base <- sub("_+$", "", basename(inputPrefix))
+  if (grepl("_(allchr|chr([1-9]|1[0-9]|2[0-2]))$", input_base)) {
+    stop(
+      "'inputPrefix' must be the shared base prefix before '_allchr' or '_chrN'. ",
+      "Use inputPrefix='", file.path(input_dir, sub("_(allchr|chr([1-9]|1[0-9]|2[0-2]))$", "", input_base)), "'."
+    )
+  }
+
+  all_files <- list.files(input_dir, pattern = "[.]txt$", full.names = TRUE)
+  prefix <- paste0(input_base, "_")
+  files <- all_files[startsWith(basename(all_files), prefix)]
 
   if (length(files) == 0) {
     stop(
-      "No result files found in: ", inputPrefix,
+      "No result files found for inputPrefix: ", file.path(input_dir, input_base),
+      "\nExpected files like: ", paste0(input_base, "_allchr_<feature>.txt"),
+      " or ", paste0(input_base, "_chrN_<feature>.txt"),
       "\nFiles present: ",
-      paste(list.files(inputPrefix), collapse = ", ")
+      paste(list.files(input_dir), collapse = ", ")
     )
   }
 
   base_names <- basename(files)
-  parsed <- regexec("^(.*)_(allchr|chr([1-9]|1[0-9]|2[0-2]))_(.+)[.]txt$", base_names)
-  pieces <- regmatches(base_names, parsed)
-  ok <- vapply(pieces, length, integer(1)) >= 5L
+  suffix_names <- substring(base_names, nchar(prefix) + 1L)
+  parsed <- regexec("^(allchr|chr([1-9]|1[0-9]|2[0-2]))_(.+)[.]txt$", suffix_names)
+  suffix_pieces <- regmatches(suffix_names, parsed)
+  ok <- vapply(suffix_pieces, length, integer(1)) >= 4L
   if (!any(ok)) {
     stop(
-      "discover_meta_files: no Step2/Step3-style files found in ", inputPrefix,
-      ". Expected names ending in _allchr_<feature>.txt or _chrN_<feature>.txt."
+      "discover_meta_files: no Step2/Step3-style files found for inputPrefix ", file.path(input_dir, input_base),
+      ". Expected names like ", paste0(input_base, "_allchr_<feature>.txt"),
+      " or ", paste0(input_base, "_chrN_<feature>.txt"), "."
     )
   }
 
@@ -148,9 +174,9 @@ discover_meta_files <- function(inputPrefix) {
   info <- data.frame(
     file = files[idx],
     base = base_names[idx],
-    scope = vapply(pieces[idx], `[`, character(1), 3),
-    chrom = suppressWarnings(as.integer(vapply(pieces[idx], `[`, character(1), 4))),
-    pheno = vapply(pieces[idx], `[`, character(1), 5),
+    scope = vapply(suffix_pieces[idx], `[`, character(1), 2),
+    chrom = suppressWarnings(as.integer(vapply(suffix_pieces[idx], `[`, character(1), 3))),
+    pheno = vapply(suffix_pieces[idx], `[`, character(1), 4),
     stringsAsFactors = FALSE
   )
 

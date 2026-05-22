@@ -11,7 +11,7 @@ WORK="${WORK:-${SLURM_SUBMIT_DIR:-$PWD}}"
 cd "${WORK}"
 
 SIF="${SIF:-${WORK}/PALMGWAS.sif}"
-INPUT_PREFIX="${INPUT_PREFIX:-${WORK}/output/meta}"
+INPUT_PREFIX="${INPUT_PREFIX:-${WORK}/output/meta/step3_meta}"
 OUTPUT_PREFIX="${OUTPUT_PREFIX:-${WORK}/output/plot/step4}"
 FEATURE="${FEATURE:-g_Acinetobacter}"
 SNP="${SNP:-chr4:1682869:G:C}"

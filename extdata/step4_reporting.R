@@ -33,7 +33,7 @@ arg_supplied <- function(flag, args = raw_args) {
 
 option_list <- list(
   make_option(c("--inputPrefix"), type = "character", default = "",
-              help = "Directory containing Step3 meta files or single-study Step2 files [default %default]"),
+              help = "Shared Step3/Step2 input prefix before _allchr or _chrN, e.g. example/output/meta/meta [default %default]"),
   make_option(c("--outputPrefix"), type = "character", default = "",
               help = "Prefix for plot outputs, including directory and optional filename prefix [default %default]"),
   make_option(c("--feature"), type = "character", default = NA,

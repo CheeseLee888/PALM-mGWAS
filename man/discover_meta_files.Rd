@@ -7,7 +7,8 @@
 discover_meta_files(inputPrefix)
 }
 \arguments{
-\item{inputPrefix}{Directory containing Step3 meta files or single-study Step2 files.}
+\item{inputPrefix}{Shared Step3 or Step2 base prefix before `_allchr` or
+`_chrN`, for example `example/output/meta/meta`.}
 }
 \value{
 A data frame with columns `pheno`, `scope`, `file`, and `files`.
@@ -15,10 +16,10 @@ A data frame with columns `pheno`, `scope`, `file`, and `files`.
 `files` is a list column containing all selected files for the feature.
 }
 \description{
-Utility to list Step3 meta-analysis files or single-study Step2 files and
-extract phenotype names from filenames. Files must be named as
-`<prefix>_allchr_<feature>.txt` or `<prefix>_chrN_<feature>.txt`, where
-`N` is 1..22.
+Utility to list Step3 meta-analysis files or single-study Step2 files that
+share a base prefix and extract phenotype names from filenames. Files must be
+named as `<inputPrefix>_allchr_<feature>.txt` or
+`<inputPrefix>_chrN_<feature>.txt`, where `N` is 1..22.
 }
 \details{
 For each feature, chromosome-specific files are preferred over `allchr`
